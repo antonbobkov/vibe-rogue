@@ -204,10 +204,15 @@ besides the canvas.
 
 ## TEC-13 Debug and test hooks
 
-`window.CH` exposes `{ state, playRng, floorRng, act(actionName, args), newRun(seed), loadFloor(n) }`
-so that `32-acceptance-tests.md` can be automated with any browser test runner. `CH.act` performs one
-player action and runs the turn loop, returning the log lines produced. These hooks have no UI and do
-not affect gameplay.
+`window.CH` exposes `{ state, game, playRng, floorRng, act(action), newRun(seed), loadFloor(n),
+grid(), events(), queueRng(values) }` so that `32-acceptance-tests.md` can be automated with any
+browser test runner. `CH.act` performs one engine action (`PLN-03` schema) and runs the turn loop,
+returning `{ok, reason, log, events}`. `CH.grid()` returns the last rendered 80×30 cell buffer as
+rows of `{glyph, fg, bg}` so tests assert what is drawn without reading pixels. `CH.events()` returns
+and clears the UI's pending engine events. `CH.queueRng(values)` replaces the play RNG with a scripted
+sequence (tests only; throws when exhausted). These hooks have no UI and do not affect gameplay.
+The headless engine facade, action schema, and event vocabulary they rely on are fixed in
+`40-implementation-plan.md` § PLN-03.
 
 ## TEC-14 Performance targets
 

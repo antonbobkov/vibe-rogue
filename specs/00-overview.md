@@ -173,6 +173,7 @@ These apply to every file in `specs/`.
 | `30-technical.md` | 4 | Stack, module layout, data schemas, PRNG, save format, rendering | Done |
 | `31-balance.md` | 4 | Expected-run model and sanity checks against wave 3 tables | Done |
 | `32-acceptance-tests.md` | 4 | Observable behaviors and edge cases the finished game must satisfy | Done |
+| `40-implementation-plan.md` | — | Thirteen milestones with machine-checkable Definitions of Done, for autonomous agents | Done |
 
 ## OVR-09 Reading order for a builder
 
