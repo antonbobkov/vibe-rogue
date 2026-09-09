@@ -17,17 +17,17 @@ Fields per `ENM-01`. `Acc` = accuracy, `Eva` = evasion, `Plt` = plating, `Per` =
 
 | Name | Glyph | Color | Int | Acc | Eva | Plt | Attack | Speed | Archetype | Per | Doors | XP | Drop % | Drop table | Immune | Floors |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| **Rust-moth** | `m` | rust | 3 | 70 | 25 | 0 | `1d2` | FAST | SWARMER (pack 3–5; floor 1: 3–4) | 7 | N | 1 | 5 | Solder 1 | — | 1, 2, 3, 5, 6 |
-| **Sweeper** | `s` | steel | 10 | 70 | 5 | 0 | `1d3` | NORMAL | CHASER | 7 | Y | 3 | 15 | Solder 2, Spring-Key 1 | — | 1, 2, 3, 4 |
+| **Rust-moth** | `m` | rust | 2 | 60 | 25 | 0 | `1` (flat) | FAST | SWARMER (pack 3–5; floor 1: 3–4) | 7 | N | 1 | 5 | Solder 1 | — | 1, 2, 3, 5, 6 |
+| **Sweeper** | `s` | steel | 7 | 65 | 5 | 0 | `1d3` | NORMAL | CHASER | 7 | Y | 3 | 15 | Solder 2, Spring-Key 1 | — | 1, 2, 3, 4 |
 | **Spring-Hound** | `h` | copper | 8 | 75 | 15 | 0 | `1d3` | FAST | CHASER | 9 | N | 5 | 15 | Spring-Key 2, Solder 1 | — | 2, 3, 4, 5 |
 | **Tin Soldier** | `t` | silver | 16 | 75 | 5 | 1 | `1d4+1` | NORMAL | GUARD | 7 | Y | 6 | 25 | Solder 2, Spring-Key 2, Tin Plating 1 | — | 2, 3, 4, 5, 6 |
 | **Music-box Dancer** | `d` | pink | 12 | 75 | 30 | 0 | `1d4` | NORMAL | CHASER | 7 | Y | 4 | 15 | Tuning Fork 1, Solder 1 | — | 3, 7 |
-| **Cuckoo** | `c` | yellow | 8 | 80 | 15 | 0 | melee `1d2`; ranged `1d4`, range 6, windUp YES | NORMAL | SKIRMISHER | 8 | N | 6 | 20 | Spring-Key 2, Grit Bomb 1 | — | 3, 5, 7 |
+| **Cuckoo** | `c` | yellow | 8 | 80 | 15 | 0 | melee `1d2`; ranged `1d4` (ignores Plating), range 6, windUp YES | NORMAL | SKIRMISHER | 8 | N | 6 | 20 | Spring-Key 2, Grit Bomb 1 | — | 3, 5, 7 |
 | **Stoker** | `k` | orange | 18 | 75 | 5 | 1 | `1d6` + on hit **Burning** 2 | NORMAL | CHASER | 7 | Y | 8 | 25 | Oil Flask 2, Solder 1 | Burning | 4, 7 |
 | **Gear-Golem** | `g` | iron | 30 | 70 | 0 | 3 | heavy `3d4` (no plain attack) | SLOW | BRUISER | 6 | B | 12 | 40 | Spring-Key 2, Solder 2, Counterweight 1 | — | 4, 6, 7 |
-| **Brass Finch** | `f` | lime | 5 | 75 | 30 | 0 | `1d3` | FAST | SWARMER (pack 2–3) | 8 | N | 3 | 10 | Spring-Key 1 | — | 5, 7 |
+| **Brass Finch** | `f` | lime | 5 | 75 | 30 | 0 | `1d4+1` | FAST | SWARMER (pack 2–3) | 8 | N | 3 | 10 | Spring-Key 1 | — | 5, 7 |
 | **Archivist** | `a` | blue | 14 | 80 | 15 | 1 | melee `1d3`; ranged `1d4` + on hit **Exposed** 2, range 5, windUp NO | NORMAL | SKIRMISHER | 7 | Y | 8 | 25 | Flux 1, Solder 1, Clatter Can 1 | — | 6, 7 |
-| **The Unfinished** | `u` | violet | 20 | 65 | 10 | 2 | `2d3` | NORMAL | ERRATIC | 6 | Y | 9 | 20 | Solder 2, Flux 1 | Blinded | 6, 7, 8 |
+| **The Unfinished** | `u` | violet | 20 | 65 | 10 | 2 | `2d4` | NORMAL | ERRATIC | 6 | Y | 9 | 20 | Solder 2, Flux 1 | Blinded | 6, 7, 8 |
 | **Pendulum Knight** | `p` | white | 26 | 80 | 10 | 2 | `2d4` | NORMAL | GUARD | 7 | Y | 12 | 40 | Solder 2, Spring-Key 2, Flux 1, Steel Plating 1 | — | 6, 7 |
 
 Special-case rules:
@@ -72,12 +72,12 @@ Descriptions (≤ 25 words, in the inspect popup):
 
 | Glyph | Color | Int | Acc | Eva | Plt | Attack | Speed | Per | Doors | XP | Drop | Immune |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| `C` | pink | 40 | 80 | 15 | 1 | `1d6` | NORMAL (P1), FAST (P2) | 8 | Y | 10 | **Conductor's Baton** | — |
+| `C` | pink | 32 | 80 | 15 | 1 | `1d5` | NORMAL (P1), FAST (P2) | 8 | Y | 10 | **Conductor's Baton** | — |
 
 - **Placement:** floor 3's stairs room (`FLR-04`), on a random interior tile. Active from the start of
   the floor (entry trigger = floor start), but it does not leave its room until Tick has been seen:
   before first sight it Waits; after first sight it runs its script anywhere.
-- **Phase 1 (Integrity > 20):**
+- **Phase 1 (Integrity > 16):**
   1. If `windingUp` → **Downbeat**: summon **Music-box Dancer**s on the two free tiles adjacent to the
      Conductor that are first in reading order (fewer if fewer are free), each Active with
      `lastKnown = Tick's tile`. Summoned dancers count toward a cap of **4 alive summoned dancers**; if
@@ -86,7 +86,7 @@ Descriptions (≤ 25 words, in the inspect popup):
   2. Else if `n mod 3 == 2` and Tick is seen → `windingUp = true` (telegraph). Log: "The Conductor raises
      the baton."
   3. Else → CHASER lines 1–3.
-- **Phase 2 (Integrity ≤ 20):** on transition, log "The Conductor's tempo doubles." Speed becomes FAST.
+- **Phase 2 (Integrity ≤ 16):** on transition, log "The Conductor's tempo doubles." Speed becomes FAST.
   Script: CHASER only. No more summons.
 - Description: *Keeps fourteen brass players to a bar that never ends. Calls the dancers in on the beat.*
 
@@ -94,14 +94,14 @@ Descriptions (≤ 25 words, in the inspect popup):
 
 | Glyph | Color | Int | Acc | Eva | Plt | Heavy | Speed | Per | Doors | XP | Drop | Immune |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| `R` | red | 60 | 75 | 0 | 4 | `3d5` | SLOW (P1), NORMAL (P2) | 7 | B | 12 | **Governor** | Slowed, Burning |
+| `R` | red | 48 | 75 | 0 | 4 | `3d5` | SLOW (P1), NORMAL (P2) | 7 | B | 12 | **Governor** | Slowed, Burning |
 
 - **Placement:** floor 6's stairs room, random interior tile. Entry trigger = the first time any tile of
   the stairs room is in Tick's FOV. Before that it is Dormant (it can also be woken by noise like any
   enemy, which counts as the trigger).
-- **Phase 1 (Integrity > 30):** BRUISER script (`ENM-06`) with `heavyAttack 3d5`. Telegraph log: "The
+- **Phase 1 (Integrity > 24):** BRUISER script (`ENM-06`) with `heavyAttack 3d5`. Telegraph log: "The
   Regulator's arm ratchets back." Heavy log: "The Regulator's arm drops."
-- **Phase 2 (Integrity ≤ 30):** on transition, log "The Regulator's governor spins free." Speed becomes
+- **Phase 2 (Integrity ≤ 24):** on transition, log "The Regulator's governor spins free." Speed becomes
   NORMAL. Script:
   1. If `ventingUp` → **Vent**: every actor within Chebyshev 2 of the Regulator takes 4 damage ignoring
      Plating and gets **Burning** 2. Noise 6. Log: "Steam bursts from the Regulator." Clear `ventingUp`.
@@ -113,7 +113,7 @@ Descriptions (≤ 25 words, in the inspect popup):
 
 | Glyph | Color | Int | Acc | Eva | Plt | Attack | Speed | Per | Doors | XP | Drop | Immune |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| `U` | white | 90 | 85 | 15 | 2 | `2d4` | NORMAL (P1, P2), SLOW (P3) | 10 | Y | 0 | (the Master Key — narrative) | Slowed |
+| `U` | white | 72 | 85 | 15 | 2 | `2d4` | NORMAL (P1, P2), SLOW (P3) | 10 | Y | 0 | (the Master Key — narrative) | Slowed |
 
 - **Placement:** the `U` tile of the floor 8 map (`FLR-09`). Entry trigger = Tick opens the door at the
   antechamber (the `+` on the map). At that moment: text box with line 1 (`SCR-08`), then the
@@ -121,21 +121,21 @@ Descriptions (≤ 25 words, in the inspect popup):
 - **Its own spring:** the Understudy has `tension = 100`, shown in its inspect popup as `Spring n/100`.
   Every action it takes costs 2. If it reaches 0, the Understudy is **defeated** exactly as if broken
   (`STY-02`: it is winding down as you fight it).
-- **Phase 1 (Integrity > 60):**
-  1. If `windingUp` and Tick adjacent → **Overwind**: melee attack rolling `2d4` twice (sum), accuracy +25.
+- **Phase 1 (Integrity > 48):**
+  1. If `windingUp` and Tick adjacent → **Overwind**: melee attack rolling `2d4` twice (sum), accuracy +15.
      Log: "The Understudy's arm unwinds all at once." Clear `windingUp`. If Tick not adjacent, clear and
      Wait.
-  2. Else if adjacent to Tick and `n mod 3 == 2` → `windingUp = true`. Log: "The Understudy tightens."
+  2. Else if adjacent to Tick and `n mod 4 == 3` → `windingUp = true`. Log: "The Understudy tightens."
   3. Else → CHASER.
-- **Phase 2 (Integrity 31–60):** on transition: log line 2 (`SCR-08`), then summon two **The Unfinished**
+- **Phase 2 (Integrity 25–48):** on transition: log line 2 (`SCR-08`), then summon two **The Unfinished**
   on marker tiles `1` and `2` (or the nearest free tiles by Chebyshev, reading order), Active, and
   `n` continues. Script:
-  1. If `pulsingUp` → **Pulse**: every actor within Chebyshev 2 takes `1d6+2` ignoring Plating and is
+  1. If `pulsingUp` → **Pulse**: every actor within Chebyshev 2 takes `1d6+1` ignoring Plating and is
      knocked back 1 away from the Understudy. Noise 8. Log: "The Understudy rings like a bell." Clear.
-  2. Else if `n mod 3 == 2` and Tick within 2 → `pulsingUp = true`. Log: "The Understudy hums."
+  2. Else if `n mod 4 == 3` and Tick within 2 → `pulsingUp = true`. Log: "The Understudy hums."
   3. Else → Phase 1 lines 1–3 (it still Overwinds when adjacent on the same counter — the Pulse check
      takes precedence when both would fire).
-- **Phase 3 (Integrity ≤ 30):** on transition: log line 3 (`SCR-08`); speed becomes SLOW permanently;
+- **Phase 3 (Integrity ≤ 24):** on transition: log line 3 (`SCR-08`); speed becomes SLOW permanently;
   all `windingUp`/`pulsingUp` cleared. Script: CHASER only. No specials.
 - **On defeat** (Integrity ≤ 0 or spring 0): no scrap. Text box with the defeat description and line 4,
   then thought 3, then the ending choice (`UI-19`). Journal page 8 appears on the chair tile `C`

@@ -194,8 +194,8 @@ Second text box:
 | # | When (`STY-06`) | Where | Text |
 |---|---|---|---|
 | 1 | Entry | Text box | "Tick. She wrote about you. *The first attempt — she works.* She meant the Key for something finished. Go back down. There is oil in the workshop, and nothing you need to do." |
-| 2 | Integrity ≤ 60 | Log, `violet` | "You fight the way she taught the soldiers to. She was not a soldier." |
-| 3 | Integrity ≤ 30 | Log, `violet` | "I am running down. So are you. Tell me what you would do with a heart, first attempt." |
+| 2 | Integrity ≤ 48 | Log, `violet` | "You fight the way she taught the soldiers to. She was not a soldier." |
+| 3 | Integrity ≤ 24 | Log, `violet` | "I am running down. So are you. Tell me what you would do with a heart, first attempt." |
 | 4 | Defeat | Text box (in Moment 3) | "Turn it, then. Someone has to." |
 
 ## SCR-07 The ending choice
