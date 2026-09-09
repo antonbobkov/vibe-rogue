@@ -248,7 +248,7 @@ the totals the specs claim.
 `23-floors.md`, `24-script.md`, `UI-07`, `UI-08`, `BST-01`.
 
 **Files.** `data/palette.js`, `data/items.js`, `data/enemies.js`, `data/skills.js`,
-`data/floors.js`, `data/script.js`; `test/unit/data.test.js`.
+`data/floors.js`, `data/script.js`, `src/palette.js`; `test/unit/data.test.js`.
 
 **Tasks.**
 1. Transcribe verbatim. Names, glyphs, colors, dice strings, descriptions, floors, tables.
@@ -259,7 +259,9 @@ the totals the specs claim.
    `pages[1..8]`, `moments{1,2,'3a','3b'}`, `understudy[1..4]`, `endingChoice`, `endingA`,
    `endingB`, `descent[]`, `screens{broken,woundDown,keeper,walker}`, `help[]`, `log{...}` with the
    `SCR-10` templates using `{A} {D} {n} {X}` placeholders.
-4. `data/palette.js`: `UI-08` plus `BST-01`; `resolve(colorOrName)`.
+4. `data/palette.js`: the `UI-08` table plus `BST-01`, and nothing else — PLN-02 R3 forbids
+   functions under `data/`. The `resolve(colorOrName)` helper lives in `src/palette.js`, which
+   imports the table (D-012).
 
 **Tests** (`@m02`, all `@unit` unless an ACC is named):
 - Every item has the fields its category requires and no unknown fields; every enemy has all
@@ -279,7 +281,9 @@ the totals the specs claim.
 - Script: `descent` has 7 lines; page 8 has no `— A.V.`; every other page ends with `— A.V.`; each
   page word count 110–170; intro ≤ 180 words; `understudy[4] === 'Turn it, then. Someone has to.'`.
 
-**DoD.** `npm run dod -- 02`.
+**DoD.** `npm run dod -- 02`; remove ACC-132 and ACC-77 from the allowlist. ACC-77 goes now because
+`acc-coverage` rejects an allowlisted ID that any test title already names, and the floor 8 map test
+above names it; M03 still adds ACC-77's loading clause (D-026).
 
 ---
 
@@ -315,7 +319,8 @@ from `WLD-08`); `test/unit/gen.test.js`.
 - Performance: mean generation time over 200 floors < 50 ms (`TEC-14`), asserted with
   `process.hrtime` (allowed here: `tools/` and tests may use timers; `src/` may not).
 
-**DoD.** `npm run dod -- 03`; remove ACC-70–74, 76, 77, 80, 81 from the allowlist.
+**DoD.** `npm run dod -- 03`; remove ACC-70–74, 76, 80, 81 from the allowlist. ACC-77 already left
+it in M02 (D-026); M03 still writes its loading test.
 
 ---
 
