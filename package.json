@@ -1,0 +1,20 @@
+{
+  "name": "clockwork-hollow",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Clockwork Hollow — a short browser roguelike in colored ASCII. No runtime dependencies, no build step.",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node tools/dod.js --node",
+    "e2e": "playwright test",
+    "start": "node tools/serve.js",
+    "dod": "node tools/dod.js"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0"
+  }
+}
