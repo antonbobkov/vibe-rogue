@@ -11,7 +11,10 @@ spawn lists, guards, bosses, and the handcrafted floor 8.
 Each floor's **spawn list** is a fixed list of entries; the generator places every entry (`WLD-11`
 step 9). An entry `Type × n` places `n` individuals; `Type pack` places one pack of that SWARMER type
 (pack size rolled from the bestiary); `Type pack (a–b)` overrides the pack-size range for that entry. Order of placement is the order listed. The **cache guard** is
-placed last, in the cache room, with archetype GUARD (`BST-02`).
+placed after the spawn list, in the cache room, with archetype GUARD (`BST-02`). A floor's **boss**
+(floors 3 and 6) is placed last of all, on a random interior tile of the stairs room with no actor,
+feature, or hazard (retry 50 times, then any free interior tile of that room); `WLD-12`'s visibility
+rule applies to it too.
 
 Loot tables (`ITM-10`) are written `Item w` with weight `w`. **Cache count** is rolled uniformly from
 the given range.

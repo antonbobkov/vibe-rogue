@@ -84,13 +84,13 @@ this table defines the effect.
 | **Move** (8 directions) | Yes | If the target tile holds a living enemy → **Melee Attack** it instead. If the target tile is a closed door → open it (door becomes open; Tick does not move). If the target tile is walkable and unoccupied → move there. Otherwise (a wall, or a tile occupied by a non-enemy actor such as the Decoy) → no turn is spent and the log says why ("The wall is solid."). Diagonal moves are always allowed, including between two walls (no corner cutting rule). |
 | **Wait** | Yes | Nothing. The only action allowed while Stunned. |
 | **Pick up** | Yes | Take the item on Tick's tile into inventory (`ITM-06`). If no item, no turn is spent. If the inventory is full, no turn is spent and the log says so. |
-| **Interact** | Yes | Use the feature on Tick's tile: an unspent Winding Station (`CHR-05`) or the up-stairs (equivalent to **Ascend**). If nothing to interact with, no turn is spent. |
-| **Ascend** | Yes (ends the floor) | Only on the `<` tile. Immediately generates the next floor (`WLD-10`) and places Tick on its start tile. All statuses on Tick are cleared. Enemies on the old floor are discarded. |
+| **Interact** | Yes | Use the feature on Tick's tile: an unspent Winding Station (`CHR-05`) or the up-stairs (equivalent to **Ascend**). If nothing to interact with (a spent station counts as nothing: "This station has run down."), no turn is spent. |
+| **Ascend** | Yes (ends the floor) | Only on the `<` tile. Immediately generates the next floor (`WLD-10`) and places Tick on its start tile. All statuses on Tick, and the Flywheel Guard timer (`SKL-02`), are cleared. Enemies on the old floor are discarded. |
 | **Close door** | Yes | Choose a direction; if the adjacent tile is an open door with no actor or item on it, it becomes closed. Otherwise no turn is spent. |
 | **Use consumable** | Yes | Apply an instant consumable's effect (`ITM-09`). |
 | **Throw** | Yes | Choose a throwable consumable and a target tile within range and in FOV (`CMB-08`). |
 | **Fire** | Yes | Attack with the equipped ranged weapon at a target (`CMB-08`). Requires a ranged weapon; otherwise no turn is spent. |
-| **Use skill** | Yes | Activate an active skill (`20-skills.md`). Costs its Tension; if Tick's Tension is less than the cost, no turn is spent and the log says so. |
+| **Use skill** | Yes | Activate an active skill (`20-skills.md`). Costs its Tension; if Tick's Tension is not greater than the cost (paying would wind Tick down), no turn is spent and the log says so. |
 | **Equip / Unequip / Drop** | Yes | From the inventory screen (`ITM-07`). Dropping onto a tile that already holds an item is refused without spending a turn. |
 | **Free actions** | No | Open/close any screen, inspect, look mode, cycle targets, cancel, scroll the log, quit to title. |
 
@@ -130,8 +130,10 @@ hit roll for these. All damage is integer.
   throwable, which lands on the last passable tile before the obstacle).
 - **Range:** Chebyshev distance `max(|dx|,|dy|)` from attacker to target must be ≤ the weapon's or
   throwable's range. The target tile must be in Tick's FOV.
-- **Ranged weapon attack** by Tick: pay the weapon's Tension cost (if Tick cannot, refuse without
-  spending a turn), emit noise radius 4, then resolve exactly as CMB-06 steps 2–7 against the actual
+- **Ranged weapon attack** by Tick: if the line of fire to the target tile contains no actor, refuse
+  without spending a turn (log "Nothing to shoot."). Otherwise pay the weapon's Tension cost (if Tick's
+  Tension is not greater than the cost, refuse without spending a turn — a shot never winds Tick down),
+  emit noise radius 4, then resolve exactly as CMB-06 steps 2–7 against the actual
   target, using the ranged weapon's dice and accuracy modifier and **not** adding `force`.
   Tick's ranged accuracy uses the same `80 + 5 × Precision + weapon modifier` base.
 - **Enemy ranged attack:** same as above without a Tension cost; enemy-specific noise per bestiary.
@@ -153,7 +155,7 @@ Exactly five statuses exist. Each has an integer duration in turns.
 
 | Status | Effect while active | Per-turn effect (step 3 / 7) | Notes |
 |---|---|---|---|
-| **Stunned** | Actor cannot act (enemies: energy set to 0 each phase; Tick: only Wait). | — | Applying Stun to an already Stunned actor: duration = `max(remaining, new)`. Bosses have Stun caps in `22`. |
+| **Stunned** | Actor cannot act (enemies: energy set to 0 each phase; Tick: only Wait). | — | Applying Stun to an already Stunned actor: duration = `max(remaining, new)`. Applying Stun to an enemy clears its wind-up flags (`windingUp`, `ventingUp`, `pulsingUp`): a stunned thing drops what it was doing. Bosses have Stun caps in `22`. |
 | **Slowed** | Speed tier lowered by one (`FAST→NORMAL`, `NORMAL→SLOW`, `SLOW` unchanged). Tick: enemy phase runs twice (CMB-04). | — | |
 | **Burning** | Drawn with an orange glyph background. | Takes 2 damage, ignores Plating. | Automata burn (oil). Rust-moths take 4 instead. |
 | **Blinded** | `accuracy − 30` (applied after everything else, before the clamp). Enemies also treat the target as unseen unless adjacent (`ENM-02`). | — | |

@@ -77,7 +77,8 @@ Descriptions (≤ 25 words, in the inspect popup):
 
 - **Placement:** floor 3's stairs room (`FLR-04`), on a random interior tile. Active from the start of
   the floor (entry trigger = floor start), but it does not leave its room until Tick has been seen:
-  before first sight it Waits; after first sight it runs its script anywhere.
+  before first sight it Waits; after first sight it runs its script anywhere. Its action counter `n`
+  starts at 0 on first sight; Waits before first sight do not increment it.
 - **Phase 1 (Integrity > 16):**
   1. If `windingUp` → **Downbeat**: summon **Music-box Dancer**s on the two free tiles adjacent to the
      Conductor that are first in reading order (fewer if fewer are free), each Active with
@@ -106,7 +107,8 @@ Descriptions (≤ 25 words, in the inspect popup):
   NORMAL. Script:
   1. If `ventingUp` → **Vent**: every actor within Chebyshev 2 of the Regulator takes 4 damage ignoring
      Plating and gets **Burning** 2. Noise 6. Log: "Steam bursts from the Regulator." Clear `ventingUp`.
-  2. Else if `n mod 4 == 3` → `ventingUp = true` (telegraph color). Log: "The Regulator's seams glow."
+  2. Else if `n mod 4 == 3` → `ventingUp = true` and `windingUp = false` (telegraph color; a pending heavy
+     hit is dropped). Log: "The Regulator's seams glow."
   3. Else → BRUISER script.
 - Description: *The tower's governor. Built to run without her and never did. Slow until it is not.*
 
@@ -114,7 +116,7 @@ Descriptions (≤ 25 words, in the inspect popup):
 
 | Glyph | Color | Int | Acc | Eva | Plt | Attack | Speed | Per | Doors | XP | Drop | Immune |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
-| `U` | white | 72 | 85 | 15 | 2 | `2d4` | NORMAL (P1, P2), SLOW (P3) | 10 | Y | 0 | (the Master Key — narrative) | Slowed |
+| `U` | white | 72 | 85 | 15 | 2 | `2d4` | NORMAL (P1, P2), SLOW (P3) | 10 | Y | 0 | none (`dropChance 0`, `dropTable []`; the Master Key is narrative) | Slowed |
 
 - **Placement:** the `U` tile of the floor 8 map (`FLR-09`). Entry trigger = Tick opens the door at the
   antechamber (the `+` on the map). At that moment: text box with line 1 (`SCR-06`), then the
@@ -134,8 +136,9 @@ Descriptions (≤ 25 words, in the inspect popup):
   1. If `pulsingUp` → **Pulse**: every actor within Chebyshev 2 takes `1d6+1` ignoring Plating and is
      knocked back 1 away from the Understudy. Noise 8. Log: "The Understudy rings like a bell." Clear.
   2. Else if `n mod 4 == 3` and Tick within 2 → `pulsingUp = true`. Log: "The Understudy hums."
-  3. Else → Phase 1 lines 1–3 (it still Overwinds when adjacent on the same counter — the Pulse check
-     takes precedence when both would fire).
+  3. Else → Phase 1 lines 1–3. Because adjacency implies "within 2", line 2 above always fires first on
+     `n mod 4 == 3`: in Phase 2 the Understudy Overwinds only to complete a wind-up carried over from
+     Phase 1.
 - **Phase 3 (Integrity ≤ 24):** on transition: log line 3 (`SCR-06`); speed becomes SLOW permanently;
   all `windingUp`/`pulsingUp` cleared. Script: CHASER only. No specials.
 - **On defeat** (Integrity ≤ 0 or spring 0): no scrap, no XP. Text box with the defeat description and

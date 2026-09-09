@@ -227,7 +227,8 @@ same popup style.
 impassable). Take one step per turn, running the full turn loop each step, and **stop** when: the
 destination is reached; a step fails; an enemy becomes visible that was not visible when the travel
 started; Tick takes damage; Tension crosses 30 or 15; an item or feature is on the current tile; or the
-player presses any key or clicks. Clicking an enemy travels to the nearest tile adjacent to it and then
+player presses any key or clicks. A step that opens a closed door is a successful step (Tick stays put
+and continues with the next step). Clicking an enemy travels to the nearest tile adjacent to it and then
 stops (it does not attack automatically).
 
 ## UI-14 Inventory screen

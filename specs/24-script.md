@@ -286,6 +286,10 @@ When you die, the run is over. The seed on the last screen replays the same towe
 
 `{A}` attacker, `{D}` defender, `{n}` number, `{X}` item/skill/feature name. Colors per `UI-04`.
 
+**Names in templates.** Where `{A}` or `{D}` is an enemy, its name is preceded by "the" (capitalised at
+the start of a sentence: "The Sweeper breaks."), unless the name itself begins with "The"
+(**The Unfinished**), which is used as is. Tick and the Decoy take no article.
+
 | Event | Text |
 |---|---|
 | Hit | `{A} hits {D} for {n}.` |
@@ -322,6 +326,12 @@ When you die, the run is over. The seed on the last screen replays the same towe
 | Decoy placed / expires / breaks | `The decoy rattles.` / `The decoy runs down.` / `The decoy is broken.` |
 | Salvage | `Something worth keeping: {X}.` |
 | Sympathetic Break | `The break carries.` |
+| Skill / throwable damage (not an attack) | `{D} takes {n} from the {X}.` |
+| Field Repair | `Tick mends the frame. Integrity {n}.` |
+| Flywheel Guard start / end | `The flywheel spins up.` / `The flywheel runs down.` |
+| Fire with no actor on the line | `Nothing to shoot.` |
+| Interact with nothing on the tile | `Nothing here to use.` (no turn) |
+| Archivist telegraph / shot | `The Archivist lifts a pin.` / `The Archivist flicks a drafting pin.` |
 | Wake (enemy first seen active) | *(no message; the inspect line shows "active")* |
 | Cuckoo telegraph / shriek | `The Cuckoo draws breath.` / `The Cuckoo shrieks.` |
 | Travel interrupted | `Tick stops.` |

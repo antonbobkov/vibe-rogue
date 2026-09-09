@@ -79,7 +79,8 @@ At the start of each of its actions an Active enemy updates:
 
 Each archetype is a decision list evaluated top to bottom on each action; the first applicable line is
 performed. "Adjacent" means the 8-neighborhood. "Step toward X" means take the first step of the path
-in ENM-08; if there is no path or the first step is blocked, **Wait**.
+in ENM-08; if there is no path or the first step is blocked, **Wait**. "Tick" in these lists means the
+enemy's current target, which is the Decoy while `SKL-03` redirects it.
 
 ### CHASER — *residual instruction: clear this floor*
 

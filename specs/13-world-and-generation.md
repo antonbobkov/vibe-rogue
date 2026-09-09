@@ -86,7 +86,8 @@ Two mechanisms; three configurations. Hazards are visible from the start (no hid
 | **Pendulum Sweep** | Cyclic, period 8, active on `turn mod 8 == 0` | **Standing** at step 4/7 while active, or **Enter** while active | 6 damage, ignores Plating; **Stunned** 1. | 7 |
 
 - "Active" uses the global `turn` counter after step 2 of `CMB-02`, so the panel can show "vents in
-  *n*" (`UI-06`). Cyclic hazards are drawn bright while active and dim otherwise, and additionally
+  *n*" (`UI-06`). The turn number of a player action is the value of `turn` after that action's step 2;
+  an **Enter** check during step 1 uses that value (the pre-increment `turn + 1`). Cyclic hazards are drawn bright while active and dim otherwise, and additionally
   drawn in a warning color on the turn *before* they become active.
 - Enemies path around hazards that are active or would be active on their arrival turn (`ENM-08`);
   they treat Grinding Gears as impassable unless no other path exists.
@@ -138,7 +139,9 @@ All random choices use the floor's PRNG in the order written. Per-floor paramete
    - `journal` = among remaining rooms, a uniformly random one.
    With exactly 5 rooms all roles are still assignable; with fewer, validation already failed.
 6. **Features** per WLD-07, in the order: player start, stairs, station, journal page, cache items
-   (rolled from the cache table, `ITM-10`), cache guard.
+   (rolled from the cache table, `ITM-10`), cache guard. On floor 1 the `station` role is still assigned
+   in step 5 (so the draw sequence is identical on every floor) but no station tile is placed in that
+   room: the `&` is the start tile, already spent (`CHR-01`), and exempt from the wall-adjacency rule.
 7. **Hazards.** For each hazard configuration on this floor, place `count` hazard tiles:
    Grinding Gears go on **corridor** Floor tiles (tiles not inside any room interior, not doors);
    Steam Vents and Pendulum Sweeps go where `23` says (room interiors, or a fixed band for the
@@ -151,7 +154,8 @@ All random choices use the floor's PRNG in the order written. Per-floor paramete
    than start; choose a random interior tile with no actor, no feature, no hazard; require BFS
    distance from player start ≥ 8 (retry 50 times, else any valid tile ≥ 3). Pack types place their
    whole pack on distinct tiles within Chebyshev distance 2 of the first, falling back to any free
-   interior tile of the same room. All enemies begin **Dormant**.
+   interior tile of the same room. The cache guard and then the floor's boss, if any, are placed after
+   the spawn list (`FLR-01`). All enemies begin **Dormant** (bosses: per `BST-03`).
 10. **Validate:** ≥ 5 rooms; every room reachable from start; stairs, station, journal page all placed;
     cache has ≥ 2 items; no feature tile (start, stairs, station, journal page, cache items) is within
     Chebyshev 1 of a hazard tile. Otherwise regenerate (WLD-10).

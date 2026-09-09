@@ -198,7 +198,7 @@ choice is still up there."*
 | **Solder** | Consumable that restores 15 Integrity. |
 | **Armature / Tinkering / Resonance** | The three skill disciplines. |
 | **residual instruction** | The lore reason enemies act as they do. |
-| **the Unfinished** | The enemy type that never received an instruction. |
+| **The Unfinished** | The enemy type that never received an instruction. The name carries its own article (`SCR-10`). |
 | **scrap** | A dead enemy's remains (`%` glyph). |
 | **journal page** | One of Aurelie's eight entries. |
 | **The Keeper / The Walker** | The two endings. |

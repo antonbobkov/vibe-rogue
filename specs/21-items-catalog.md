@@ -72,7 +72,7 @@ Descriptions:
 | **Balance Wheel** | 0 | +1 | 0 | +5 | — | silver | 1–4 | — |
 | **Counterweight** | +2 | 0 | 0 | −5 | — | iron | 2–5 | — |
 | **Oil Reservoir** | 0 | 0 | +1 | 0 | **Cooling**: Tick cannot receive Burning. | oil | 3–6 | — |
-| **Sounding Plate** | 0 | +1 | 0 | +5 | **Quiet**: Tick's melee noise is 2 instead of 5; opening a door is silent. | violet | 5–7 | — |
+| **Sounding Plate** | 0 | +1 | 0 | +5 | **Quiet**: Tick's plain melee noise is 2 instead of 5 (Overwind Strike stays 6); opening a door is silent. | violet | 5–7 | — |
 | **Governor** | 0 | +1 | +1 | 0 | **Regulated**: `decayPeriod` is 6 instead of 5 (`CHR-04`); `decayCounter` is kept when the Governor is fitted or removed. | brass | drop: the Regulator | Yes |
 
 Descriptions:

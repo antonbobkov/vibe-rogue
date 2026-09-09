@@ -8,8 +8,8 @@
 ## SKL-01 Conventions
 
 - **Type:** `P` passive (always on from the moment it is taken) or `A` active (costs a turn and Tension).
-- **Cost:** Tension paid before the effect (`CHR-04`). If unaffordable, the action is refused and no turn
-  is spent (`CMB-05`).
+- **Cost:** Tension paid before the effect (`CHR-04`). If Tick's Tension is not greater than the cost, the
+  action is refused and no turn is spent (`CMB-05`); a skill never winds Tick down.
 - **Target:** `self`, `direction` (choose one of 8 adjacent tiles; only valid if an enemy is there),
   `tile` (targeting mode `UI-12`), `adjacent-free` (choose an adjacent walkable, unoccupied tile).
 - **Text** is shown on the Skills screen exactly as written: a one-line summary (≤ 60 chars) and a
@@ -86,7 +86,9 @@
   `evasion 0`, `plating 0`, no speed (it never acts), glyph `0` in `teal`, immune to all statuses.
   On placement and at the start of each enemy phase for 6 turns, every Active enemy within Chebyshev
   8 of the Decoy has `lastKnown` set to the Decoy's tile and treats the Decoy as its target
-  (attacks it if adjacent; paths to it) instead of Tick. Enemies that *see* Tick adjacent to
+  (attacks it if adjacent; paths to it) instead of Tick: while decoyed, every reference to Tick in the
+  enemy's archetype list (`ENM-06`: adjacency, in-bounds, Fire target, Retreat distance) means the
+  Decoy, and Skirmishers fire at the Decoy. Enemies that *see* Tick adjacent to
   themselves still attack Tick. After 6 turns, or when its Integrity reaches 0, the Decoy is removed
   (no scrap, no XP, no noise). Only one Decoy exists at a time; placing a new one removes the old.
 - Summary: `Place a 12-Integrity decoy; enemies within 8 target it for 6 turns. 15 Tension.`

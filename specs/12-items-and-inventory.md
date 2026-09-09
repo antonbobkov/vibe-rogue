@@ -19,7 +19,8 @@ enter the world.
 | **Record** | `?` | — (goes to Journal) | — | `journalIndex` or `blueprint` |
 
 Every item also has `name`, `color`, `description` (≤ 25 words, `STY-09`), and `floors` (the set of
-floors on which its loot tables may contain it). Item glyphs are drawn in the item's own color on the
+floors whose floor and cache tables may contain it; enemy drop tables are exempt — a Tin Soldier may
+drop Tin Plating on floor 6). Item glyphs are drawn in the item's own color on the
 map; the category glyph is fixed so the player can read the map at a glance.
 
 ## ITM-02 Equipment slots
@@ -117,9 +118,10 @@ protection; the panel already shows the numbers.
 ## ITM-11 Enemy drops
 
 When an enemy breaks: roll `d100`; if `≤ dropChance`, roll its drop table and place the item on the
-enemy's tile. If that tile already holds an item, place it on the nearest free walkable tile by
-Chebyshev distance (ties: the first in reading order — top-left to bottom-right); if none within
-distance 2, the item is not created. Bosses always drop (dropChance 100) and their drops are unique.
+enemy's tile. If that tile already holds an item or is a feature tile (stairs, station), place it on the nearest
+free walkable non-feature tile by Chebyshev distance (ties: the first in reading order — top-left to
+bottom-right); if none within distance 2, the item is not created. Bosses always drop (dropChance 100),
+their drops are unique, and for them the search has no distance limit (a unique item is never lost).
 
 ## ITM-12 Starting kit and the floor 1 guarantee
 
