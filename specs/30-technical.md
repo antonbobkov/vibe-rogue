@@ -224,6 +224,6 @@ The headless engine facade, action schema, and event vocabulary they rely on are
 
 ## TEC-15 Invariants the code asserts (throw in development, log in production)
 
-Every `ACC` generation invariant (`32-acceptance-tests.md` § ACC-2x); Tension and Integrity within
+Every `ACC` generation invariant (`32-acceptance-tests.md` § ACC-7x); Tension and Integrity within
 their clamps after every mutation; at most one actor per tile; at most one item per tile; enemy
 `energy ≤ 200`; unique items generated at most once; the floor 8 map is 24 rows × 60 columns.

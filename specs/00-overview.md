@@ -1,6 +1,6 @@
 # 00 — Overview: Clockwork Hollow
 
-**Status:** Wave 5 — complete. All sixteen documents are final; later docs refine, never contradict, what is written here.
+**Status:** Wave 6 — audit pass (2026-09-08) complete. All sixteen documents are final; later docs refine, never contradict, what is written here.
 **Purpose:** Fix the identity, scope, pacing, and conventions of the game so that every later document is
 filling in detail rather than making decisions. If a later doc conflicts with this one, this one wins
 unless the conflict is explicitly noted and resolved in the wave 5 consistency pass.
@@ -46,7 +46,7 @@ Every design question in later docs is settled by asking which option better ser
 | Skills | 3 disciplines (**Armature**, **Tinkering**, **Resonance**), each a strictly linear line of 4 skills. 12 skills total. A run affords 8 of the 12. |
 | Items | 3 equipment slots (**weapon**, **plating**, **attachment**) + 10-slot inventory. ~8 weapons, ~5 platings, ~5 attachments, ~7 consumables. Stackable consumables. |
 | Ranged | Ranged weapons and throwables exist. Ranged weapons cost Tension per shot; there is no ammunition. |
-| Enemies | ~12 regular enemy types + 2 mini-bosses (floors 3 and 6) + 1 final boss (floor 8). Five AI archetypes. Enemies start dormant and wake on sight or noise. |
+| Enemies | ~12 regular enemy types + 2 mini-bosses (floors 3 and 6) + 1 final boss (floor 8). Six AI archetypes plus a boss framework. Enemies start dormant and wake on sight, noise, or damage. |
 | Map | Fixed 60×24 tile map per floor, no scrolling. Rooms and corridors. Doors (open by walking in; block sight when closed). Three hazard tiles built on two mechanisms (constant, cyclic). One **Winding Station** and one **Cache** room per floor 1–7. |
 | Vision | Symmetric shadowcasting field of view, radius 8. Remembered tiles drawn dim. |
 | Movement | 8-directional for everyone. Energy-based speed with exactly three tiers (slow / normal / fast). |

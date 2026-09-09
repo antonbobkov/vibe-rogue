@@ -26,7 +26,8 @@
 ## CHR-02 Integrity
 
 - Tick's hit points. `integrityMax` starts at 40 and rises only through level-ups (CHR-07) and skills.
-- Integrity is restored only by: **Solder** (+15, `ITM-09`), the **Field Repair** skill, and level-ups.
+- Integrity is restored only by: **Solder** (+15, `ITM-09`), **Flux** (+5, `CAT-06`), the **Field Repair**
+  skill, **Braced Frame** (+6 when taken), and level-ups.
   There is no regeneration of any kind, on any floor, ever.
 - Integrity is clamped to `[0, integrityMax]`.
 
@@ -59,8 +60,7 @@
 ## CHR-06 Experience
 
 - Every enemy has an `xp` value (`22-bestiary.md`). Tick gains it when the enemy breaks, regardless of
-  the damage source (Burning, hazard, decoy, or Tick's attack all count). Enemies that break other
-  enemies do not exist.
+  the damage source (Burning, hazard, a boss's area attack, or Tick's attack all count).
 - Level thresholds are cumulative XP:
 
 | Level | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 |

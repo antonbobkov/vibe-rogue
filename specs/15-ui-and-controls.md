@@ -73,7 +73,7 @@ Bars: fill cells `#` in the bar color, empty cells ` `; fill count = `round(17 Ã
   consuming log rows; wrapped continuation lines are indented 2 spaces.
 - Messages generated during one turn loop are appended in order. If more than 5 lines are produced in
   one turn, the last 5 are shown; the full history is on the Message History screen (UI-16).
-- Message colors (UI-08): default `#c8c8c8`; damage to Tick `#ff6060`; damage by Tick `#e0e0e0`;
+- Message colors (UI-08): default `#c8c8c8`; damage to Tick `#ff6060`; damage by Tick `#d0d0d0` (silver);
   Tension warnings `#ffd75f`; level-up and item pickup `#80ff80`; scripted/boss lines `#c0a0ff`.
 - Identical consecutive messages are merged as "*message* (Ã—n)".
 
@@ -140,7 +140,7 @@ The fixed palette. Later docs choose colors from this list by name.
 | yellow | `#ffd75f` | violet | `#c0a0ff` |
 | teal | `#5ad0ff` | pink | `#ff80c0` |
 | iron | `#9a9aa0` | lime | `#a0e060` |
-| telegraph | `#ffffff` on background `#602020` | | |
+| telegraph | `#ffffff` on background `#602020` | gold | `#e0b040` |
 
 ## UI-09 Drawing rules
 
@@ -268,7 +268,7 @@ is free.
 
 ## UI-16 Message History, Help, and text boxes
 
-- **Message History** (`m` / click log): full-screen scrollable list of every log line this run,
+- **Message History** (`m` / click log): full-screen scrollable list of the last 500 log lines this run (`TEC-05`),
   newest at the bottom; wheel/arrows/PageUp/PageDown scroll; `Esc` closes.
 - **Help** (`?`): full-screen static list of every key in UI-10, UI-12, UI-14, and a 6-line summary of
   the core rules (Tension decay, no regen, stations, permadeath). Text in `24`.

@@ -83,7 +83,7 @@ grouped by source document. "Given / When / Then" is implied by the three column
 | ACC-64 | Flux at full Integrity while Burning | Use | Burning removed; item consumed; "Nothing needed mending." not printed (status was removed). |
 | ACC-65 | Journal page on floor | Pick up | Not in inventory; Journal shows the page; log line per `SCR-04`. |
 
-## ACC-2x / ACC-7x World and generation (`13`, `23`)
+## ACC-7x World and generation (`13`, `23`)
 
 | ID | Setup | Action | Expected |
 |---|---|---|---|
@@ -121,7 +121,7 @@ grouped by source document. "Given / When / Then" is implied by the three column
 | ACC-96 | Understudy defeated | — | Text box (moment 3 + line 4) → text box (thought 3) → Ending choice; no scrap; no XP. |
 | ACC-97 | Bosses | Apply Stun 3 / Exposed 4 | Durations become 1 / 2. |
 
-## ACC-9x UI and controls (`15`, `24`)
+## ACC-10x UI and controls (`15`, `24`)
 
 | ID | Setup | Action | Expected |
 |---|---|---|---|

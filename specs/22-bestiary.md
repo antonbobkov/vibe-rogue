@@ -7,8 +7,7 @@
 
 ## BST-01 Additional palette entries
 
-These names are used below and are added to `UI-08` in the consistency pass:
-`iron #9a9aa0`, `lime #a0e060`.
+No additions: every color name used below (`iron`, `lime`, `gold`, …) is defined in `UI-08`.
 
 ## BST-02 Regular enemies
 
@@ -22,7 +21,7 @@ Fields per `ENM-01`. `Acc` = accuracy, `Eva` = evasion, `Plt` = plating, `Per` =
 | **Spring-Hound** | `h` | copper | 8 | 75 | 15 | 0 | `1d3` | FAST | CHASER | 9 | N | 5 | 15 | Spring-Key 2, Solder 1 | — | 2, 3, 4, 5 |
 | **Tin Soldier** | `t` | silver | 16 | 75 | 5 | 1 | `1d4+1` | NORMAL | GUARD | 7 | Y | 6 | 25 | Solder 2, Spring-Key 2, Tin Plating 1 | — | 2, 3, 4, 5, 6 |
 | **Music-box Dancer** | `d` | pink | 12 | 75 | 30 | 0 | `1d4` | NORMAL | CHASER | 7 | Y | 4 | 15 | Tuning Fork 1, Solder 1 | — | 3, 7 |
-| **Cuckoo** | `c` | yellow | 8 | 80 | 15 | 0 | melee `1d2`; ranged `1d4` (ignores Plating), range 6, windUp YES | NORMAL | SKIRMISHER | 8 | N | 6 | 20 | Spring-Key 2, Grit Bomb 1 | — | 3, 5, 7 |
+| **Cuckoo** | `c` | gold | 8 | 80 | 15 | 0 | melee `1d2`; ranged `1d4` (ignores Plating), range 6, windUp YES | NORMAL | SKIRMISHER | 8 | N | 6 | 20 | Spring-Key 2, Grit Bomb 1 | — | 3, 5, 7 |
 | **Stoker** | `k` | orange | 18 | 75 | 5 | 1 | `1d6` + on hit **Burning** 2 | NORMAL | CHASER | 7 | Y | 8 | 25 | Oil Flask 2, Solder 1 | Burning | 4, 7 |
 | **Gear-Golem** | `g` | iron | 30 | 70 | 0 | 3 | `0 (flat)` plain (never used, `ENM-06`); heavy `3d4` | SLOW | BRUISER | 6 | B | 12 | 40 | Spring-Key 2, Solder 2, Counterweight 1 | — | 4, 6, 7 |
 | **Brass Finch** | `f` | lime | 5 | 75 | 30 | 0 | `1d4+1` | FAST | SWARMER (pack 2–3) | 8 | N | 3 | 10 | Spring-Key 1 | — | 5, 7 |

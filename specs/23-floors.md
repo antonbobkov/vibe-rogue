@@ -128,7 +128,7 @@ Each floor has a **short name** (≤ 11 characters) for the panel (`UI-03` row 5
 - **Spawn list:** `Pendulum Knight × 1`, `Stoker × 1`, `Cuckoo × 1`, `Music-box Dancer × 1`,
   `The Unfinished × 1`, `Brass Finch pack`. Cache guard: **Pendulum Knight**.
 - **Journal:** page 7.
-- Nominal XP: 12 + 8 + 6 + 4 + 9 + 7.5 + 12 = **58.5**. Enemies 8–10.
+- Nominal XP: 12 + 8 + 6 + 4 + 9 + 7.5 + 12 = **58.5**. Enemies 8–9.
 
 ## FLR-09 Floor 8 — The Escapement (handcrafted)
 
