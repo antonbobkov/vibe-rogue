@@ -21,7 +21,7 @@ machine-checkable Definition of Done, so that the build can run end-to-end with 
 | # | Rule |
 |---|---|
 | R1 | **The spec is law.** Code implements `10`–`24` and `30` as written. Gameplay numbers change only through the balance protocol (PLN-07.2). |
-| R2 | **Headless core.** Every module under `src/` except `render.js`, `main.js`, `screens/*`, and the storage adapter in `save.js` must not reference `window`, `document`, `localStorage`, `requestAnimationFrame`, `performance`, or any DOM API. Enforced by `test/meta/dom-free.test.js`. |
+| R2 | **Headless core.** Every module under `src/` except `render.js`, `main.js`, `screens/*`, and the storage adapter in `save.js` must not reference `window`, `document`, `localStorage`, `requestAnimationFrame`, `performance`, or any DOM API. Enforced by `test/meta/dom-free.test.js`. `input.js` and `travel.js` are pure: they receive event data and are driven by timers that `main.js` owns. |
 | R3 | **Data is data.** Modules under `data/` export frozen plain objects and contain no functions. Enforced by `test/meta/data-pure.test.js`. |
 | R4 | **No runtime dependencies. No build step.** `@playwright/test` is the only devDependency. ESM everywhere. `index.html` loads `src/main.js` directly. |
 | R5 | **Tests name their spec.** Every test title contains the ACC ID(s) it verifies (e.g. `ACC-15`), or `@unit` for module-level tests, and exactly one milestone tag `@m00`…`@m12`. |
@@ -85,7 +85,8 @@ while `ended`, nothing. Text boxes therefore never race the turn loop (`UI-16`).
 
 ### Debug hooks (`TEC-13`)
 
-`window.CH = { state, game, act, newRun, loadFloor, grid(), events(), queueRng }`. `grid()` returns
+`window.CH = { state, game, act, newRun, loadFloor, loadFixture, grid(), events(), queueRng, render(),
+timers() }` per `TEC-13`. `grid()` returns
 the last rendered 80×30 buffer as `[{glyph, fg, bg}]` rows so browser tests assert what is on screen
 without pixel reading. `events()` returns and clears the UI's pending event list.
 
@@ -116,11 +117,12 @@ Travel and Shift-run are `main.js` timers that call `act` repeatedly (`UI-13`, `
   allowlist contains an ID that *is* covered (stale entries). M0 creates the allowlist with all IDs;
   each milestone removes the IDs it covers; M12 requires it empty.
 - **DoD runner** (`tools/dod.js`): `npm run dod -- NN` runs `node --test` with
-  `--test-name-pattern` matching tags `@m00`…`@mNN`, then the meta tests, then (for NN ≥ 10)
-  `playwright test --grep "@m(0\d|1[0-NN])"`. Exit code is the DoD.
+  `--test-name-pattern` matching tags `@m00`…`@mNN`, then the meta tests, then `playwright test`
+  with a `--grep` matching the tags `@m00` and (for NN ≥ 10) `@m10`…`@mNN`. Exit code is the DoD.
 - **CI** (`.github/workflows/ci.yml`): on push and PR; Node 20; `npm ci`;
-  `npx playwright install --with-deps chromium`; `npm test`; `npm run e2e`. One job, no matrix, no
-  retries, 15-minute timeout.
+  `npx playwright install --with-deps chromium`; `npm test`; `npm run e2e`. Two jobs: `test` (unit +
+  meta + e2e; 15-minute timeout) and, from M11 on, `sim` (`npm run sim`; 45-minute timeout). No
+  matrix, no retries.
 - **Snapshots:** none. Expected values are written in the test from the spec.
 
 ## PLN-05 Milestone overview
@@ -142,7 +144,8 @@ Travel and Shift-run are `main.js` timers that call `act` repeatedly (`UI-13`, `
 | 12 | Release | perf tests, empty allowlist, README, tag | ACC-133; TEC-14 | S |
 
 **Order:** strictly sequential, with two exceptions: M02 may run in parallel with M01 (no shared
-files); M05 and M06 may run in parallel after M04 (they touch different files; M07 integrates both).
+files); M05 and M06 may run in parallel after M04 (each replaces only its own stub module from M04 and adds
+its own tests; M07 integrates both).
 
 ## PLN-06 Milestones in detail
 
@@ -164,7 +167,8 @@ package.json            "private": true, "type": "module", devDependencies: @pla
                         scripts: test, e2e, start, dod
 index.html              <canvas id="game">, hidden <input id="seed">, <script type="module" src="src/main.js">
 src/main.js             stub: draws "CLOCKWORK HOLLOW" text on the canvas; installs window.CH = {}
-tools/serve.js          static server on 8080 using node:http; MIME for .html/.js/.json; no deps
+tools/serve.js          static server on 8080 using node:http, serving the repo root (so `test/fixtures/`
+                        is importable from e2e tests); MIME for .html/.js/.json; no deps
 tools/dod.js            PLN-04 DoD runner
 playwright.config.js    webServer: node tools/serve.js; baseURL http://localhost:8080; chromium; retries 0
 .github/workflows/ci.yml
@@ -174,6 +178,8 @@ test/meta/titles.test.js       R5: every test title has an @mNN tag and (ACC-\d+
 test/meta/acc-coverage.test.js PLN-04
 test/meta/acc-allowlist.json   all ACC IDs from specs/32
 test/e2e/smoke.spec.js         page loads, no console errors, window.CH exists           (@m00 @unit)
+specs/DECISIONS.md             PLN-07.1 table, header row only
+specs/BALANCE-CHANGELOG.md     PLN-07.2 table, header row only
 .gitignore              node_modules, playwright-report, test-results
 ```
 
@@ -216,7 +222,8 @@ test/e2e/smoke.spec.js         page loads, no console errors, window.CH exists  
 - `@m01 @unit rng`: same seed → same 1,000 values; `getState/setState` round-trip; `int` bounds over
   10,000 draws for several ranges; `chance(100)` always true, `chance(0)` always false; `parseDice`
   table of 8 cases incl. flat; `roll` with `queueRng` gives the sum; `weighted` walks in table order
-  (queueRng `[total]` → last entry, `[1]` → first); `queueRng` throws when exhausted; distribution
+  (`queueRng([0])` → first entry, `queueRng([(total − 1) / total])` → last; `queueRng` values are the
+  `next()` floats in `[0, 1)`); `queueRng` throws when exhausted; distribution
   sanity: 100,000 `int(1,6)` draws each face within 15–18.5%.
 - `@m01 @unit grid`: `bresenham` on 12 hand-computed lines including the diagonal tie case and both
   octant families, start excluded, end included; `bfs` distances on a small ASCII map; `astar` finds
@@ -264,7 +271,9 @@ the totals the specs claim.
   in `data/items.js`; every enemy in every spawn list and `guard` exists in `data/enemies.js`; every
   skill name in `11` (hard-coded list in the test) exists in `data/skills.js`.
 - Counts equal `CAT-08` (7+2 weapons, 5, 5, 7, 9 records). XP by floor equals `FLR-10` nominal
-  values (compute pack means as `(min+max)/2`). Understudy `xp` is 0.
+  values: pack means are `(min+max)/2` using a spawn entry's `size` override when present; floor 3 is
+  the base 33 (summons excluded); floor 8 is 18 + 18 for the Understudy's two summoned Unfinished.
+  Understudy `xp` is 0.
 - Floor 8 `fixedMap` is 24 rows × 60 cols; only legend characters; exactly one `@`, one `U`, one
   `C`; markers `1` and `2` present once; outer ring all `#` (**ACC-77** static clause).
 - Script: `descent` has 7 lines; page 8 has no `— A.V.`; every other page ends with `— A.V.`; each
@@ -319,7 +328,7 @@ Tension, death, and floor transitions — headless, event-driven, exact.
 `CMB-*`, `TEC-05`, `TEC-07`, `UI-04` (log colors), `SCR-10`.
 
 **Files.** `src/engine.js`, `src/actors.js`, `src/turn.js`, `src/combat.js`, `src/log.js`,
-`test/fixtures/maps.js`, `test/integration/turnloop.test.js`, `combat.test.js`, `hazards.test.js`,
+`src/ai.js` (stub), `src/items.js` (stub), `test/fixtures/maps.js`, `test/integration/turnloop.test.js`, `combat.test.js`, `hazards.test.js`,
 `engine.test.js`.
 
 **Tasks.**
@@ -328,8 +337,9 @@ Tension, death, and floor transitions — headless, event-driven, exact.
    Precision from equipment + skills (`CMB-01`, `CHR-08`) — equipment and skills hooks exist now,
    return zeros until M05/M07.
 2. `turn.js`: `runTurn(state, action)` implementing `CMB-02` steps 1–10 literally, with step 6 the
-   enemy phase of `CMB-03` (AI action is a pluggable function; M04 ships a stub that **Waits** so
-   enemies exist and block but do nothing until M06). Statuses `CMB-10`; hazards `WLD-08`
+   enemy phase of `CMB-03` (the enemy phase calls `ai.decide(enemy, state)` from `src/ai.js`; M04
+   ships that module as a stub that always **Waits**, so enemies exist and block but do nothing until
+   M06 replaces the module in place). Statuses `CMB-10`; hazards `WLD-08`
    (enter/standing, cycles, warning turn); Tension decay; death checks; level-up check calls a hook
    (M07). Slowed-Tick double phase (`CMB-04`). Wake-energy rule (`ENM-03`) lives here as
    `wokeThisTurn` handling.
@@ -338,9 +348,16 @@ Tension, death, and floor transitions — headless, event-driven, exact.
    Weapon specials are M05.
 4. `engine.js`: the facade of PLN-03; the action schema (except `skill`, `takeSkill`, `choose`);
    `phase` handling; event queue; FOV + memory update; `floor` transition (`ascend` → `gen.js`,
-   statuses cleared, `floor` event, `SCR-10` stairs line); intro textbox event on new game; the
+   enemy instances created from the generator's spawn records via `createEnemy`, item records placed
+   through `items.placeFloorItems`, statuses cleared, `floor` event, `SCR-10` stairs line); the break
+   hook `items.onBreak(enemy)` for drops — `src/items.js` ships in M04 as a stub whose
+   `placeFloorItems` places the generator's records verbatim and whose `onBreak` rolls nothing, so M05
+   replaces the module without touching the engine; intro textbox event on new game; the
    noise → wake plumbing (`ENM-04` for Dormant enemies — wake rules are simple enough to live in
-   `turn.js` now; tracking/archetypes come in M06).
+   `turn.js` now; tracking/archetypes come in M06); Tension warnings (`CHR-03`, `SCR-10`: "The spring
+   is loosening." once per floor at ≤ 30 via `flags.tension30Warned`, reset on Ascend; "Tick's spring
+   is nearly slack." every 5th turn at ≤ 15); the decay counter (`decayCounter` / `decayPeriod`,
+   `CMB-02` step 2, with `decayPeriod` derived so M05 can change it).
 5. `log.js`: templates from `data/script.log`, colors per `UI-04`, merge of identical consecutive
    lines, history cap 500.
 6. `test/fixtures/maps.js` (PLN-04).
@@ -375,8 +392,8 @@ Tension, death, and floor transitions — headless, event-driven, exact.
 3. Weapon specials `REND, SWEEP, KNOCK, TEMPO, RING`; attachment specials `COOLING, QUIET,
    REGULATED` (the decay period becomes a derived value `tick.decayPeriod`).
 4. Loot: `rollTable`, the equipment re-roll rule and `unique` tracking (`ITM-10`), enemy drops with
-   nearest-free-tile placement (`ITM-11`). Wire `gen.js` spawn/loot records into instances at floor
-   creation (engine).
+   nearest-free-tile placement (`ITM-11`). This replaces the M04 `items.js` stub in place; the engine
+   hooks (`placeFloorItems`, `onBreak`) already exist, so no engine edits.
 5. `derive()` now includes equipment.
 
 **Tests** (`@m05`): **ACC-50–59, 61, 63, 65** on fixtures; `@unit` for stack compaction, letters,
@@ -404,7 +421,7 @@ reading order and the "none within 2" case.
    Guard bounds and RETURNING.
 4. Enemy melee/ranged through `combat.js` (`ENM-07`); Cuckoo shriek noise 12 and ignores-Plating flag;
    door handling `ENM-09` (`YES/NO/BREAKS`).
-5. Replace the M04 stub; the engine's enemy phase now calls `ai.decide`.
+5. Replace the M04 `ai.js` stub in place; the engine already calls `ai.decide`, so no engine edits.
 
 **Tests** (`@m06`): **ACC-14, 82–92** on fixtures; plus `@unit`: each archetype's decision list on a
 table of situations (adjacent / seen at range / lost / blocked / windingUp) yields the expected
@@ -530,7 +547,7 @@ history,textbox,endingChoice,summary,pause,inspect,targeting}.js`, `src/input.js
 7. `window.CH` complete per `TEC-13` (+ `grid`, `events`, `queueRng`).
 
 **Tests** (`@m10`, Playwright; each test starts a run with a fixed seed via `CH.newRun('TEST1234')`
-or loads a fixture through `CH.loadFloor`; assertions read `CH.grid()` cells and `CH.state`):
+or loads a fixture through `CH.loadFixture`; assertions read `CH.grid()` cells and `CH.state`):
 **ACC-100–122**, and the browser forms of **ACC-01–06** (reload + Continue; localStorage key
 presence). Text-box scrolling (`UI-16`) with the intro. Keyboard: dispatch `Numpad1` vs `Digit1`.
 Mouse: click coordinates computed from the canvas rect and cell size.
@@ -546,7 +563,8 @@ targets — or the balance protocol has been applied and logged.
 
 **Inputs.** `31-balance.md`, `BAL-07`, `BAL-08`, `TEC-13`.
 
-**Files.** `tools/sim.js` (CLI: `node tools/sim.js S4 --seeds 200 --json`), `tools/bots/*.js`,
+**Files.** `tools/sim.js` (CLI: `node tools/sim.js S4 --seeds 200 --json`; `--all` runs S1–S6),
+`package.json` script `sim`, `tools/bots/*.js`,
 `test/integration/balance.test.js`, `test/integration/sim.test.js`.
 
 **Tasks.**
@@ -562,8 +580,10 @@ targets — or the balance protocol has been applied and logged.
    disabled: never wound down; Tension at floor 8 entry within 35–65).
 4. Apply the balance protocol (PLN-07.2) if any target fails.
 
-**Tests.** As above; sims run in < 3 minutes total on CI (reduce to 100 seeds if not, and say so in
-the test title).
+**Tests.** `sim.test.js` runs each bot on **50 seeds** inside `dod` (S5 reuses S4's runs) and must
+finish in < 5 minutes. The full 200-seed `BAL-07` run is `npm run sim` (`node tools/sim.js --all
+--seeds 200`), executed by the second CI job (`sim`, 45-minute timeout, PLN-04), which is required
+for the M11 and M12 DoD. ACC-130's test title states the seed count it ran.
 
 **DoD.** `npm run dod -- 11`.
 
@@ -577,8 +597,8 @@ the test title).
 
 **Tasks.**
 1. Perf tests (`TEC-14`): turn < 5 ms mean with 30 enemies on a fixture; generation < 50 ms; full
-   redraw < 8 ms (Playwright, `performance.now()` around `CH.render()` — add the hook and note it in
-   DECISIONS.md); idle CPU: no timers registered after 1 s idle (`CH.timers()` count is 0 — same).
+   redraw < 8 ms (Playwright, using the duration `CH.render()` returns, `TEC-13`); idle CPU:
+   `CH.timers()` is 0 after 1 s idle.
 2. Empty `acc-allowlist.json`; **ACC-133** as a meta test scanning `specs/` for placeholder markers.
 3. README: how to run (`npm start`), how to test, controls summary pointer to Help, seed usage.
 4. Tag `v1.0.0`.
@@ -612,7 +632,7 @@ When a `BAL-C*` or `ACC-130/131` target fails:
 
 If a `UI-*` rule cannot be asserted through `CH.grid()`/`CH.state`, add the narrowest read-only
 hook to `window.CH`, document it in `TEC-13` in the same PR, and log a D-entry. Hooks never mutate
-state except `act`, `newRun`, `loadFloor`, `queueRng`.
+state except `act`, `newRun`, `loadFloor`, `loadFixture`, `queueRng`.
 
 ### 7.4 Tooling failures
 

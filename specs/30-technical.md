@@ -22,21 +22,29 @@ exact algorithms where "any correct implementation" would not reproduce the same
 
 ```
 index.html                 canvas + <script type="module" src="src/main.js">
-src/main.js                boot, screen stack, input dispatch, frame loop
+src/main.js                boot, screen stack, input dispatch, timers, frame loop
+src/engine.js              headless facade: createGame / act / phase / view (PLN-03)
 src/rng.js                 PRNG, string hashing, dice
 src/grid.js                tile helpers, Chebyshev, Bresenham, BFS, A*
 src/fov.js                 symmetric shadowcasting
+src/tiles.js               tile enum, walkable / blocksSight predicates, hazard configs (WLD-02, WLD-08)
 src/gen.js                 floor generator (WLD-11), floor 8 loader (WLD-13)
 src/actors.js              Tick and enemy instances, derived-stat recomputation (CHR-08, CMB-01)
 src/turn.js                turn loop (CMB-02), energy (CMB-03), statuses, hazards, death
 src/ai.js                  archetypes (ENM-06), boss scripts (BST-04..06)
+src/story.js               scripted moments, boss triggers, ending machine (STY-05..07, SCR-05..07)
 src/combat.js              hit/damage (CMB-06/07), ranged & throw (CMB-08), knockback, noise
 src/items.js               inventory, equipment, loot tables, drops (12, 21)
 src/skills.js              the 12 skills (20)
+src/log.js                 log templates, colors, merging, history cap (UI-04, SCR-10)
 src/render.js              canvas grid renderer (UI-01, UI-07..09)
+src/input.js               key and mouse maps (UI-10..13) — pure: receives event data from main.js
+src/travel.js              Travel and Shift-run step policies (UI-13) — pure: main.js owns the timers
 src/screens/               one module per screen: title, run, inventory, skills, journal, help,
-                           history, textbox, endingChoice, summary
-src/save.js                autosave / restore (TEC-09)
+                           history, textbox, endingChoice, summary, pause, inspect, targeting
+src/save.js                autosave / restore (TEC-09); the localStorage adapter is its only DOM code
+tools/                     serve.js, dod.js, sim.js, bots/ (40-implementation-plan.md § PLN-04, M11)
+test/                      unit, integration, meta, e2e, fixtures (PLN-04)
 data/palette.js            UI-08 (+ BST-01)
 data/items.js              21
 data/enemies.js            22
@@ -147,10 +155,11 @@ Pause, Ending choice) push/pop. Title, Death, Victory, Intro replace the stack. 
 
 ## TEC-08 Deterministic algorithms
 
-- **Bresenham** (`CMB-08`): standard integer error-accumulation line from `(x0,y0)` to `(x1,y1)`; when
-  `|dx| ≥ |dy|` step along x, else along y; error initialized to `dx/2`-style halves as in the classic
-  form; on exact ties in the diagonal case prefer stepping in x then y. The start tile is excluded from
-  the projectile path.
+- **Bresenham** (`CMB-08`), integer form: `dx = |x1 − x0|`, `dy = |y1 − y0|`, `sx = sign(x1 − x0)`,
+  `sy = sign(y1 − y0)`, `err = dx − dy`, `(x, y) = (x0, y0)`. Repeat: `e2 = 2 × err`; if `e2 > −dy`
+  then `err −= dy; x += sx`; if `e2 < dx` then `err += dx; y += sy`; emit `(x, y)`; stop once
+  `(x1, y1)` has been emitted. Both branches may fire in one iteration (a diagonal step). The start tile
+  is excluded from the projectile path; the end tile is included.
 - **FOV:** port the reference implementation of Albert Ford's *Symmetric Shadowcasting* (2020) exactly,
   including its `is_symmetric` check, then filter to Chebyshev radius ≤ 8 (or the enemy's perception).
 - **BFS** over 8-connected passable tiles for room distances (`WLD-11` step 5).
@@ -206,8 +215,12 @@ besides the canvas.
 ## TEC-13 Debug and test hooks
 
 `window.CH` exposes `{ state, game, playRng, floorRng, act(action), newRun(seed), loadFloor(n),
-grid(), events(), queueRng(values) }` so that `32-acceptance-tests.md` can be automated with any
-browser test runner. `CH.act` performs one engine action (`PLN-03` schema) and runs the turn loop,
+loadFixture(rows, opts), grid(), events(), queueRng(values), render(), timers() }` so that
+`32-acceptance-tests.md` can be automated with any browser test runner. `CH.loadFloor(n)` generates
+floor `n` of the current seed and enters it with Tick's current state. `CH.loadFixture(rows, opts)`
+replaces the current floor with a `test/fixtures/maps.js` ASCII map (same legend and options), keeping
+Tick's stats. `CH.render()` forces a full redraw and returns its duration in ms. `CH.timers()` returns
+the number of live timers (`TEC-14` idle check). `CH.act` performs one engine action (`PLN-03` schema) and runs the turn loop,
 returning `{ok, reason, log, events}`. `CH.grid()` returns the last rendered 80×30 cell buffer as
 rows of `{glyph, fg, bg}` so tests assert what is drawn without reading pixels. `CH.events()` returns
 and clears the UI's pending engine events. `CH.queueRng(values)` replaces the play RNG with a scripted
