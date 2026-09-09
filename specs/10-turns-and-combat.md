@@ -124,7 +124,7 @@ hit roll for these. All damage is integer.
 ## CMB-08 Ranged attacks and throwing
 
 - **Line of fire:** from the attacker's tile to the target tile along a Bresenham line
-  (`TEC-11` specifies the exact variant). The projectile travels tile by tile; it stops at the first
+  (`TEC-08` specifies the exact variant). The projectile travels tile by tile; it stops at the first
   tile that is not walkable (wall, closed door, chair, Escapement wheel) or contains an actor. If it stops before the target tile, the
   actor or obstacle there is the actual target (for a ranged weapon) or the actual landing tile (for a
   throwable, which lands on the last passable tile before the obstacle).

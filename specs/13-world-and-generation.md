@@ -45,7 +45,7 @@ brightness (`UI-09`), under any item. Purely cosmetic; walkable; never removed.
 ## WLD-05 Field of view
 
 - Algorithm: **symmetric shadowcasting** (the "Albert Ford" formulation: recursive per-octant scan with
-  slope intervals, symmetric variant). `TEC-11` names the exact reference implementation to match.
+  slope intervals, symmetric variant). `TEC-08` names the exact reference implementation to match.
 - Radius: a tile is visible only if `max(|dx|, |dy|) ≤ 8` (Chebyshev) *and* the shadowcast reaches it.
 - Walls, closed doors, and the Escapement wheel block sight but are themselves visible when reached (the
   wall you can see is drawn).
