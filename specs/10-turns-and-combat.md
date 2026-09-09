@@ -80,7 +80,7 @@ this table defines the effect.
 
 | Action | Costs a turn? | Effect |
 |---|---|---|
-| **Move** (8 directions) | Yes | If the target tile holds a living enemy → **Melee Attack** it instead. If the target tile is a closed door → open it (door becomes open; Tick does not move). If the target tile is walkable and unoccupied → move there. Otherwise (wall, spent-station is walkable so not this) → no turn is spent and the log says why ("The wall is solid."). Diagonal moves are always allowed, including between two walls (no corner cutting rule). |
+| **Move** (8 directions) | Yes | If the target tile holds a living enemy → **Melee Attack** it instead. If the target tile is a closed door → open it (door becomes open; Tick does not move). If the target tile is walkable and unoccupied → move there. Otherwise (a wall, or a tile occupied by a non-enemy actor such as the Decoy) → no turn is spent and the log says why ("The wall is solid."). Diagonal moves are always allowed, including between two walls (no corner cutting rule). |
 | **Wait** | Yes | Nothing. The only action allowed while Stunned. |
 | **Pick up** | Yes | Take the item on Tick's tile into inventory (`ITM-06`). If no item, no turn is spent. If the inventory is full, no turn is spent and the log says so. |
 | **Interact** | Yes | Use the feature on Tick's tile: an unspent Winding Station (`CHR-05`) or the up-stairs (equivalent to **Ascend**). If nothing to interact with, no turn is spent. |
@@ -155,7 +155,7 @@ Exactly five statuses exist. Each has an integer duration in turns.
 | **Stunned** | Actor cannot act (enemies: energy set to 0 each phase; Tick: only Wait). | — | Applying Stun to an already Stunned actor: duration = `max(remaining, new)`. Bosses have Stun caps in `22`. |
 | **Slowed** | Speed tier lowered by one (`FAST→NORMAL`, `NORMAL→SLOW`, `SLOW` unchanged). Tick: enemy phase runs twice (CMB-04). | — | |
 | **Burning** | Drawn with an orange glyph background. | Takes 2 damage, ignores Plating. | Automata burn (oil). Rust-moths take 4 instead. |
-| **Blinded** | `accuracy − 30` (applied after everything else, before the clamp). Enemies also treat the target as unseen unless adjacent (`ENM-05`). | — | |
+| **Blinded** | `accuracy − 30` (applied after everything else, before the clamp). Enemies also treat the target as unseen unless adjacent (`ENM-02`). | — | |
 | **Exposed** | Plating treated as 0 against all damage. | — | |
 
 - **Reapplication** always uses `duration = max(remaining, new)` — never additive.

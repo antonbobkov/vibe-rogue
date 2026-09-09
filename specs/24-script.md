@@ -210,6 +210,10 @@ Text box:
 
 Options: `A) Wind the tower` · `B) Wind yourself`.
 
+**After the choice, before either ending:** Tick takes page 8 from the chair. It is shown as a Journal
+page view (header `Page 8 — The Escapement`, text per `SCR-03`) and marked found. Any key continues to
+the chosen ending.
+
 ### Ending A — The Keeper
 > You set the Key into the Escapement and turn it. It turns easily; it was made to.
 >
@@ -224,7 +228,7 @@ Options: `A) Wind the tower` · `B) Wind yourself`.
 > Down in Lowmere, in the square, the clock struck the hour for the first time in eleven days, and went on
 > striking it.
 
-Then: page 8 is shown (header `Page 8 — The Escapement`, found on the chair), then the Victory screen.
+Then the Victory screen.
 
 ### Ending B — The Walker
 First: the descent. Seven lines, one at a time on a black screen, each held 1.5 seconds (any key skips
@@ -252,8 +256,7 @@ Then the text box:
 >
 > In the square in Lowmere the clock says twenty past four, and will go on saying it. You walk past it.
 
-Then: page 8 is shown (found on the chair, before the descent — the Journal records it), then the
-Victory screen.
+Then the Victory screen.
 
 ## SCR-08 Death and victory screens
 

@@ -116,7 +116,7 @@ Descriptions (≤ 25 words, in the inspect popup):
 | `U` | white | 72 | 85 | 15 | 2 | `2d4` | NORMAL (P1, P2), SLOW (P3) | 10 | Y | 0 | (the Master Key — narrative) | Slowed |
 
 - **Placement:** the `U` tile of the floor 8 map (`FLR-09`). Entry trigger = Tick opens the door at the
-  antechamber (the `+` on the map). At that moment: text box with line 1 (`SCR-08`), then the
+  antechamber (the `+` on the map). At that moment: text box with line 1 (`SCR-06`), then the
   Understudy is Active with `lastKnown = Tick's tile`.
 - **Its own spring:** the Understudy has `tension = 100`, shown in its inspect popup as `Spring n/100`.
   Every action it takes costs 2. If it reaches 0, the Understudy is **defeated** exactly as if broken
@@ -127,7 +127,7 @@ Descriptions (≤ 25 words, in the inspect popup):
      Wait.
   2. Else if adjacent to Tick and `n mod 4 == 3` → `windingUp = true`. Log: "The Understudy tightens."
   3. Else → CHASER.
-- **Phase 2 (Integrity 25–48):** on transition: log line 2 (`SCR-08`), then summon two **The Unfinished**
+- **Phase 2 (Integrity 25–48):** on transition: log line 2 (`SCR-06`), then summon two **The Unfinished**
   on marker tiles `1` and `2` (or the nearest free tiles by Chebyshev, reading order), Active, and
   `n` continues. Script:
   1. If `pulsingUp` → **Pulse**: every actor within Chebyshev 2 takes `1d6+1` ignoring Plating and is
@@ -135,12 +135,11 @@ Descriptions (≤ 25 words, in the inspect popup):
   2. Else if `n mod 4 == 3` and Tick within 2 → `pulsingUp = true`. Log: "The Understudy hums."
   3. Else → Phase 1 lines 1–3 (it still Overwinds when adjacent on the same counter — the Pulse check
      takes precedence when both would fire).
-- **Phase 3 (Integrity ≤ 24):** on transition: log line 3 (`SCR-08`); speed becomes SLOW permanently;
+- **Phase 3 (Integrity ≤ 24):** on transition: log line 3 (`SCR-06`); speed becomes SLOW permanently;
   all `windingUp`/`pulsingUp` cleared. Script: CHASER only. No specials.
-- **On defeat** (Integrity ≤ 0 or spring 0): no scrap. Text box with the defeat description and line 4,
-  then thought 3, then the ending choice (`UI-19`). Journal page 8 appears on the chair tile `C`
-  after the ending — no: page 8 is shown *within* the ending sequence (`SCR-06`) so the player
-  cannot miss it; it is also added to the Journal as found.
+- **On defeat** (Integrity ≤ 0 or spring 0): no scrap, no XP. Text box with the defeat description and
+  line 4, then thought 3, then the ending choice (`UI-19`). Journal page 8 is shown within the ending
+  sequence (`SCR-07`) and marked found.
 - Description: *Her last work. Silver, finished, waiting to be told. It has the Key and cannot use it.*
 
 ## BST-07 XP inventory (for `31-balance.md`)

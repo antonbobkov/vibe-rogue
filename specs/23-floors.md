@@ -157,7 +157,7 @@ the given range.
 - **Enemies at start:** **The Unfinished** at markers `1` and `2` (Dormant). **The Understudy** at `U`.
 - **Entry trigger:** opening the door `+` at (11, 4) (`BST-06`).
 - **No** stairs, station, cache, floor items, or journal room. Journal page 8 is delivered by the ending
-  sequence (`SCR-06`).
+  sequence (`SCR-07`).
 - The two pillars (`#` at (27,7), (46,7), (27,15), (46,15)) and the `EEEE` block are the only sight
   blockers inside the chamber.
 - Nominal XP: 18 + 18 (Phase 2 summons) = **36**.

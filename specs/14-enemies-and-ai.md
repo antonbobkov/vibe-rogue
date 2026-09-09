@@ -47,11 +47,10 @@ RETURNING (GUARD only) ──(reaches homeTile)──▶ DORMANT
   "active", see `UI-11`). Dormant enemies still block movement and can be attacked.
 - **ACTIVE:** runs its archetype every action.
 - Bosses are never Dormant after their entry trigger (`22`).
-- On entering ACTIVE, `energy` is set to 0 (so a newly woken `NORMAL` enemy acts on the *next*
-  player turn, never the same one it woke — the player always gets one turn of warning. `FAST`
-  enemies still act only once on the turn after waking because energy goes 0 → 200 → two actions
-  *next* phase; the builder must ensure waking happens after that phase's energy grant or that the
-  0 reset happens at wake time so no same-turn action occurs).
+- On entering ACTIVE, `energy` is set to 0, and an enemy that became Active during the current turn
+  (by any cause, at any point in the loop) **gains no energy in that turn's enemy phase**. A newly
+  woken enemy therefore never acts on the turn it wakes, whatever its speed: the player always gets
+  one turn of warning.
 
 ## ENM-04 Waking
 

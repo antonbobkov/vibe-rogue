@@ -105,7 +105,7 @@ are defined in `13-world-and-generation.md` and `23-floors.md` and must fit the 
 | 5 | **The Aviary** | Open galleries, perches, cages, a shattered skylight. Long sightlines. | Ranged threat floor (Cuckoos). Teaches cover and doors. | *Page 5:* Fear. What happens to them when she stops? "They will run down their last order until they stop. I have given them such small orders." |
 | 6 | **The Archive** | Blueprint cabinets, drafting tables, the shelves of parts for things she never finished. | **Mini-boss: The Regulator** — the tower's governor, the one thing she built to run *without* her, and which never worked right. Scripted moment: Tick finds the Understudy's blueprint. Thought #2. | *Page 6:* The plan. A key that turns from the inside. "A heart, if I am being ridiculous, and I am." |
 | 7 | **The Pendulum Stair** | A spiral stair around the shaft; the Great Pendulum swings through the map. Narrow. Mixed elite enemies. | The gauntlet. No new mechanics; everything at once. | *Page 7:* Doubt. Who gets the Key? The Understudy is finished, perfect, and she doesn't trust it. "Tick would have no idea what to do with it. That is rather the point." |
-| 8 | **The Escapement** | A single handcrafted circular chamber around the escapement wheel. Aurelie's chair. | **Final boss: The Understudy.** Scripted entry: the Understudy is standing beside the chair, holding the Key. Aurelie's body is *not* depicted — the chair is empty; she was "taken down to Lowmere" per page 8's context. Boss dialogue. On victory, the **ending choice**. Thought #3. | *Page 8:* Found on the chair *after* the boss. Unfinished mid-sentence. She was deciding. |
+| 8 | **The Escapement** | A single handcrafted circular chamber around the escapement wheel. Aurelie's chair. | **Final boss: The Understudy.** Scripted entry: the Understudy is standing beside the chair, holding the Key. Aurelie's body is *not* depicted — the chair is empty; the doctor's visit in page 8 implies she was taken down to Lowmere. Boss dialogue. On victory, the **ending choice**. Thought #3. | *Page 8:* Found on the chair *after* the boss, delivered by the ending sequence (`SCR-07`). Unfinished mid-sentence. She was deciding. |
 
 ## STY-05 Scripted moments and Tick's three thoughts
 
@@ -140,7 +140,7 @@ no way to defer. Both are victories; the victory screen names which ending was r
 | Option | Name | What Tick does | Consequence shown | Emotional shape |
 |---|---|---|---|---|
 | A | **The Keeper** | Turns the Master Key in the Great Escapement — the tower's own spring. | The tower thunders back to life. Every automaton in the Hollow restarts with its instruction cleared; the orchestra plays the whole piece. Tick sits down in Aurelie's chair to keep the Key turning. Final image: Tick in the chair, the pendulum swinging, "and the clock in Lowmere struck the hour for the first time in eleven days." | Bittersweet: everyone saved, Tick bound. |
-| B | **The Walker** | Turns the Master Key in its own back. | Tick's Tension gauge shows ∞. The tower slows and stops. Tick walks down eight floors past the still automata — the game shows a brief, non-interactive descent (one line per floor, in reverse order) — and out the door into Lowmere at dawn. Final image: the town clock stopped at the hour she died; Tick walks past it. | Bittersweet: Tick free, everyone else gone. |
+| B | **The Walker** | Turns the Master Key in its own back. | The tower slows and stops. Tick walks down eight floors past the still automata — the game shows a brief, non-interactive descent (one line per floor, in reverse order) — and out the door into Lowmere at dawn. Final image: the town clock stopped at the hour she died; Tick walks past it. | Bittersweet: Tick free, everyone else gone. |
 
 After either ending, the victory screen shows the run summary (STY-08) and the words *"The other
 choice is still up there."*
@@ -189,7 +189,7 @@ choice is still up there."*
 | **the Conductor** | Floor 3 mini-boss. |
 | **the Regulator** | Floor 6 mini-boss. |
 | **Winding Station** | The wall-mounted rewinding fixture; one per floor 1–7. Restores Tension to 100. |
-| **Cache** | The one locked-then-unlocked room per floor holding 2–3 items. (Unlock rule in `13`.) |
+| **Cache** | The one dead-end treasure room per floor 1–7, holding 2–3 items and one guard (`WLD-07`, `FLR-01`). |
 | **Integrity** | Tick's hit points. |
 | **Tension** | Tick's mainspring; both fuel and clock. |
 | **Force / Precision / Plating** | Tick's three attributes. |

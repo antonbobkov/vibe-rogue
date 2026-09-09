@@ -156,4 +156,4 @@ grouped by source document. "Given / When / Then" is implied by the three column
 | ACC-130 | `BAL-07` S1–S6 bots, 200 seeds each | Run | Each target met. |
 | ACC-131 | Full-explore scripted run on seed `TEST1234` with no Spring-Keys used | Run | Never wound down; Tension at floor 8 entry within 35–65. |
 | ACC-132 | All content tables | Static check | Every item name in `23` exists in `21`; every enemy name in `23` exists in `22`; every skill name in `11`/`20` matches; every color name resolves in the palette (`UI-08` + `BST-01`). |
-| ACC-133 | All docs | `grep -rn "TBD\|TODO" specs/` | No matches after wave 5. |
+| ACC-133 | All docs | Search for placeholder markers (to-be-decided notes, question-mark runs) | None; every value in the specs is fixed (`OVR-07` rule 10). |

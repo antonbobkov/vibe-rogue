@@ -26,7 +26,8 @@ seeds by following this document and `TEC-07`.
 | **Grinding Gear** (hazard) | `^` | Yes | No | Constant hazard (WLD-08). |
 | **Steam Vent** (hazard) | `^` | Yes | No | Cyclic hazard (WLD-08). Distinct color. |
 | **Pendulum Sweep** (hazard) | `~` | Yes | No | Cyclic hazard (WLD-08). Floor 7 only. |
-| **Escapement** | `@`-adjacent set piece | No | No | Floor 8 only; see `23-floors.md` legend. |
+| **Chair** | `h` | No | No | Floor 8 only (`C` in the WLD-13 legend). |
+| **Escapement wheel** | `O` | No | No | Floor 8 only (`E` in the WLD-13 legend). |
 
 **Scrap** (`WLD-04`) is not a tile: it is a decoration flag on a floor tile.
 
@@ -174,8 +175,8 @@ loads it verbatim.
 | `+` | Closed door |
 | `@` | Player start (Floor beneath) |
 | `U` | The Understudy's start tile (Floor beneath) |
-| `C` | Aurelie's chair — a non-walkable, non-sight-blocking set piece; the journal page 8 is placed here after the boss dies (`STY-04`). |
-| `E` | Escapement wheel — non-walkable, non-sight-blocking. |
+| `C` | Chair tile (drawn `h`). Journal page 8 is narratively found here but is delivered by the ending sequence (`SCR-07`), never placed on the map. |
+| `E` | Escapement wheel tile (drawn `O`). |
 | `1`–`9` | Enemy spawn markers referenced by the floor 8 encounter script in `23` |
 | `~` | Pendulum Sweep hazard (only if `23` uses it) |
 

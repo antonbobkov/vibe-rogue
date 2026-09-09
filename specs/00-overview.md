@@ -1,6 +1,6 @@
 # 00 — Overview: Clockwork Hollow
 
-**Status:** Wave 1 — approved direction. Later docs refine, never contradict, what is written here.
+**Status:** Wave 5 — complete. All sixteen documents are final; later docs refine, never contradict, what is written here.
 **Purpose:** Fix the identity, scope, pacing, and conventions of the game so that every later document is
 filling in detail rather than making decisions. If a later doc conflicts with this one, this one wins
 unless the conflict is explicitly noted and resolved in the wave 5 consistency pass.
@@ -47,7 +47,7 @@ Every design question in later docs is settled by asking which option better ser
 | Items | 3 equipment slots (**weapon**, **plating**, **attachment**) + 10-slot inventory. ~8 weapons, ~5 platings, ~5 attachments, ~7 consumables. Stackable consumables. |
 | Ranged | Ranged weapons and throwables exist. Ranged weapons cost Tension per shot; there is no ammunition. |
 | Enemies | ~12 regular enemy types + 2 mini-bosses (floors 3 and 6) + 1 final boss (floor 8). Five AI archetypes. Enemies start dormant and wake on sight or noise. |
-| Map | Fixed 60×24 tile map per floor, no scrolling. Rooms and corridors. Doors (open by walking in; block sight when closed). Two hazard tile types. One **Winding Station** and one **Cache** room per floor 1–7. |
+| Map | Fixed 60×24 tile map per floor, no scrolling. Rooms and corridors. Doors (open by walking in; block sight when closed). Three hazard tiles built on two mechanisms (constant, cyclic). One **Winding Station** and one **Cache** room per floor 1–7. |
 | Vision | Symmetric shadowcasting field of view, radius 8. Remembered tiles drawn dim. |
 | Movement | 8-directional for everyone. Energy-based speed with exactly three tiers (slow / normal / fast). |
 | Story | Intro text, one journal page per floor (8 total), scripted moments on floors 3, 6, 8, boss dialogue, ending choice with two endings, death and victory summaries. |
@@ -70,15 +70,15 @@ These are targets that wave 3 content and wave 4 balance must hit. "Turns" are p
 
 | Floor | Name | Target turns (full explore) | Regular enemies | Boss | Expected char. level on exit |
 |---|---|---|---|---|---|
-| 1 | The Workshop | 180 | 6–8 | — | 2 |
+| 1 | The Workshop | 180 | 7–8 | — | 2 |
 | 2 | The Gear Gallery | 220 | 8–10 | — | 3 |
-| 3 | The Music Room | 240 | 8–10 | Mini-boss: **The Conductor** | 4 |
-| 4 | The Furnace Deck | 240 | 9–11 | — | 5 |
+| 3 | The Music Room | 240 | 8–10 (+ summons) | Mini-boss: **The Conductor** | 4 |
+| 4 | The Furnace Deck | 240 | 7 | — | 5 |
 | 5 | The Aviary | 240 | 9–11 | — | 6 |
-| 6 | The Archive | 260 | 10–12 | Mini-boss: **The Regulator** | 7 |
-| 7 | The Pendulum Stair | 260 | 10–12 | — | 8 |
-| 8 | The Escapement | 120 | 4–6 (arena adds) | Final boss: **The Understudy** | 9 |
-| | **Total** | **~1,760** | **~70** | | |
+| 6 | The Archive | 260 | 9–11 | Mini-boss: **The Regulator** | 7 |
+| 7 | The Pendulum Stair | 260 | 8–10 | — | 8 |
+| 8 | The Escapement | 120 | 2 (+ summons) | Final boss: **The Understudy** | 9 |
+| | **Total** | **~1,760** | **~65** | | |
 
 - A full-explore run is ~1,760 turns. A confident player taking ~1.2 s per turn finishes in ~35 minutes
   plus reading. A cautious first-time player reaches ~60 minutes before dying or winning.
@@ -137,7 +137,7 @@ These apply to every file in `specs/`.
 2. **Tables beat prose.** If a table and a sentence disagree, the table is authoritative.
 3. **Numbers are numbers.** Never "a few", "some", "roughly" in a normative statement. Ranges are
    inclusive and written `3–5`. Dice are written `NdS+M`, rolled as the sum of N dice with S sides
-   plus M; `d` rolls are uniform. Percentages are integers.
+   plus M; `d` rolls are uniform. A flat value is written `1 (flat)` and means `0d1+1`. Percentages are integers.
 4. **Rounding.** Unless a rule says otherwise, fractional results round **down** to an integer, and
    any clamping (e.g. minimum 1 damage) happens **after** rounding.
 5. **Names.** A game entity is written in **bold** where it is defined and matched exactly
@@ -150,7 +150,8 @@ These apply to every file in `specs/`.
    expire), the rule that resolves it is stated where the mechanic is defined.
 9. **"Builder"** means the person or system implementing the game from these specs. Text addressed to
    the builder is normative unless marked *Rationale:*, which is explanatory only.
-10. **Placeholders.** `TBD` is permitted in waves 1–4 and must not appear anywhere after wave 5.
+10. **Placeholders.** No "to be decided" markers of any kind remain in the final specs; every value is
+    fixed. If a builder finds an undefined case, that is a spec bug to be fixed here, not a choice.
 
 ## OVR-08 Document index
 
@@ -158,20 +159,20 @@ These apply to every file in `specs/`.
 |---|---|---|---|
 | `00-overview.md` | 1 | This document | Done |
 | `01-story.md` | 1 | World, characters, floor-by-floor beats, endings, tone, glossary | Done |
-| `10-turns-and-combat.md` | 2 | Energy system, actions, to-hit/damage formulas, status effects, death | Planned |
-| `11-character-and-skills.md` | 2 | Integrity, Tension, attributes, XP curve, discipline framework | Planned |
-| `12-items-and-inventory.md` | 2 | Slots, inventory rules, item categories, loot-table mechanism | Planned |
-| `13-world-and-generation.md` | 2 | Tiles, generation algorithm, FOV, floor 8 layout format | Planned |
-| `14-enemies-and-ai.md` | 2 | Perception, AI archetypes, wake rules, boss framework | Planned |
-| `15-ui-and-controls.md` | 2 | Screen layout, every key and mouse action, all screens, colors | Planned |
-| `20-skills.md` | 3 | All 12 skills, fully specified | Planned |
-| `21-items-catalog.md` | 3 | Every item with stats, glyph, color, text, floor availability | Planned |
-| `22-bestiary.md` | 3 | Every enemy and boss with stats, AI, drops, text, boss phases | Planned |
-| `23-floors.md` | 3 | Per-floor themes, generation parameters, spawn and loot tables | Planned |
-| `24-script.md` | 3 | All in-game text, verbatim | Planned |
-| `30-technical.md` | 4 | Stack, module layout, data schemas, PRNG, save format, rendering | Planned |
-| `31-balance.md` | 4 | Expected-run model and sanity checks against wave 3 tables | Planned |
-| `32-acceptance-tests.md` | 4 | Observable behaviors and edge cases the finished game must satisfy | Planned |
+| `10-turns-and-combat.md` | 2 | Energy system, actions, to-hit/damage formulas, status effects, death | Done |
+| `11-character-and-skills.md` | 2 | Integrity, Tension, attributes, XP curve, discipline framework | Done |
+| `12-items-and-inventory.md` | 2 | Slots, inventory rules, item categories, loot-table mechanism | Done |
+| `13-world-and-generation.md` | 2 | Tiles, generation algorithm, FOV, floor 8 layout format | Done |
+| `14-enemies-and-ai.md` | 2 | Perception, AI archetypes, wake rules, boss framework | Done |
+| `15-ui-and-controls.md` | 2 | Screen layout, every key and mouse action, all screens, colors | Done |
+| `20-skills.md` | 3 | All 12 skills, fully specified | Done |
+| `21-items-catalog.md` | 3 | Every item with stats, glyph, color, text, floor availability | Done |
+| `22-bestiary.md` | 3 | Every enemy and boss with stats, AI, drops, text, boss phases | Done |
+| `23-floors.md` | 3 | Per-floor themes, generation parameters, spawn and loot tables | Done |
+| `24-script.md` | 3 | All in-game text, verbatim | Done |
+| `30-technical.md` | 4 | Stack, module layout, data schemas, PRNG, save format, rendering | Done |
+| `31-balance.md` | 4 | Expected-run model and sanity checks against wave 3 tables | Done |
+| `32-acceptance-tests.md` | 4 | Observable behaviors and edge cases the finished game must satisfy | Done |
 
 ## OVR-09 Reading order for a builder
 

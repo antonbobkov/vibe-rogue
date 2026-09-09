@@ -133,5 +133,5 @@
 - **Discord on the Understudy** in its wound-down phase: it is already `SLOW`; Slowed has no further
   effect; Exposed applies.
 - **Sympathetic Break + Salvage:** both trigger on the same break; Salvage counts chained breaks.
-- **Field Repair** cannot be used at full Integrity? It can; it still costs and is spent
+- **Field Repair** can be used at full Integrity; it still costs Tension and is spent for the floor
   (`ITM-09` rationale).

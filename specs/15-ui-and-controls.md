@@ -101,6 +101,7 @@ Shows one line about whatever the mouse is over (or the look cursor is on, UI-12
 | Thing | Glyph | Color |
 |---|---|---|
 | Tick | `@` | `#ffd75f` |
+| Decoy (`SKL-03`) | `0` | `#5ad0ff` |
 | Wall | `#` | `#6e6a5e` |
 | Floor | `.` | `#3a3a44` |
 | Closed door | `+` | `#b08a4a` |
@@ -138,6 +139,7 @@ The fixed palette. Later docs choose colors from this list by name.
 | orange | `#ff9040` | blue | `#60c0ff` |
 | yellow | `#ffd75f` | violet | `#c0a0ff` |
 | teal | `#5ad0ff` | pink | `#ff80c0` |
+| iron | `#9a9aa0` | lime | `#a0e060` |
 | telegraph | `#ffffff` on background `#602020` | | |
 
 ## UI-09 Drawing rules
@@ -270,7 +272,9 @@ is free.
 - **Help** (`?`): full-screen static list of every key in UI-10, UI-12, UI-14, and a 6-line summary of
   the core rules (Tension decay, no regen, stations, permadeath). Text in `24`.
 - **Text box** (scripted moments, boss lines marked "text box" in `STY-06`): a centered box over the
-  map, max 50 × 10 cells, with the text and `— any key —`. Dismissed by any key or click. The game does
+  map, max 56 × 20 cells, with the text and `— any key —`. Text longer than the box scrolls with
+  arrows/wheel and shows `— more —` on the last line until the end is reached. Dismissed by any
+  key or click. The game does
   not advance while it is open.
 
 ## UI-17 Title, Death, Victory, Ending-choice screens
@@ -306,7 +310,7 @@ Continue resumes it). No "save and quit" — saving is automatic.
 | Any overlay | `Esc` (or its own key) | Run |
 | Run | Level-up (`CHR-07`) | Skills (auto) |
 | Run | Scripted trigger (`STY-05`) | Text box → Run |
-| Run | Understudy defeated | Text box (line 4) → Text box (thought 3) → Ending choice → Ending text → Victory |
+| Run | Understudy defeated | Text box (line 4) → Text box (thought 3) → Ending choice → Journal page 8 → (B only: descent lines) → Ending text → Victory |
 | Run | Tick dies | Death |
 | Death / Victory | any key | Title |
 | Pause | Quit to title | Title |
