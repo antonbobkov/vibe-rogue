@@ -263,7 +263,7 @@ the totals the specs claim.
 - **ACC-132**: every item name in every floor table / cache table / drop table / `cacheExtra` exists
   in `data/items.js`; every enemy in every spawn list and `guard` exists in `data/enemies.js`; every
   skill name in `11` (hard-coded list in the test) exists in `data/skills.js`.
-- Counts equal `CAT-08` (7+2 weapons, 5, 5, 7, 10 records). XP by floor equals `FLR-10` nominal
+- Counts equal `CAT-08` (7+2 weapons, 5, 5, 7, 9 records). XP by floor equals `FLR-10` nominal
   values (compute pack means as `(min+max)/2`). Understudy `xp` is 0.
 - Floor 8 `fixedMap` is 24 rows × 60 cols; only legend characters; exactly one `@`, one `U`, one
   `C`; markers `1` and `2` present once; outer ring all `#` (**ACC-77** static clause).

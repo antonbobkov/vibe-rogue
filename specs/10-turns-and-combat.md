@@ -33,7 +33,8 @@ action. Free actions (CMB-05) do not run this loop.
 
 1. **Resolve the player's action** (movement, attack, item use, skill…). Any damage, noise, status
    application, or death check that the action itself specifies happens here.
-2. **Advance the clock.** `turn += 1`. If `turn mod 5 == 0`, Tick loses 1 Tension (`CHR-04`).
+2. **Advance the clock.** `turn += 1`; `decayCounter += 1`. If `decayCounter ≥ decayPeriod` (5; 6 with
+   the **Governor** attachment, `CAT-05`), Tick loses 1 Tension and `decayCounter = 0` (`CHR-04`).
 3. **Player status tick** (CMB-10): apply per-turn effects (e.g. Burning damage), then decrement
    durations, then remove expired statuses.
 4. **Hazard tick for Tick** (`WLD-08`): if Tick is standing on a hazard tile that is active this turn,
@@ -124,7 +125,7 @@ hit roll for these. All damage is integer.
 
 - **Line of fire:** from the attacker's tile to the target tile along a Bresenham line
   (`TEC-11` specifies the exact variant). The projectile travels tile by tile; it stops at the first
-  tile that is a wall, a closed door, or contains an actor. If it stops before the target tile, the
+  tile that is not walkable (wall, closed door, chair, Escapement wheel) or contains an actor. If it stops before the target tile, the
   actor or obstacle there is the actual target (for a ranged weapon) or the actual landing tile (for a
   throwable, which lands on the last passable tile before the obstacle).
 - **Range:** Chebyshev distance `max(|dx|,|dy|)` from attacker to target must be ≤ the weapon's or
@@ -159,6 +160,10 @@ Exactly five statuses exist. Each has an integer duration in turns.
 | **Exposed** | Plating treated as 0 against all damage. | — | |
 
 - **Reapplication** always uses `duration = max(remaining, new)` — never additive.
+- **Counting.** A status applied to an enemy during step 1 (by Tick) has its first decrement at that
+  turn's step 7; a status applied to Tick during step 6 (by an enemy) has its first decrement at the next
+  turn's step 3. A 1-turn status Tick applies therefore never affects Tick's next attack; a 2-turn one
+  affects exactly one. Stunned N on an enemy costs it exactly N enemy phases.
 - **Order within a status tick:** per-turn effects first (Burning damage), then all durations −1, then
   removal of any status at 0. A death from Burning is checked in step 5 / step 7.
 - Statuses on Tick are cleared on Ascend. Statuses on enemies persist until expiry or death.

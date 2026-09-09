@@ -74,7 +74,7 @@ grouped by source document. "Given / When / Then" is implied by the three column
 | ACC-55 | Enemy dies on an item tile | — | Drop appears on the nearest free tile in reading order; none within 2 → not created. |
 | ACC-56 | Floor table roll produces a duplicate weapon | — | Re-rolled once (`ITM-10`); consumables never re-rolled. |
 | ACC-57 | Governor generated | Continue rolling | Never generated again this run. |
-| ACC-58 | Cog Saw hit | — | Target Exposed 1; next attack that turn ignores Plating. |
+| ACC-58 | Cog Saw hit | — | Target Exposed 2; Tick's next attack (the following turn) ignores Plating; the attack after that does not, unless it hit again. |
 | ACC-59 | Pendulum Flail hit with 2 other adjacent enemies | — | Each takes 2 minus its Plating. |
 | ACC-60 | Oil Reservoir equipped, Stoker hits | — | No Burning. Steam Vent | No Burning, still 4 damage. |
 | ACC-61 | Sounding Plate | Melee attack; open door | Noise 2; silent. |
@@ -87,7 +87,7 @@ grouped by source document. "Given / When / Then" is implied by the three column
 
 | ID | Setup | Action | Expected |
 |---|---|---|---|
-| ACC-70 | 1,000 seeds × floors 1–7 | Generate | Every floor validates; ≥ 5 rooms; all rooms reachable; exactly one `<`, one `&`, one `?`; cache has 2–3 items (+ Blueprint on floor 6). |
+| ACC-70 | 1,000 seeds × floors 1–7 | Generate | Every floor validates; ≥ 5 rooms; all rooms reachable; exactly one `<`, one `&`, one journal page `?` (floor 6: plus the Blueprint `?`); cache has 2–3 items. |
 | ACC-71 | Same | — | No two door tiles adjacent; doors only on room boundary walls; no item on a corridor/door/feature/hazard tile; ≤ 1 item per tile. |
 | ACC-72 | Same | — | No enemy in the start room; no enemy visible from the start tile; no hazard adjacent to start, stairs, or station. |
 | ACC-73 | Same | — | Station room's BFS distance is the closest to half the stairs distance among eligible rooms. |
@@ -140,8 +140,8 @@ grouped by source document. "Given / When / Then" is implied by the three column
 | ACC-112 | Targeting | Press `f` with two visible enemies | Cursor on the nearest; Tab cycles; line of fire inverted, red when blocked; Esc spends no turn; click confirms. |
 | ACC-113 | Log | 7 messages in one turn | Last 5 shown; History has all 7; identical consecutive lines merged with `(×n)`. |
 | ACC-114 | Text box | Any scripted moment | Game does not advance until dismissed; dismiss with any key or click; exact `SCR-05` text. |
-| ACC-115 | Ending A | Choose A | Ending A text → page 8 → Victory `THE KEEPER`, flavor line, stats, seed selectable; any key → Title; save deleted. |
-| ACC-116 | Ending B | Choose B | Seven descent lines 1.5 s each (skippable) → Ending B text → page 8 → Victory `THE WALKER`. |
+| ACC-115 | Ending A | Choose A | Page 8 journal view → Ending A text → Victory `THE KEEPER`, flavor line, stats, seed selectable; any key → Title; save deleted (`UI-19`, `SCR-07`). |
+| ACC-116 | Ending B | Choose B | Page 8 journal view → seven descent lines 1.5 s each (skippable) → Ending B text → Victory `THE WALKER`. |
 | ACC-117 | Death | Integrity 0 by a Stoker on floor 4 | Log "Tick was broken by the Stoker on floor 4."; Death screen header `TICK WAS BROKEN`, flavor line per `SCR-08`. |
 | ACC-118 | Title | Enter seed `abc`, Enter | New run; summary later shows `Seed abc`. |
 | ACC-119 | Pause | Esc → Quit to title → Continue | Resumes exactly. |

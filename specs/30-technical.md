@@ -87,7 +87,8 @@ type FloorDef = { number: number; name: string; roomTarget: number; extraCorrido
   doorChance: number; hazards: { kind: 'GRINDING_GEAR'|'STEAM_VENT'|'PENDULUM_BAND'; count?: number }[];
   itemCount: number; floorTable: [string, number][]; cacheCount: [number, number];
   cacheTable: [string, number][]; cacheFirstRollTable?: [string, number][]; cacheExtra?: string[];
-  spawns: ({ type: string; count: number } | { pack: string })[]; guard: string;
+  spawns: ({ type: string; count: number } | { pack: string; size?: [number, number] })[]; // size overrides packSize
+  guard: string;
   boss?: { type: string; room: 'stairs' }; journalPage: number; fixedMap?: string[] };
 ```
 
@@ -107,7 +108,7 @@ One plain object `state`, serializable to JSON (TEC-09), containing:
 version, seedString, playRngState, turn, floorNumber,
 tick: { integrity, integrityMax, tension, xp, level, skillPoints, skills[], activeSlots[],
         equipment{weapon,plating,attachment}, inventory[{name,count}], statuses{}, guardTimer,
-        fieldRepairUsed, salvageCounter, salvageNext, x, y },
+        fieldRepairUsed, salvageCounter, salvageNext, decayCounter, x, y },
 floor: { tiles[24][60], memory[24][60], items[{name,count,x,y}], scrap[], hazards[], features{},
          rooms[], roles{}, enemies[EnemyInstance], decoy?, nextEnemyId, bossFlags{} },
 journal: { pages: boolean[8], blueprint: boolean }, uniquesGenerated: string[],

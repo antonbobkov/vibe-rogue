@@ -10,7 +10,7 @@ spawn lists, guards, bosses, and the handcrafted floor 8.
 
 Each floor's **spawn list** is a fixed list of entries; the generator places every entry (`WLD-11`
 step 9). An entry `Type × n` places `n` individuals; `Type pack` places one pack of that SWARMER type
-(pack size rolled from the bestiary). Order of placement is the order listed. The **cache guard** is
+(pack size rolled from the bestiary); `Type pack (a–b)` overrides the pack-size range for that entry. Order of placement is the order listed. The **cache guard** is
 placed last, in the cache room, with archetype GUARD (`BST-02`).
 
 Loot tables (`ITM-10`) are written `Item w` with weight `w`. **Cache count** is rolled uniformly from
@@ -26,7 +26,7 @@ the given range.
   Balance Wheel 1`.
 - **Cache:** count 2–3. **Guarantee:** the first cache roll uses the table `Tin Plating 1, Brass Plating 1`
   (`ITM-12`); remaining rolls use `Mallet 3, Balance Wheel 2, Solder 3, Spring-Key 3, Grit Bomb 1`.
-- **Spawn list:** `Rust-moth pack`, `Sweeper × 3`. Cache guard: **Sweeper**.
+- **Spawn list:** `Rust-moth pack (3–4)`, `Sweeper × 3`. Cache guard: **Sweeper**.
 - **Journal:** page 1.
 - Nominal XP: 3.5 + 9 + 3 = **15.5**. Enemies 7–8.
 
@@ -113,6 +113,8 @@ the given range.
   **Pendulum Sweep** tile (doors first become Floor). Then **Grinding Gear × 4** on corridor tiles
   outside the band. Features (`WLD-07`) are never placed in the band (their rooms' interior tiles in the
   band are excluded from feature placement; if a role room has no tile outside the band, regenerate).
+  If after feature placement any feature tile is within Chebyshev 1 of the band, regenerate
+  (`WLD-11` step 10).
 - **Floor items:** 5. Floor table: `Solder 6, Spring-Key 6, Flux 2, Piston Hammer 1, Pendulum Flail 1,
   Steel Plating 1, Lacquered Plating 1, Oil Flask 2, Grit Bomb 2, Tuning Fork 2`.
 - **Cache:** 2–3 from `Piston Hammer 2, Pendulum Flail 2, Steel Plating 2, Harmonic Rifle 1, Flux 2,

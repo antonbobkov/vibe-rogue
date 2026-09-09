@@ -42,7 +42,7 @@
 
 | Cause | Amount |
 |---|---|
-| Time | 1 per 5 turns (`CMB-02` step 2). Unconditional; not affected by anything. |
+| Time | 1 per `decayPeriod` turns, counted by `decayCounter` (`CMB-02` step 2). `decayPeriod` is 5; the **Governor** attachment (`CAT-05`) is the only thing that changes it (to 6). Nothing pauses or skips it. |
 | Active skills | Per skill, 5–20 (`20-skills.md`). Paid when the skill is used, before its effect. |
 | Ranged weapons | Per shot, 2–5 (`21-items-catalog.md`). |
 | Nothing else | No enemy, hazard, or status drains Tension. *Rationale:* the player must always be able to compute how long they have. |
@@ -129,4 +129,4 @@ skills, whether they are available (`UI-06`).
 The following are always visible or one hover away, so the player never has to compute them
 (`OVR-02` pillar 3): Accuracy vs. the hovered enemy (as a %), damage range vs. the hovered enemy
 (`min–max` after Plating), turns until the next Tension decay, and turns of Tension remaining at the
-current decay rate (`Tension × 5`, ignoring skill use).
+current decay rate (`Tension × decayPeriod`, ignoring skill use).

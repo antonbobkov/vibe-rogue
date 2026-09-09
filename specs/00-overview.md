@@ -114,7 +114,7 @@ These are targets that wave 3 content and wave 4 balance must hit. "Turns" are p
 | Starting Integrity | 40 |
 | Maximum Tension | 100 (never increases; never decreases) |
 | Starting Tension | 100 |
-| Tension time decay | 1 point every 5 player turns, unconditionally |
+| Tension time decay | 1 point every 5 player turns (6 with the Governor attachment); never paused |
 | Winding Station | Restores Tension to 100; single use; one per floor 1–7 |
 | Spring-Key (consumable) | Restores 30 Tension |
 | Solder (consumable) | Restores 15 Integrity |

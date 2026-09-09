@@ -27,7 +27,7 @@ seeds by following this document and `TEC-07`.
 | **Steam Vent** (hazard) | `^` | Yes | No | Cyclic hazard (WLD-08). Distinct color. |
 | **Pendulum Sweep** (hazard) | `~` | Yes | No | Cyclic hazard (WLD-08). Floor 7 only. |
 | **Chair** | `h` | No | No | Floor 8 only (`C` in the WLD-13 legend). |
-| **Escapement wheel** | `O` | No | No | Floor 8 only (`E` in the WLD-13 legend). |
+| **Escapement wheel** | `O` | No | Yes | Floor 8 only (`E` in the WLD-13 legend). |
 
 **Scrap** (`WLD-04`) is not a tile: it is a decoration flag on a floor tile.
 
@@ -47,8 +47,8 @@ brightness (`UI-09`), under any item. Purely cosmetic; walkable; never removed.
 - Algorithm: **symmetric shadowcasting** (the "Albert Ford" formulation: recursive per-octant scan with
   slope intervals, symmetric variant). `TEC-11` names the exact reference implementation to match.
 - Radius: a tile is visible only if `max(|dx|, |dy|) ≤ 8` (Chebyshev) *and* the shadowcast reaches it.
-- Walls and closed doors block sight but are themselves visible when reached (the wall you can see is
-  drawn).
+- Walls, closed doors, and the Escapement wheel block sight but are themselves visible when reached (the
+  wall you can see is drawn).
 - The player's own tile is always visible.
 - **Memory:** every tile ever visible is remembered with its terrain and the item that was on it when
   last seen. Remembered tiles are drawn dim (`UI-09`). Enemies are never drawn on remembered-only tiles.
@@ -153,7 +153,8 @@ All random choices use the floor's PRNG in the order written. Per-floor paramete
    whole pack on distinct tiles within Chebyshev distance 2 of the first, falling back to any free
    interior tile of the same room. All enemies begin **Dormant**.
 10. **Validate:** ≥ 5 rooms; every room reachable from start; stairs, station, journal page all placed;
-    cache has ≥ 2 items. Otherwise regenerate (WLD-10).
+    cache has ≥ 2 items; no feature tile (start, stairs, station, journal page, cache items) is within
+    Chebyshev 1 of a hazard tile. Otherwise regenerate (WLD-10).
 
 ## WLD-12 Item and enemy placement invariants
 

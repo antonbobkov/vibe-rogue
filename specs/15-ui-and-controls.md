@@ -46,7 +46,7 @@ row 29  message log line 5 (newest)
 | 3 | `TENSION    cur/100` | `TENSION      61/100` |
 | 4 | Tension bar, same format; fill color per UI-08 | |
 | 5 | `Floor N` + short name right-aligned | `Floor 3  Music Room` |
-| 6 | `Turn NNNN   decay:n` — turns until next Tension decay (`CHR-11`) | `Turn 412    decay:3` |
+| 6 | `Turn NNNN   decay:n` — turns until next Tension decay, `decayPeriod − decayCounter` (`CHR-11`) | `Turn 412    decay:3` |
 | 7 | blank |
 | 8 | `FRC n  PRC n  PLT n` — attributes | `FRC 2  PRC 0  PLT 3` |
 | 9 | `ACC nn%  EVA nn` — accuracy base and evasion | `ACC 80%  EVA 8` |

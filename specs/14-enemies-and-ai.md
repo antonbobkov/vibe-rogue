@@ -132,7 +132,9 @@ Has `heavyAttack`.
 4. Else → Wait.
 
 Bruisers are `SLOW`, so the sequence *wind up → hit* spans two player turns after they arrive: the
-player always has a turn to step away. Bruisers `BREAKS` doors.
+player always has a turn to step away. Bruisers `BREAKS` doors. A Bruiser never makes a plain melee
+attack; its `attack` field is `0 (flat)` and the inspect line and popup (`UI-05`, `ENM-11`) show its
+`heavyAttack` dice as its damage.
 
 ### ERRATIC — *no instruction*
 

@@ -10,7 +10,7 @@ workshop labels (`STY-09`).
 
 | Special | Trigger | Effect |
 |---|---|---|
-| **Rend** | On hit | Target becomes **Exposed** 1 (so the *next* hit within a turn ignores its Plating). |
+| **Rend** | On hit | Target becomes **Exposed** 2 (so Tick's *next* attack, on the following turn, ignores its Plating; see the counting rule in `CMB-10`). |
 | **Sweep** | On hit | Every other enemy adjacent to Tick takes 2 damage (Plating applies). |
 | **Knock** | On damage ≥ 6 | Target knocked back 1 (`CMB-09`). No Stun. |
 | **Tempo** | On hit | Target becomes **Slowed** 1. |
@@ -73,7 +73,7 @@ Descriptions:
 | **Counterweight** | +2 | 0 | 0 | −5 | — | iron | 2–5 | — |
 | **Oil Reservoir** | 0 | 0 | +1 | 0 | **Cooling**: Tick cannot receive Burning. | oil | 3–6 | — |
 | **Sounding Plate** | 0 | +1 | 0 | +5 | **Quiet**: Tick's melee noise is 2 instead of 5; opening a door is silent. | violet | 5–7 | — |
-| **Governor** | 0 | +1 | +1 | 0 | **Regulated**: time decay is 1 Tension per 6 turns instead of 5 (`CHR-04`). | brass | drop: the Regulator | Yes |
+| **Governor** | 0 | +1 | +1 | 0 | **Regulated**: `decayPeriod` is 6 instead of 5 (`CHR-04`); `decayCounter` is kept when the Governor is fitted or removed. | brass | drop: the Regulator | Yes |
 
 Descriptions:
 - Balance Wheel: *Hairspring and wheel from a pocket watch. Steadies the hand.*
@@ -109,9 +109,11 @@ Descriptions:
 |---|---|---|---|
 | **Journal page 1–8** | `?` | One per floor in the journal room (`WLD-07`); page 8 on the chair after the Understudy breaks | Added to the Journal screen. Text in `24-script.md`. |
 | **Understudy Blueprint** | `?` | Floor 6 cache, guaranteed, in addition to the 2–3 rolled items | Added to the Journal screen; triggers scripted moment 2 (`STY-05`). |
-| **Master Key** | — | Never on the map; given by the Understudy | Triggers the ending choice. Not an inventory item. |
+
+The **Master Key** is narrative only: never on the map, never an item in `data/items.js`; the ending
+choice is triggered by the Understudy's defeat (`BST-06`).
 
 ## CAT-08 Summary counts
 
-7 melee + 2 ranged weapons, 5 platings, 5 attachments, 7 consumables, 10 records. Two unique items
+7 melee + 2 ranged weapons, 5 platings, 5 attachments, 7 consumables, 9 records. Two unique items
 (Conductor's Baton, Governor).

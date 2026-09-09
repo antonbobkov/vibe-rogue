@@ -66,7 +66,7 @@ Expected Integrity lost per floor (all enemies fought, boss included, hazards av
 | 3 | Guard soldier 6; Dancer 2.5; Cuckoo 2; **Conductor ≈ 15** + summoned Dancers ≈ 5–10 | **≈ 33** | 48 + 15 | 52% |
 | 4 | Stokers ×2 ≈ 12 (Burning is most of it); Gear-Golem 0–6; guard 1 | **≈ 17** (+4–8 vents) | 52 + 15 | 25–37% |
 | 5 | Cuckoos ×3 ≈ 11 (shriek ignores Plating); Finch packs ≈ 10; guard 1 | **≈ 22** | 56 + 15 | 31% |
-| 6 | Archivists (Exposed) ≈ 8; Unfinished ≈ 2; Knight guard ≈ 6; **Regulator ≈ 12–25** | **≈ 30–40** | 60 + 15 | 40–53% |
+| 6 | Archivists (Exposed; telegraphed, so shots can be dodged) ≈ 5; Unfinished ≈ 2; Knight guard ≈ 6; **Regulator ≈ 12–25** | **≈ 27–37** | 60 + 15 | 36–49% |
 | 7 | Knights ×2 ≈ 10; Stoker ≈ 5; Cuckoo ≈ 4; Finches ≈ 4; others ≈ 3; hazards ≈ 6 | **≈ 32** | 64 + 15 | 41% |
 | 8 | Unfinished ×2–4 ≈ 6; **Understudy ≈ 30** (hammer) / ≈ 45 (blade) | **≈ 36–51** | 68 + 15 | 43–61% |
 

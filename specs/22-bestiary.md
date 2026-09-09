@@ -17,16 +17,16 @@ Fields per `ENM-01`. `Acc` = accuracy, `Eva` = evasion, `Plt` = plating, `Per` =
 
 | Name | Glyph | Color | Int | Acc | Eva | Plt | Attack | Speed | Archetype | Per | Doors | XP | Drop % | Drop table | Immune | Floors |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| **Rust-moth** | `m` | rust | 2 | 60 | 25 | 0 | `1` (flat) | FAST | SWARMER (pack 3–5; floor 1: 3–4) | 7 | N | 1 | 5 | Solder 1 | — | 1, 2, 3, 5, 6 |
+| **Rust-moth** | `m` | rust | 2 | 60 | 25 | 0 | `1` (flat) | FAST | SWARMER (pack 3–5; floor 1 overrides to 3–4, `FLR-02`) | 7 | N | 1 | 5 | Solder 1 | — | 1, 2, 3, 5, 6 |
 | **Sweeper** | `s` | steel | 7 | 65 | 5 | 0 | `1d3` | NORMAL | CHASER | 7 | Y | 3 | 15 | Solder 2, Spring-Key 1 | — | 1, 2, 3, 4 |
 | **Spring-Hound** | `h` | copper | 8 | 75 | 15 | 0 | `1d3` | FAST | CHASER | 9 | N | 5 | 15 | Spring-Key 2, Solder 1 | — | 2, 3, 4, 5 |
 | **Tin Soldier** | `t` | silver | 16 | 75 | 5 | 1 | `1d4+1` | NORMAL | GUARD | 7 | Y | 6 | 25 | Solder 2, Spring-Key 2, Tin Plating 1 | — | 2, 3, 4, 5, 6 |
 | **Music-box Dancer** | `d` | pink | 12 | 75 | 30 | 0 | `1d4` | NORMAL | CHASER | 7 | Y | 4 | 15 | Tuning Fork 1, Solder 1 | — | 3, 7 |
 | **Cuckoo** | `c` | yellow | 8 | 80 | 15 | 0 | melee `1d2`; ranged `1d4` (ignores Plating), range 6, windUp YES | NORMAL | SKIRMISHER | 8 | N | 6 | 20 | Spring-Key 2, Grit Bomb 1 | — | 3, 5, 7 |
 | **Stoker** | `k` | orange | 18 | 75 | 5 | 1 | `1d6` + on hit **Burning** 2 | NORMAL | CHASER | 7 | Y | 8 | 25 | Oil Flask 2, Solder 1 | Burning | 4, 7 |
-| **Gear-Golem** | `g` | iron | 30 | 70 | 0 | 3 | heavy `3d4` (no plain attack) | SLOW | BRUISER | 6 | B | 12 | 40 | Spring-Key 2, Solder 2, Counterweight 1 | — | 4, 6, 7 |
+| **Gear-Golem** | `g` | iron | 30 | 70 | 0 | 3 | `0 (flat)` plain (never used, `ENM-06`); heavy `3d4` | SLOW | BRUISER | 6 | B | 12 | 40 | Spring-Key 2, Solder 2, Counterweight 1 | — | 4, 6, 7 |
 | **Brass Finch** | `f` | lime | 5 | 75 | 30 | 0 | `1d4+1` | FAST | SWARMER (pack 2–3) | 8 | N | 3 | 10 | Spring-Key 1 | — | 5, 7 |
-| **Archivist** | `a` | blue | 14 | 80 | 15 | 1 | melee `1d3`; ranged `1d4` + on hit **Exposed** 2, range 5, windUp NO | NORMAL | SKIRMISHER | 7 | Y | 8 | 25 | Flux 1, Solder 1, Clatter Can 1 | — | 6, 7 |
+| **Archivist** | `a` | blue | 14 | 80 | 15 | 1 | melee `1d3`; ranged `1d4` + on hit **Exposed** 2, range 5, windUp YES | NORMAL | SKIRMISHER | 7 | Y | 8 | 25 | Flux 1, Solder 1, Clatter Can 1 | — | 6, 7 |
 | **The Unfinished** | `u` | violet | 20 | 65 | 10 | 2 | `2d4` | NORMAL | ERRATIC | 6 | Y | 9 | 20 | Solder 2, Flux 1 | Blinded | 6, 7, 8 |
 | **Pendulum Knight** | `p` | white | 26 | 80 | 10 | 2 | `2d4` | NORMAL | GUARD | 7 | Y | 12 | 40 | Solder 2, Spring-Key 2, Flux 1, Steel Plating 1 | — | 6, 7 |
 
@@ -37,7 +37,8 @@ Special-case rules:
 - **Stoker** on-hit Burning applies only on a hit that deals ≥ 1 damage after Plating.
 - **Gear-Golem** telegraph log line: "The Gear-Golem raises its arm." Heavy attack log: "The Gear-Golem
   brings its arm down."
-- **Archivist** ranged attack noise 2; log "The Archivist flicks a drafting pin."
+- **Archivist** telegraph log line: "The Archivist lifts a pin." Ranged attack noise 2; log "The Archivist
+  flicks a drafting pin." Its Exposed applies on any hit, including one that deals 0 damage after Plating.
 - **The Unfinished** never returns to Dormant (`ENM-06`).
 - A **cache guard** (`23`) of any type is spawned with archetype **GUARD** and `homeRoom` = the cache
   room, regardless of the table above.

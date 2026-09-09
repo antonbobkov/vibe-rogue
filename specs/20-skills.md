@@ -32,7 +32,8 @@
 
 ### Overwind Strike
 - Effect: a melee attack (`CMB-06`) against the enemy in the chosen direction, with the equipped weapon,
-  rolling the weapon's `dice` **twice** and summing (Force added once), and accuracy +25. The weapon's
+  rolling the weapon's `NdS` dice part **twice** and summing, then adding the weapon's `+M` modifier
+  once and Force once (Wrench `1d4+1` with rolls 4 and 4 → 4 + 4 + 1 = 9), and accuracy +25. The weapon's
   `special` applies normally. Noise 6 instead of 5.
 - Summary: `Melee hit: double weapon dice, +25 accuracy. 8 Tension.`
 - Description: *Let the spring out all at once into the arm. Loud, and the spring feels it.*
@@ -130,8 +131,8 @@
 - **Overwind Strike + Piston Drive:** the doubled roll counts toward the ≥ 6 threshold.
 - **Overwind Strike + weapon specials:** `Sweep`, `Rend`, `Knock`, `Tempo` trigger as on any hit.
 - **Flywheel Guard + Stun sources:** hazards (Pendulum Sweep) also cannot Stun Tick while it is active.
-- **Discord on the Understudy** in its wound-down phase: it is already `SLOW`; Slowed has no further
-  effect; Exposed applies.
+- **Discord on the Understudy:** Slowed never applies (it is immune, `BST-06`); Exposed applies with the
+  boss cap of 2.
 - **Sympathetic Break + Salvage:** both trigger on the same break; Salvage counts chained breaks.
 - **Field Repair** can be used at full Integrity; it still costs Tension and is spent for the floor
   (`ITM-09` rationale).
