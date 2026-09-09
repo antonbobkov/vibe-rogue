@@ -356,11 +356,20 @@ export function meleeAttack(ctx, attacker, defender, opts = {}) {
   const state = ctx.state;
   if (isTick(state, attacker)) {
     const d = statsOf(state, attacker).derived;
+    // CAT-05 QUIET: the Sounding Plate makes Tick's *plain* melee noise 2. A skill that passes its
+    // own `noise` (Overwind Strike's 6) still wins, because `opts` is assigned last (D-051).
     return attack(
       ctx,
       attacker,
       defender,
-      Object.assign({ dice: d.attack, special: d.weapon ? d.weapon.special || null : null }, opts),
+      Object.assign(
+        {
+          dice: d.attack,
+          special: d.weapon ? d.weapon.special || null : null,
+          noise: items.meleeNoise(attacker),
+        },
+        opts,
+      ),
     );
   }
   const type = enemyType(attacker);

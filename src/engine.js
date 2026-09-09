@@ -262,7 +262,8 @@ export function createGame(options = {}) {
     if (t === TILE.DOOR_CLOSED) {
       state.floor.tiles[ny][nx] = TILE.DOOR_OPEN;
       log.say(state.log, 'doorOpen');
-      combat.noise(ctx, nx, ny, combat.NOISE.DOOR);
+      // CAT-05 QUIET: with the Sounding Plate fitted, Tick opening a door is silent (D-051).
+      combat.noise(ctx, nx, ny, items.doorNoise(tick));
       return { ok: true };
     }
     if (!walkable(t)) return refuse('blocked', 'wall');

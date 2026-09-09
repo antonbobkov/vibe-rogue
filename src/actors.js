@@ -11,7 +11,7 @@
 import { parseDice } from './rng.js';
 import { ENEMIES_BY_NAME } from '../data/enemies.js';
 import { XP_THRESHOLDS } from '../data/skills.js';
-import { equipmentMods, meleeWeapon, rangedWeapon, BASE_DECAY_PERIOD } from './items.js';
+import { equipmentMods, meleeWeapon, rangedWeapon, tickImmuneTo, BASE_DECAY_PERIOD } from './items.js';
 
 /** CHR-01 / CHR-03: the mainspring is 100 for the whole game and nothing changes it. */
 export const TENSION_MAX = 100;
@@ -278,9 +278,13 @@ export function speedOf(state, actor) {
   return tier;
 }
 
-/** CMB-10: an actor listed as immune never receives the status at all. */
+/**
+ * CMB-10: an actor listed as immune never receives the status at all. Tick's only immunity comes
+ * from equipment (CAT-05 **Cooling**), which `items.js` owns — this is the third equipment hook,
+ * alongside `equipmentMods` and the weapon lookups (D-051).
+ */
 export function immuneTo(state, actor, status) {
-  if (isTick(state, actor)) return false;
+  if (isTick(state, actor)) return tickImmuneTo(actor, status);
   if (actor.isDecoy) return true;
   const type = enemyType(actor);
   return type.immunities.includes(status);

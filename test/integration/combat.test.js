@@ -116,8 +116,11 @@ test('ACC-24: a throwable lands on the last passable tile before the wall @m04',
 
   const result = game.act({ type: 'throw', slot: 2, x: 6, y: 5 });
   assert.equal(result.ok, true);
-  assert.deepEqual(texts(result), ['Tick throws the Oil Flask.']);
+  assert.equal(texts(result)[0], 'Tick throws the Oil Flask.');
   assert.deepEqual(game.state.tick.inventory[2], { name: 'Oil Flask', count: 1 }, 'one left the stack');
+  // CMB-08: the effect covers every actor within the radius, "including Tick" — the flask lands
+  // at (3,3), one tile from Tick, so Tick catches its Burning (CAT-06, M05).
+  assert.equal(game.state.tick.statuses.Burning, 2, 'Burning 3, ticked once at CMB-02 step 3');
 });
 
 test('ACC-25: knockback into a wall moves nothing and costs nothing @m04', () => {
