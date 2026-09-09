@@ -39,7 +39,7 @@
 - Description: *Let the spring out all at once into the arm. Loud, and the spring feels it.*
 
 ### Flywheel Guard
-- Effect: for 4 turns (a status-like timer shown in the panel's status row as `Guard(n)`, but not one
+- Effect: for 4 turns (a status-like timer shown in the panel's status row as `Gua(n)`, but not one
   of the five statuses and not removable): Plating +3; Tick cannot be Stunned or knocked back.
   Reusing while active resets the timer to 4.
 - Summary: `4 turns: +3 Plating, immune to Stun and knockback. 10 Tension.`

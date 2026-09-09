@@ -83,7 +83,7 @@ type Skill = { name: string; discipline: 'Armature'|'Tinkering'|'Resonance'; ran
   type: 'P'|'A'; cost?: number; target?: 'self'|'direction'|'tile'|'adjacent-free';
   summary: string; description: string; oncePerFloor?: true };
 
-type FloorDef = { number: number; name: string; roomTarget: number; extraCorridors: number;
+type FloorDef = { number: number; name: string; shortName: string; roomTarget: number; extraCorridors: number;
   doorChance: number; hazards: { kind: 'GRINDING_GEAR'|'STEAM_VENT'|'PENDULUM_BAND'; count?: number }[];
   itemCount: number; floorTable: [string, number][]; cacheCount: [number, number];
   cacheTable: [string, number][]; cacheFirstRollTable?: [string, number][]; cacheExtra?: string[];

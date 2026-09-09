@@ -19,6 +19,9 @@ rule applies to it too.
 Loot tables (`ITM-10`) are written `Item w` with weight `w`. **Cache count** is rolled uniformly from
 the given range.
 
+Each floor has a **short name** (≤ 11 characters) for the panel (`UI-03` row 5), in floor order:
+`Workshop` · `Gallery` · `Music Room` · `Furnace` · `Aviary` · `Archive` · `Stair` · `Escapement`.
+
 ## FLR-02 Floor 1 — The Workshop
 
 - **Theme:** benches, vices, part racks, a cold forge. Tick's home. Tutorial floor; no hazards.

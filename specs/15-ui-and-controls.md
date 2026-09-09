@@ -45,7 +45,7 @@ row 29  message log line 5 (newest)
 | 2 | Integrity bar, 19 cells: `[` + 17 fill cells + `]` | `[############     ]` |
 | 3 | `TENSION    cur/100` | `TENSION      61/100` |
 | 4 | Tension bar, same format; fill color per UI-08 | |
-| 5 | `Floor N` + short name right-aligned | `Floor 3  Music Room` |
+| 5 | `Floor N` + the floor's `shortName` (`FLR-01`, ≤ 11 chars) right-aligned | `Floor 3  Music Room` |
 | 6 | `Turn NNNN   decay:n` — turns until next Tension decay, `decayPeriod − decayCounter` (`CHR-11`) | `Turn 412    decay:3` |
 | 7 | blank |
 | 8 | `FRC n  PRC n  PLT n` — attributes | `FRC 2  PRC 0  PLT 3` |
@@ -55,15 +55,15 @@ row 29  message log line 5 (newest)
 | 12 | `P ` + plating name or `—` | `P Brass Plating` |
 | 13 | `A ` + attachment name or `—` | `A —` |
 | 14 | blank |
-| 15 | Status effects, comma-separated `Name(n)`; `—` if none | `Burning(2), Slowed(1)` |
+| 15 | Status effects, comma-separated as the first three letters + `(n)` (`Stu Slo Bur Bli Exp`, plus `Gua` for Flywheel Guard); `—` if none; truncated with `…` at 19 | `Bur(2), Slo(1)` |
 | 16 | Hazard timer if the floor has cyclic hazards: `vents in n` / `pendulum in n` / `ACTIVE`; blank otherwise | `vents in 2` |
 | 17 | blank |
-| 18 | `1 ` + active skill 1 name + cost right-aligned; `(used)` replaces cost for a once-per-floor skill already used; blank row if no skill | `1 Overwind      8` |
+| 18 | `1 ` + active skill 1 name + cost right-aligned; `(used)` replaces cost for a once-per-floor skill already used; the name is truncated with `…` so the row is ≤ 19 chars; blank row if no skill | `1 Overwind Strike 8` |
 | 19 | active skill 2 | |
 | 20 | active skill 3 | |
 | 21 | active skill 4 | |
-| 22 | blank |
-| 23 | Buttons: `[i]nv [s]kills [r]ead [?]` — each bracketed token is clickable (UI-13) | |
+| 22 | Buttons: `[i]nv  [s]kills` — each bracketed token is clickable (UI-13) | |
+| 23 | Buttons: `[r]ead  [m]sg  [?]` | |
 
 Bars: fill cells `#` in the bar color, empty cells ` `; fill count = `round(17 × cur / max)`.
 
@@ -81,7 +81,7 @@ Bars: fill cells `#` in the bar color, empty cells ` `; fill count = `round(17 �
 
 Shows one line about whatever the mouse is over (or the look cursor is on, UI-12):
 
-- Enemy: `Sweeper  12/12  hits you 60% for 1–3  · plating 0 · normal · dormant`
+- Enemy: `Sweeper  7/7  hits you 55% for 1–3  · plating 0 · normal · dormant`
 - Item: `Brass Plating  [ plating 2  evasion −2`  /  `Solder ×3  ! +15 Integrity`
 - Feature: `Winding Station (unspent) — stand here and press e` / `Up-stairs — press <`
 - Hazard: `Steam Vent — active in 2 turns: 4 damage, Burning 2`
@@ -218,7 +218,7 @@ same popup style.
 | Left-click | Closed door adjacent | Open it (a Move into it) |
 | Right-click | Any map cell | Inspect popup |
 | Left-click | Panel row 18–21 | Use that skill |
-| Left-click | Panel row 23 tokens | Open Inventory / Skills / Journal / Help |
+| Left-click | Panel rows 22–23 tokens | Open Inventory / Skills / Journal / History / Help |
 | Left-click | Log rows | Open Message History |
 | Wheel | Anywhere | In Message History: scroll; elsewhere nothing |
 
@@ -245,7 +245,7 @@ Overlays the map area (cols 0–59) with a box; the panel and log stay visible.
  P) —
  A) —
 
- [e]quip/[u]nequip  [u]se  [t]hrow  [d]rop    ↑↓ or letter to select
+ [e]quip/unequip  [u]se  [t]hrow  [d]rop      ↑↓ or letter to select
 ```
 
 - Select with letters `a–j` (inventory) or `W`/`P`/`A` (equipped), or arrow keys, or click.
