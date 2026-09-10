@@ -24,6 +24,8 @@ import * as log from './log.js';
 import * as items from './items.js';
 import * as combat from './combat.js';
 import * as skills from './skills.js';
+import * as bosses from './bosses.js';
+import * as story from './story.js';
 import { runTurn, hazardEnter, tensionWarnings, diagonalThroughDoor } from './turn.js';
 import { createTick, createEnemy, derive, statsOf, TENSION_MAX } from './actors.js';
 import { SCRIPT } from '../data/script.js';
@@ -63,7 +65,8 @@ export function createGame(options = {}) {
     uniquesGenerated: [],
     log: [],
     stats: { enemiesBroken: 0, turns: 0, floorsReached: 1 },
-    flags: { tension30Warned: false },
+    // STY-05: the scripted moments fire once per run, so the run remembers which have been shown.
+    flags: { tension30Warned: false, momentsSeen: [] },
     dead: null,
     victory: null,
   };
@@ -78,6 +81,8 @@ export function createGame(options = {}) {
     events.push(event);
     pending.push(event);
     if (BLOCKING_EVENTS.has(event.type)) blocking.push(event);
+    // PLN-03: the ending choice puts the engine in `awaitChoice`, where only `choose` is accepted.
+    if (event.type === 'choice') awaitingChoice = true;
   }
 
   const ctx = {
@@ -87,13 +92,22 @@ export function createGame(options = {}) {
     emit,
     dead: false,
     // The milestone hooks of PLN-06: `skills.js` owns the two that fire inside the turn loop
-    // (SKL-03's Salvage and Decoy upkeep, SKL-04's Sympathetic Break); `bossSpecial` is M08's.
+    // (SKL-03's Salvage and Decoy upkeep, SKL-04's Sympathetic Break); `bosses.js` owns the boss
+    // specials and the BST-03 phase machine; `story.js` owns the STY-05 triggers and the endings.
     hooks: {
-      onEnemyBroken: skills.onEnemyBroken,
+      onEnemyBroken(hookCtx, enemy) {
+        // SKL-05 / D-069: Salvage and Sympathetic Break first, then BST-06's defeat sequence.
+        skills.onEnemyBroken(hookCtx, enemy);
+        story.onEnemyBroken(hookCtx, enemy);
+      },
       onEnemyPhase: skills.onEnemyPhase,
+      onRecordTaken: story.onRecordTaken,
+      bossSpecial: bosses.bossSpecial,
+      onBossDamaged: bosses.onDamaged,
     },
     resolveAction,
     onTensionChanged: tensionWarnings,
+    summary: () => summary(),
   };
 
   // -------------------------------------------------------------------------------------------
@@ -135,6 +149,8 @@ export function createGame(options = {}) {
       journalPage: data.journalPage,
       noises: [],
       hazardCycle: null,
+      // WLD-13's spawn markers, sorted by marker number — BST-06's Phase 2 summons stand on them.
+      markers: data.markers ? data.markers.map((m) => ({ n: m.n, x: m.x, y: m.y })) : [],
     };
     for (const s of data.spawns) {
       floor.enemies.push(
@@ -165,6 +181,9 @@ export function createGame(options = {}) {
     state.tick.fieldRepairUsed = false;
 
     items.placeFloorItems(floor, data.items, ctx);
+    // BST-04: the Conductor's entry trigger is the floor start, so it is Active before Tick's
+    // first view of the floor is computed below.
+    story.onFloorEntered(ctx);
     emit({ type: 'floor', number: floor.number, name: floor.name });
     updateView();
     updateHazardCycle();
@@ -210,6 +229,8 @@ export function createGame(options = {}) {
       for (let x = 0; x < W; x++) if (floor.memory[y][x] !== -1) remembered.add(idx(x, y));
     }
     lastView = { visible, remembered };
+    // STY-05 / FLR-04 / BST-05: the triggers that fire on what Tick can now see.
+    story.afterView(ctx, visible);
     return lastView;
   }
 
@@ -270,6 +291,8 @@ export function createGame(options = {}) {
       log.say(state.log, 'doorOpen');
       // CAT-05 QUIET: with the Sounding Plate fitted, Tick opening a door is silent (D-051).
       combat.noise(ctx, nx, ny, items.doorNoise(tick));
+      // BST-06: opening the antechamber door of FLR-09 is the Understudy's entry trigger.
+      story.onDoorOpened(ctx, nx, ny);
       return { ok: true };
     }
     if (!walkable(t)) return refuse('blocked', 'wall');
@@ -407,7 +430,8 @@ export function createGame(options = {}) {
   /** STY-08's summary fields, as the death and victory events carry them. */
   function summary() {
     return {
-      floor: state.floorNumber,
+      // STY-08 says "floors reached", so it is the run's high-water mark, not `floorNumber` (D-076).
+      floor: state.stats.floorsReached,
       turns: state.turn,
       enemiesBroken: state.stats.enemiesBroken,
       level: state.tick.level,
@@ -472,7 +496,12 @@ export function createGame(options = {}) {
     }
     if (current === 'awaitChoice') {
       if (action.type !== 'choose') return { ok: false, reason: 'awaitChoice', log: [], events: [] };
-      return { ok: false, reason: 'notImplemented', log: [], events: [] }; // M08
+      // STY-07 / SCR-07: one action emits page 8, Ending B's descent, the ending text and the
+      // Victory screen, and `state.victory` puts the engine in `ended` (PLN-06 M08 task 4).
+      const chosen = story.choose(ctx, action.option);
+      if (chosen.ok === false) return { ok: false, reason: chosen.reason, log: [], events: [] };
+      awaitingChoice = false;
+      return { ok: true, log: linesSince(startLen, startLast, startCount), events };
     }
     if (action.type === 'dismiss') return { ok: false, reason: 'nothingToDismiss', log: [], events: [] };
     if (action.type === 'choose') return { ok: false, reason: 'noChoicePending', log: [], events: [] };

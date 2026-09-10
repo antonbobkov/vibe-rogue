@@ -167,6 +167,9 @@ export function damage(ctx, target, amount, opts = {}) {
         const tickNear = chebyshev(target.x, target.y, state.tick.x, state.tick.y) <= 10;
         wake(target, tickNear || !opts.wakeTo ? tickTile : opts.wakeTo);
       }
+      // BST-03: "Phase transitions happen at the moment Integrity crosses the threshold, and any
+      // log line for the transition is printed then." `bosses.js` owns the phase machine (D-073).
+      if (ctx.hooks && ctx.hooks.onBossDamaged) ctx.hooks.onBossDamaged(ctx, target);
     }
   }
   if (opts.deferDeath !== true) checkDeath(ctx, target, opts.cause, opts.causeLabel);

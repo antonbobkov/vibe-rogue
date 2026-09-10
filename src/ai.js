@@ -38,6 +38,7 @@ import { canSee } from './turn.js';
 import * as combat from './combat.js';
 import * as log from './log.js';
 import { int } from './rng.js';
+import * as bosses from './bosses.js';
 
 /** The action every actor may always take. */
 export const WAIT = Object.freeze({ type: 'wait' });
@@ -60,12 +61,15 @@ export const PATH_CAP = 60;
  *   `telegraph`  printed with the wind-up action (through the `telegraph` action's `message`)
  *   `action`     printed just before the telegraphed attack resolves
  *
- * M08 adds the boss rows (BST-04–06) here or in its own module.
+ * M08's boss rows: the Regulator's BRUISER phases telegraph and announce through the same table
+ * (BST-05); the Conductor's and the Understudy's lines belong to their phase scripts in
+ * `bosses.js`, which prints them itself.
  */
 export const FLAVOR = Object.freeze({
   Cuckoo: Object.freeze({ telegraph: 'cuckooTelegraph', action: 'cuckooShriek' }),
   Archivist: Object.freeze({ telegraph: 'archivistTelegraph', action: 'archivistShot' }),
   'Gear-Golem': Object.freeze({ telegraph: 'golemTelegraph', action: 'golemHeavy' }),
+  'The Regulator': Object.freeze({ telegraph: 'regulatorTelegraph', action: 'regulatorHeavy' }),
 });
 
 // ---------------------------------------------------------------------------------------------
@@ -103,11 +107,12 @@ function actionFor(enemy, state, ctx) {
       return bruiser(enemy, state);
     case 'ERRATIC':
       return erratic(enemy, state, ctx);
+    // ENM-06 BOSS: the phase scripts of BST-04-06 live in `bosses.js`; each of their fallback lines
+    // is one of the archetype lists above, so bosses still path and melee "like any enemy".
+    case 'BOSS':
+      return bosses.decide(enemy, state, ctx);
     case 'SWARMER':
     case 'CHASER':
-    // ENM-06 BOSS: a phase script is M08's; every boss's fallback line is CHASER, and BST-03 makes
-    // bosses path and melee "like any enemy", so that is the base behaviour until M08 lands.
-    case 'BOSS':
     default:
       return chaser(enemy, state);
   }

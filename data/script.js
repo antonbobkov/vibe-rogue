@@ -270,6 +270,21 @@ export const log = Object.freeze({
   // table; they are transcribed verbatim here so `ai.js` never invents a string (D-057).
   golemTelegraph: 'The Gear-Golem raises its arm.',
   golemHeavy: 'The Gear-Golem brings its arm down.',
+  // BST-04, BST-05 and BST-06 write the three boss scripts' log lines in their own phase lists
+  // rather than in SCR-10's table; they are transcribed verbatim here so `bosses.js` never invents
+  // a string (D-057's precedent, extended by D-072).
+  conductorTelegraph: 'The Conductor raises the baton.',
+  conductorDownbeat: 'The Conductor brings the baton down.',
+  conductorPhase2: "The Conductor's tempo doubles.",
+  regulatorTelegraph: "The Regulator's arm ratchets back.",
+  regulatorHeavy: "The Regulator's arm drops.",
+  regulatorPhase2: "The Regulator's governor spins free.",
+  regulatorVentTelegraph: "The Regulator's seams glow.",
+  regulatorVent: 'Steam bursts from the Regulator.',
+  understudyTelegraph: 'The Understudy tightens.',
+  understudyOverwind: "The Understudy's arm unwinds all at once.",
+  understudyPulseTelegraph: 'The Understudy hums.',
+  understudyPulse: 'The Understudy rings like a bell.',
   travelInterrupted: 'Tick stops.',
   deathByEnemy: 'Tick was broken by {A} on floor {n}.',
   deathByTension: 'Tick wound down on floor {n}.',
