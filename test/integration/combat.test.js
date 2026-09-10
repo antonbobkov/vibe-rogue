@@ -13,7 +13,7 @@ import * as combat from '../../src/combat.js';
 import { TILE } from '../../src/tiles.js';
 import { queueRng } from '../../src/rng.js';
 import { diagonalThroughDoor } from '../../src/turn.js';
-import { fixtureGame, floorFromAscii, d100, die, DROP_ROLL } from '../fixtures/maps.js';
+import { fixtureGame, floorFromAscii, aiWait, d100, die, DROP_ROLL } from '../fixtures/maps.js';
 
 /** A small arena: Tick at (2,2), an enemy on the tile east of it. */
 const DUEL = ['##########', '#........#', '#.T?.....#', '#........#', '##########'];
@@ -228,7 +228,9 @@ test('ACC-117: winding down uses the other SCR-08 screen @m04', () => {
 });
 
 test('ACC-19: Burning deals 2 a turn and expires after its last tick; the Rust-moth takes 4 @m04', () => {
-  const game = duel('s', { rng: queueRng([]) });
+  // M06 note: the enemy must not act while it burns, so it carries the fixture's `aiWait`
+  // override (PLN-04); `src/ai.js` is the real archetype module from M06 on.
+  const game = duel('s', { rng: queueRng([]), enemies: { s: { ai: aiWait } } });
   const sweeper = game.state.floor.enemies[0];
   combat.applyStatus(game.ctx, sweeper, 'Burning', 3);
 
@@ -243,7 +245,10 @@ test('ACC-19: Burning deals 2 a turn and expires after its last tick; the Rust-m
   assert.equal(sweeper.statuses.Burning, undefined, 'removed after the 3rd tick');
 
   // BST-02 / D-019: the Rust-moth takes 4 instead of 2.
-  const moths = fixtureGame(DUEL.map((r) => r.replace('?', 'm')), { rng: queueRng([DROP_ROLL]) });
+  const moths = fixtureGame(DUEL.map((r) => r.replace('?', 'm')), {
+    rng: queueRng([DROP_ROLL]),
+    enemies: { m: { ai: aiWait } },
+  });
   const moth = moths.state.floor.enemies[0];
   combat.applyStatus(moths.ctx, moth, 'Burning', 3);
   assert.deepEqual(texts(moths.act({ type: 'wait' })), ['The Rust-moth burns for 4.', 'The Rust-moth breaks.']);

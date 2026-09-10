@@ -266,6 +266,10 @@ export const log = Object.freeze({
   archivistShot: 'The Archivist flicks a drafting pin.',
   cuckooTelegraph: 'The Cuckoo draws breath.',
   cuckooShriek: 'The Cuckoo shrieks.',
+  // BST-02 writes the Gear-Golem's two lines in its own special-case list rather than in SCR-10's
+  // table; they are transcribed verbatim here so `ai.js` never invents a string (D-057).
+  golemTelegraph: 'The Gear-Golem raises its arm.',
+  golemHeavy: 'The Gear-Golem brings its arm down.',
   travelInterrupted: 'Tick stops.',
   deathByEnemy: 'Tick was broken by {A} on floor {n}.',
   deathByTension: 'Tick wound down on floor {n}.',

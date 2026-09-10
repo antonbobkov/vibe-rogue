@@ -157,8 +157,13 @@ export function damage(ctx, target, amount, opts = {}) {
       ctx.emit({ type: 'flash', kind: 'tick', x: target.x, y: target.y });
     } else {
       ctx.emit({ type: 'flash', kind: 'enemy', x: target.x, y: target.y });
-      // ENM-04 rule 3: any damage wakes a Dormant enemy.
-      wake(target, opts.wakeTo || { x: state.tick.x, y: state.tick.y });
+      // ENM-04 rule 3: any damage wakes a Dormant enemy. `lastKnown` is Tick's tile when Tick is
+      // within 10, otherwise the damage source tile — callers that have a source other than Tick
+      // (a hazard, a chained break) pass it as `wakeTo`; with none named, Tick's tile stands
+      // (D-063).
+      const tickTile = { x: state.tick.x, y: state.tick.y };
+      const tickNear = chebyshev(target.x, target.y, state.tick.x, state.tick.y) <= 10;
+      wake(target, tickNear || !opts.wakeTo ? tickTile : opts.wakeTo);
     }
   }
   if (opts.deferDeath !== true) checkDeath(ctx, target, opts.cause, opts.causeLabel);
@@ -523,6 +528,8 @@ export function hazardHit(ctx, actor, cfg, turnValue) {
     ignoresPlating: true,
     cause: cfg.name,
     deferDeath: true,
+    // ENM-04 rule 3: the hazard tile is the damage source, used when Tick is more than 10 away.
+    wakeTo: { x: actor.x, y: actor.y },
   });
   log.say(
     ctx.lines,

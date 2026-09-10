@@ -13,7 +13,7 @@ import assert from 'node:assert/strict';
 
 import { queueRng } from '../../src/rng.js';
 import { HAZARDS, hazardActive, TILE } from '../../src/tiles.js';
-import { fixtureGame, d100 } from '../fixtures/maps.js';
+import { fixtureGame, aiWait, d100 } from '../fixtures/maps.js';
 
 /** Tick beside a hazard tile at (3,2); the tests move Tick onto it or stand it there. */
 const VENT_ROOM = ['##########', '#........#', '#.T".....#', '#........#', '##########'];
@@ -151,7 +151,11 @@ test('a hazard hits enemies exactly as it hits Tick, at step 7 @m04 @unit', () =
   // WLD-08: "Hazards affect enemies exactly as they affect Tick (immunities per 22)." Step 7 of
   // CMB-02 runs the enemy status tick then the enemy hazard check, in id order.
   const rows = ['##########', '#........#', '#.T.s....#', '#........#', '##########'];
-  const game = fixtureGame(rows, { number: 4, rng: queueRng([d100(100)]) });
+  const game = fixtureGame(rows, {
+    number: 4,
+    rng: queueRng([d100(100)]),
+    enemies: { s: { ai: aiWait } },
+  });
   const sweeper = game.state.floor.enemies[0];
   game.state.floor.tiles[2][4] = TILE.STEAM_VENT;
   game.state.floor.hazards.push({ kind: 'STEAM_VENT', x: 4, y: 2 });

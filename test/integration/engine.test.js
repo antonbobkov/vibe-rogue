@@ -12,7 +12,7 @@ import { queueRng } from '../../src/rng.js';
 import { idx } from '../../src/grid.js';
 import { TILE } from '../../src/tiles.js';
 import { BASE_DECAY_PERIOD } from '../../src/items.js';
-import { fixtureGame } from '../fixtures/maps.js';
+import { fixtureGame, aiWait } from '../fixtures/maps.js';
 
 /** Two rooms joined by a door; the west room holds an item and a Sweeper, Tick starts east. */
 const TWO_ROOMS = [
@@ -24,7 +24,13 @@ const TWO_ROOMS = [
 ];
 
 test('ACC-79: memory keeps the terrain and the last-seen item, and never an enemy @m04', () => {
-  const game = fixtureGame(TWO_ROOMS, { rng: queueRng([]), items: { '!': 'Solder' } });
+  // The Sweeper stays put through the fixture's `aiWait` override (PLN-04): this test is about
+  // WLD-05's memory, not ENM-06, and from M06 on `src/ai.js` would walk it toward Tick.
+  const game = fixtureGame(TWO_ROOMS, {
+    rng: queueRng([]),
+    items: { '!': 'Solder' },
+    enemies: { s: { ai: aiWait } },
+  });
   const itemTile = idx(3, 2);
   const enemyTile = idx(6, 3);
 
