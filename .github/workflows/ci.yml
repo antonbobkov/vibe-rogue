@@ -19,3 +19,18 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: npm test
       - run: npm run e2e
+
+  # PLN-04 / PLN-06 M11: the full 200-seed BAL-07 sweep. Separate job, 45-minute timeout, no
+  # matrix, no retries. Required for the M11 and M12 DoD.
+  sim:
+    name: BAL-07 simulation
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+      - run: npm ci
+      - run: npm run sim

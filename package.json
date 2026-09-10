@@ -10,6 +10,7 @@
   },
   "scripts": {
     "test": "node tools/dod.js --node",
+    "sim": "node tools/sim.js --all --seeds 200",
     "e2e": "playwright test",
     "start": "node tools/serve.js",
     "dod": "node tools/dod.js"
