@@ -1,0 +1,93 @@
+name: Deploy to GitHub Pages
+
+# The game is a static ESM page with no runtime dependencies and no build step
+# (PLN-02 R4), so "building" the site is just staging the files the browser needs:
+# index.html, src/ and data/. Everything else in the repo — specs/, tools/, the
+# rest of test/ — is development-only and is deliberately not published.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Never let two deploys race; queue them instead of cancelling a live one.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Stage the runtime files
+        run: |
+          mkdir -p dist/test/fixtures
+          cp index.html dist/
+          cp -r src dist/
+          cp -r data dist/
+          # Only needed by the CH.loadFixture debug hook (src/main.js, D-095);
+          # it imports nothing outside src/ and data/.
+          cp test/fixtures/maps.js dist/test/fixtures/
+          echo "staged $(find dist -type f | wc -l) files, $(du -sh dist | cut -f1)"
+
+      - name: Check every relative import resolves with exact case
+        # index.html and all imports are relative, so the site works from a
+        # project subpath. GitHub Pages serves from a case-sensitive filesystem
+        # while the repo is developed on Windows, so a wrong-case import would
+        # pass locally and 404 here. Fail the deploy rather than ship that.
+        run: |
+          node --input-type=module -e '
+            import fs from "node:fs";
+            import path from "node:path";
+            const files = [];
+            const walk = (d) => {
+              for (const e of fs.readdirSync(d, { withFileTypes: true })) {
+                const p = path.join(d, e.name);
+                if (e.isDirectory()) walk(p);
+                else if (e.name.endsWith(".js")) files.push(p);
+              }
+            };
+            walk("dist");
+            const bad = [];
+            let checked = 0;
+            for (const f of files) {
+              const src = fs.readFileSync(f, "utf8");
+              for (const m of src.matchAll(/(?:from|import\()\s*[\x27"](\.[^\x27"]+)[\x27"]/g)) {
+                checked++;
+                const resolved = path.normalize(path.join(path.dirname(f), m[1]));
+                let cur = ".";
+                let ok = true;
+                for (const part of resolved.split(path.sep)) {
+                  if (part === "." || part === "") continue;
+                  if (!fs.readdirSync(cur).includes(part)) { ok = false; break; }
+                  cur = path.join(cur, part);
+                }
+                if (!ok) bad.push(`${f} -> ${m[1]}`);
+              }
+            }
+            console.log(`checked ${checked} relative imports`);
+            if (bad.length) {
+              console.error("unresolvable or wrong-case imports:");
+              for (const b of bad) console.error("  " + b);
+              process.exit(1);
+            }
+          '
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+      - id: deployment
+        uses: actions/deploy-pages@v4
