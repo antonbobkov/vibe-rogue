@@ -8,7 +8,7 @@
 //                damage roll; enemies resolved in id order)
 //   ctx.lines    the log line array for this action (`state.log`)
 //   ctx.emit(e)  push a PLN-03 event
-//   ctx.hooks    optional milestone hooks: `onEnemyBroken` (M07 Salvage / Sympathetic Break),
+//   ctx.hooks    optional milestone hooks: `onEnemyBroken` (Salvage / Sympathetic Break),
 //                `bossSpecial` (M08). Absent hooks are simply not called.
 //
 // Nothing here touches the DOM (PLN-02 R2).
@@ -18,6 +18,7 @@ import { walkable, isHazardTile, HAZARDS } from './tiles.js';
 import { roll, int } from './rng.js';
 import * as log from './log.js';
 import * as items from './items.js';
+import * as skills from './skills.js';
 import {
   statsOf,
   actorLabel,
@@ -160,10 +161,12 @@ export function damage(ctx, target, amount, opts = {}) {
       // ENM-04 rule 3: any damage wakes a Dormant enemy. `lastKnown` is Tick's tile when Tick is
       // within 10, otherwise the damage source tile — callers that have a source other than Tick
       // (a hazard, a chained break) pass it as `wakeTo`; with none named, Tick's tile stands
-      // (D-063).
-      const tickTile = { x: state.tick.x, y: state.tick.y };
-      const tickNear = chebyshev(target.x, target.y, state.tick.x, state.tick.y) <= 10;
-      wake(target, tickNear || !opts.wakeTo ? tickTile : opts.wakeTo);
+      // (D-063). The Decoy has no AI state to wake (SKL-03).
+      if (target.isDecoy !== true) {
+        const tickTile = { x: state.tick.x, y: state.tick.y };
+        const tickNear = chebyshev(target.x, target.y, state.tick.x, state.tick.y) <= 10;
+        wake(target, tickNear || !opts.wakeTo ? tickTile : opts.wakeTo);
+      }
     }
   }
   if (opts.deferDeath !== true) checkDeath(ctx, target, opts.cause, opts.causeLabel);
@@ -206,6 +209,12 @@ export function checkDeath(ctx, target, cause, causeLabel) {
  */
 export function breakActor(ctx, enemy) {
   const state = ctx.state;
+  // SKL-03: the Decoy is not an enemy. At 0 Integrity it is simply removed — "no scrap, no XP, no
+  // noise" — and it has no drop table to roll.
+  if (enemy.isDecoy === true) {
+    skills.removeDecoy(ctx, 'broken');
+    return;
+  }
   const list = state.floor.enemies;
   const at = list.indexOf(enemy);
   if (at < 0) return; // already resolved this pass
@@ -363,7 +372,7 @@ export function meleeAttack(ctx, attacker, defender, opts = {}) {
     const d = statsOf(state, attacker).derived;
     // CAT-05 QUIET: the Sounding Plate makes Tick's *plain* melee noise 2. A skill that passes its
     // own `noise` (Overwind Strike's 6) still wins, because `opts` is assigned last (D-051).
-    return attack(
+    const result = attack(
       ctx,
       attacker,
       defender,
@@ -376,6 +385,10 @@ export function meleeAttack(ctx, attacker, defender, opts = {}) {
         opts,
       ),
     );
+    // SKL-02 **Piston Drive**: every melee hit by Tick, Overwind Strike's included (SKL-05), is
+    // tested against its >= 6 threshold. `skills.js` owns the rule.
+    skills.onTickMeleeHit(ctx, defender, result);
+    return result;
   }
   const type = enemyType(attacker);
   return attack(ctx, attacker, defender, Object.assign({ onHit: type.onHit || null }, opts));

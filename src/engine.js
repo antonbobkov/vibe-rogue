@@ -10,8 +10,8 @@
 // `reason` means no turn was spent (CMB-05). While `phase` is `awaitDismiss` only `dismiss` is
 // accepted, while `awaitChoice` only `choose`, while `ended` nothing (UI-16).
 //
-// M04 implements the whole action schema except `skill`, `takeSkill` (M07) and `choose` (M08); the
-// item actions are routed to `items.js`, which M05 fills in place.
+// M04 implemented the whole action schema except `choose` (M08); the item actions are routed to
+// `items.js` and the two skill actions to `skills.js`, which own ITM/CAT and CHR/SKL respectively.
 //
 // Nothing here touches the DOM (PLN-02 R2).
 
@@ -23,6 +23,7 @@ import { generateFloor } from './gen.js';
 import * as log from './log.js';
 import * as items from './items.js';
 import * as combat from './combat.js';
+import * as skills from './skills.js';
 import { runTurn, hazardEnter, tensionWarnings, diagonalThroughDoor } from './turn.js';
 import { createTick, createEnemy, derive, statsOf, TENSION_MAX } from './actors.js';
 import { SCRIPT } from '../data/script.js';
@@ -85,7 +86,12 @@ export function createGame(options = {}) {
     lines: state.log,
     emit,
     dead: false,
-    hooks: {},
+    // The milestone hooks of PLN-06: `skills.js` owns the two that fire inside the turn loop
+    // (SKL-03's Salvage and Decoy upkeep, SKL-04's Sympathetic Break); `bossSpecial` is M08's.
+    hooks: {
+      onEnemyBroken: skills.onEnemyBroken,
+      onEnemyPhase: skills.onEnemyPhase,
+    },
     resolveAction,
     onTensionChanged: tensionWarnings,
   };
@@ -384,8 +390,11 @@ export function createGame(options = {}) {
       case 'drop':
         return items.drop(ctx, action.slot);
       case 'skill':
+        // SKL-01: Discord needs to know what Tick can see, and nothing else here does.
+        return skills.useSkill(ctx, action, lastView.visible);
       case 'takeSkill':
-        return { ok: false, reason: 'notImplemented' }; // M07
+        // Intercepted by `act` as a free action (D-064), so the turn loop never sees it.
+        return { ok: false, reason: 'freeAction' };
       default:
         return { ok: false, reason: 'unknownAction' };
     }
@@ -467,6 +476,18 @@ export function createGame(options = {}) {
     }
     if (action.type === 'dismiss') return { ok: false, reason: 'nothingToDismiss', log: [], events: [] };
     if (action.type === 'choose') return { ok: false, reason: 'noChoicePending', log: [], events: [] };
+
+    // CHR-07 / CHR-09: taking a skill on the Skills screen costs a skill point, not a turn, and is
+    // allowed while Stunned like any other screen action (D-064). It never enters the CMB-02 loop.
+    if (action.type === 'takeSkill') {
+      const taken = skills.takeSkill(ctx, action.name);
+      return {
+        ok: taken.ok !== false,
+        reason: taken.reason,
+        log: linesSince(startLen, startLast, startCount),
+        events,
+      };
+    }
 
     // CMB-04: while Stunned, Tick's only permitted action is Wait.
     if (state.tick.statuses.Stunned > 0 && action.type !== 'wait') {

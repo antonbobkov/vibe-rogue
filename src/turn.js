@@ -237,6 +237,10 @@ export function enemyPhase(ctx) {
   const state = ctx.state;
   const tick = state.tick;
 
+  // SKL-03: the Clockwork Decoy retargets every Active enemy within 8 "at the start of each enemy
+  // phase", and expires there too. `skills.js` owns the rule (M07's hook).
+  if (ctx.hooks && ctx.hooks.onEnemyPhase) ctx.hooks.onEnemyPhase(ctx);
+
   // ENM-04 rule 1: every Dormant enemy checks its sight at the start of the phase.
   for (const e of byId(state.floor.enemies)) {
     if (e.state !== 'DORMANT') continue;
@@ -381,7 +385,8 @@ export function enemyStatusAndHazardTick(ctx) {
 
 /**
  * CHR-07: one level per check. `+4` max Integrity and `+4` Integrity, one skill point, the log
- * line, and the `levelUp` event the UI turns into the Skills screen. M07 fills `hooks.onLevelUp`.
+ * line, and the `levelUp` event the UI turns into the Skills screen (`hooks.onLevelUp` is the
+ * optional seam a screen stack can hang off).
  */
 export function levelUpCheck(ctx) {
   const state = ctx.state;

@@ -12,6 +12,7 @@ import { parseDice } from './rng.js';
 import { ENEMIES_BY_NAME } from '../data/enemies.js';
 import { XP_THRESHOLDS } from '../data/skills.js';
 import { equipmentMods, meleeWeapon, rangedWeapon, tickImmuneTo, BASE_DECAY_PERIOD } from './items.js';
+import { passiveMods } from './skills.js';
 
 /** CHR-01 / CHR-03: the mainspring is 100 for the whole game and nothing changes it. */
 export const TENSION_MAX = 100;
@@ -139,26 +140,19 @@ export function createEnemy(typeName, x, y, id, opts = {}) {
 }
 
 /**
- * The skill half of CHR-08. **M07 fills this in**: every passive that changes an attribute
- * (Braced Frame's Plating, Piston Drive's Force, Tuning's Precision) and the Flywheel Guard timer's
- * +3 Plating are summed here from `tick.skills` and `tick.guardTimer`.
+ * The skill half of CHR-08: every passive that changes an attribute (Braced Frame's Plating, Piston
+ * Drive's Force, Tuning's Precision and ranged bonuses) plus the Flywheel Guard timer's +3 Plating,
+ * summed from `tick.skills` and `tick.guardTimer`.
  *
- * Until then it returns zeros, so `derive` already has its shape.
+ * The rules live in `skills.js`, which owns `20-skills.md`, exactly as `equipmentMods` keeps CAT-05
+ * in `items.js`.
  *
  * @param {object} tick the TEC-05 `state.tick`
  * @returns {{force: number, precision: number, plating: number, evasion: number,
  *            meleeAccuracy: number, rangedAccuracy: number, rangedTension: number}}
  */
 export function skillMods(tick) {
-  return {
-    force: 0,
-    precision: 0,
-    plating: 0,
-    evasion: 0,
-    meleeAccuracy: 0,
-    rangedAccuracy: 0,
-    rangedTension: 0,
-  };
+  return passiveMods(tick);
 }
 
 /**
