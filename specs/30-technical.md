@@ -215,16 +215,21 @@ besides the canvas.
 ## TEC-13 Debug and test hooks
 
 `window.CH` exposes `{ state, game, playRng, floorRng, act(action), newRun(seed), loadFloor(n),
-loadFixture(rows, opts), grid(), events(), queueRng(values), render(), timers() }` so that
+loadFixture(rows, opts), grid(), events(), queueRng(values), render(), timers(), metrics() }` so that
 `32-acceptance-tests.md` can be automated with any browser test runner. `CH.loadFloor(n)` generates
 floor `n` of the current seed and enters it with Tick's current state. `CH.loadFixture(rows, opts)`
 replaces the current floor with a `test/fixtures/maps.js` ASCII map (same legend and options), keeping
-Tick's stats. `CH.render()` forces a full redraw and returns its duration in ms. `CH.timers()` returns
+Tick's stats; the loader lives under `test/`, so the hook imports it on demand and returns a promise,
+and it also accepts an already-built Floor object (`D-095`). `CH.render()` forces a full redraw and
+returns its duration in ms. `CH.timers()` returns
 the number of live timers (`TEC-14` idle check). `CH.act` performs one engine action (`PLN-03` schema) and runs the turn loop,
 returning `{ok, reason, log, events}`. `CH.grid()` returns the last rendered 80×30 cell buffer as
 rows of `{glyph, fg, bg}` so tests assert what is drawn without reading pixels. `CH.events()` returns
 and clears the UI's pending engine events. `CH.queueRng(values)` replaces the play RNG with a scripted
-sequence (tests only; throws when exhausted). These hooks have no UI and do not affect gameplay.
+sequence (tests only; throws when exhausted). `CH.metrics()` returns the current canvas metrics —
+`{cell, cellW, cellH, gridW, gridH, originX, originY, width, height, cols, rows, aspect, integer,
+canvasWidth, canvasHeight}` — because `TEC-10`'s sizing is the one UI rule that leaves no trace in
+the cell buffer (`ACC-100`, `PLN-07.3`, `D-091`). These hooks have no UI and do not affect gameplay.
 The headless engine facade, action schema, and event vocabulary they rely on are fixed in
 `40-implementation-plan.md` § PLN-03.
 
