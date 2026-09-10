@@ -44,16 +44,37 @@ const LAST_FLOOR = 8;
  * Create a game.
  *
  * @param {{seedString?: string, rng?: {next: () => number}, floor?: object, floorNumber?: number,
- *          intro?: boolean}} [options]
+ *          intro?: boolean, state?: object, store?: object}} [options]
  *        `floor` injects a Floor object (`gen.js`'s shape, or `test/fixtures/maps.js`'s) instead of
  *        generating floor 1 — this is what `CH.loadFixture` and the integration tests use.
  *        `intro: false` skips the SCR-02 text box so a test starts in phase `run`.
+ *        `state` restores a saved run (TEC-09 Continue): the state is adopted verbatim, the play RNG
+ *        is rewound to its `playRngState`, no floor is generated, no intro is shown, and the log
+ *        gets "Tick resumes." (D-082).
+ *        `store` is a `save.js` store; when present the engine autosaves and deletes it exactly on
+ *        TEC-09's triggers.
  */
 export function createGame(options = {}) {
-  const seedString = options.seedString === undefined ? 'CLOCKWORK' : options.seedString;
-  const rng = options.rng || mulberry32(fnv1a(`${seedString}:play`));
+  const restored = options.state || null;
+  const seedString = restored
+    ? restored.seedString
+    : options.seedString === undefined
+      ? 'CLOCKWORK'
+      : options.seedString;
 
-  const state = {
+  let rng;
+  if (options.rng) {
+    rng = options.rng;
+  } else {
+    rng = mulberry32(fnv1a(`${seedString}:play`));
+    // TEC-09: "Continue restores state verbatim ... including `playRngState` (this is how
+    // save-scumming is made pointless: the next rolls are the same rolls)."
+    if (restored) rng.setState(restored.playRngState);
+  }
+
+  const store = options.store || null;
+
+  const state = restored || {
     version: 1,
     seedString,
     playRngState: typeof rng.getState === 'function' ? rng.getState() : 0,
@@ -102,6 +123,8 @@ export function createGame(options = {}) {
       },
       onEnemyPhase: skills.onEnemyPhase,
       onRecordTaken: story.onRecordTaken,
+      // TEC-09 step 9: the autosave M04 left this seam for (M09).
+      autosave,
       bossSpecial: bosses.bossSpecial,
       onBossDamaged: bosses.onDamaged,
     },
@@ -450,6 +473,8 @@ export function createGame(options = {}) {
   function emitDeath() {
     if (deathEmitted) return;
     deathEmitted = true;
+    // CMB-12 / TEC-09: "the autosave is deleted before the Death screen is shown" (ACC-03).
+    if (store) store.clear();
     const screen = state.dead.wound ? SCRIPT.screens.woundDown : SCRIPT.screens.broken;
     emit({
       type: 'death',
@@ -469,6 +494,33 @@ export function createGame(options = {}) {
     if (blocking.length > 0) return 'awaitDismiss';
     if (awaitingChoice) return 'awaitChoice';
     return 'run';
+  }
+
+  /**
+   * TEC-09's autosave. Called from the CMB-02 step 9 hook (so after every turn-costing action,
+   * Ascend included), after `takeSkill`, after the ending choice, and by the UI when leaving to the
+   * title via Pause (`game.autosave`).
+   *
+   * Three cases, in order (D-083):
+   *   * phase `ended` — the run is over: the save is *deleted*, which is TEC-09's death/victory rule
+   *     and what ACC-03 and ACC-115 assert.
+   *   * any other non-`run` phase — a text box or the ending choice is queued. Those events live
+   *     outside `state` and would be lost, so the previous save is left alone rather than replaced
+   *     by a state that can no longer reach the sequence it was in the middle of.
+   *   * phase `run` — write the state, with `playRngState` brought up to date first, so a restore
+   *     resumes on exactly the roll the uninterrupted run would have made (TEC-09, ACC-02).
+   */
+  function autosave() {
+    if (!store) return false;
+    const current = phase();
+    if (current === 'ended') {
+      store.clear();
+      return false;
+    }
+    if (current !== 'run') return false;
+    if (typeof rng.getState === 'function') state.playRngState = rng.getState();
+    store.save(state);
+    return true;
   }
 
   /** Every log line this action produced, merges included (UI-04). */
@@ -501,6 +553,8 @@ export function createGame(options = {}) {
       const chosen = story.choose(ctx, action.option);
       if (chosen.ok === false) return { ok: false, reason: chosen.reason, log: [], events: [] };
       awaitingChoice = false;
+      // TEC-09: the save is deleted on victory (ACC-115); `state.victory` puts us in phase `ended`.
+      autosave();
       return { ok: true, log: linesSince(startLen, startLast, startCount), events };
     }
     if (action.type === 'dismiss') return { ok: false, reason: 'nothingToDismiss', log: [], events: [] };
@@ -510,6 +564,8 @@ export function createGame(options = {}) {
     // allowed while Stunned like any other screen action (D-064). It never enters the CMB-02 loop.
     if (action.type === 'takeSkill') {
       const taken = skills.takeSkill(ctx, action.name);
+      // TEC-09 writes the save "on skill selection", which is not a turn (D-064).
+      if (taken.ok !== false) autosave();
       return {
         ok: taken.ok !== false,
         reason: taken.reason,
@@ -570,12 +626,30 @@ export function createGame(options = {}) {
     derived() {
       return derive(state.tick);
     },
+    /**
+     * TEC-09's autosave, for the one trigger that is not an engine action: "when leaving to the
+     * title via Pause" (UI-18). Returns true if a save was written.
+     */
+    autosave,
+    /** TEC-09's delete, for the UI-17 Abandon prompt and the Death/Victory screens. */
+    deleteSave() {
+      if (!store) return false;
+      return store.clear();
+    },
   };
 
-  // A new run: floor 1 (or the injected fixture), then the SCR-02 intro text box.
-  if (options.floor) enterFloor(options.floor);
-  else generateAndEnter(options.floorNumber === undefined ? 1 : options.floorNumber);
-  if (options.intro !== false) emit({ type: 'textbox', id: 'intro', text: SCRIPT.intro });
+  if (restored) {
+    // TEC-09 Continue: no floor is generated and no intro is shown — the state is already a run.
+    // Only the derived values and the FOV are recomputed (TEC-05), and the log says so.
+    log.say(state.log, 'resume');
+    updateView();
+    updateHazardCycle();
+  } else {
+    // A new run: floor 1 (or the injected fixture), then the SCR-02 intro text box.
+    if (options.floor) enterFloor(options.floor);
+    else generateAndEnter(options.floorNumber === undefined ? 1 : options.floorNumber);
+    if (options.intro !== false) emit({ type: 'textbox', id: 'intro', text: SCRIPT.intro });
+  }
 
   return game;
 }

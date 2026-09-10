@@ -83,11 +83,15 @@ export function runTurn(ctx, action) {
 
   levelUpCheck(ctx);
 
-  // ---- 9. Autosave (TEC-09; M09 fills the hook) ---------------------------------------------
+  // ENM-03's "woke this turn gains no energy" flag has done its work by here: it is cleared before
+  // the autosave, not after, so the saved state is one a restore can resume from without charging
+  // the penalty a second time (TEC-09, ACC-02, D-085).
+  for (const e of state.floor.enemies) e.wokeThisTurn = false;
+
+  // ---- 9. Autosave (TEC-09) -----------------------------------------------------------------
   if (ctx.hooks && ctx.hooks.autosave) ctx.hooks.autosave(ctx);
 
   // Step 10 (FOV + render) belongs to the caller: `engine.act` recomputes the view.
-  for (const e of state.floor.enemies) e.wokeThisTurn = false;
   return result;
 }
 
