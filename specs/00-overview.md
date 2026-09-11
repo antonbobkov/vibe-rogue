@@ -44,10 +44,10 @@ Every design question in later docs is settled by asking which option better ser
 | Character | One fixed character (Tick). Two resources: **Integrity** (HP) and **Tension** (mainspring). Three attributes: **Force**, **Precision**, **Plating**. |
 | Progression | XP from kills. Character levels 1→9 (8 level-ups). One skill point per level-up. |
 | Skills | 3 disciplines (**Armature**, **Tinkering**, **Resonance**), each a strictly linear line of 4 skills. 12 skills total. A run affords 8 of the 12. |
-| Items | 3 equipment slots (**weapon**, **plating**, **attachment**) + 10-slot inventory. ~8 weapons, ~5 platings, ~5 attachments, ~7 consumables. Stackable consumables. |
+| Items | 3 equipment slots (**weapon**, **plating**, **attachment**) + 10-slot inventory. ~8 weapons, ~5 platings, ~5 attachments, ~7 consumables. Stackable consumables. Plating **wears** where it is bitten (`CMB-14`). |
 | Ranged | Ranged weapons and throwables exist. Ranged weapons cost Tension per shot; there is no ammunition. |
-| Enemies | ~12 regular enemy types + 2 mini-bosses (floors 3 and 6) + 1 final boss (floor 8). Six AI archetypes plus a boss framework. Enemies start dormant and wake on sight, noise, or damage. |
-| Map | Fixed 60×24 tile map per floor, no scrolling. Rooms and corridors. Doors (open by walking in; block sight when closed). Three hazard tiles built on two mechanisms (constant, cyclic). One **Winding Station** and one **Cache** room per floor 1–7. |
+| Enemies | 13 regular enemy types + 2 mini-bosses (floors 3 and 6) + 1 final boss (floor 8). Seven AI archetypes plus a boss framework. Enemies start dormant and wake on sight, noise, or damage — and a floor keeps sending **wanderers** after Tick for as long as Tick stays on it (`WLD-14`). A regular spawn may be **Overwound**: the same enemy with more of it (`ENM-12`). |
+| Map | Fixed 60×24 tile map per floor, no scrolling. Rooms and corridors. Doors (open by walking in; block sight when closed). Three hazard tiles built on two mechanisms (constant, cyclic). One **Winding Station** and one **Cache** room per floor 1–7; the cache is closed by **Wound Locks**, which cost Tension to open (`WLD-15`). |
 | Vision | Symmetric shadowcasting field of view, radius 8. Remembered tiles drawn dim. |
 | Movement | 8-directional for everyone. Energy-based speed with exactly three tiers (slow / normal / fast). |
 | Story | Intro text, one journal page per floor (8 total), scripted moments on floors 3, 6, 8, boss dialogue, ending choice with two endings, death and victory summaries. |
@@ -109,20 +109,24 @@ These are targets that wave 3 content and wave 4 balance must hit. "Turns" are p
 
 ## OVR-06 Headline numbers (fixed here; detailed in waves 2–4)
 
+Every value written as a `tuning` name below lives in `data/tuning.js` (`DIF-02`), where the DIF-15
+ladder can turn it without a line of code changing; the shipped numbers are in that file and in
+`31-balance.md`.
+
 | Quantity | Value |
 |---|---|
 | Starting Integrity | 40 |
 | Maximum Tension | 100 (never increases; never decreases) |
 | Starting Tension | 100 |
 | Tension time decay | 1 point every 5 player turns (6 with the Governor attachment); never paused |
-| Winding Station | Restores Tension to 100; single use; one per floor 1–7 |
-| Spring-Key (consumable) | Restores 30 Tension |
-| Solder (consumable) | Restores 15 Integrity |
+| Winding Station | Restores Tension to `stationRestore`; single use; one per floor 1–7; **loud** (`CHR-05`) |
+| Spring-Key (consumable) | Restores `springKeyAmount` Tension |
+| Solder (consumable) | A **repair**: `solderTension` to start, then `solderAmount` Integrity over `solderTurns` turns; any damage ends it (`ITM-09`) |
 | FOV radius | 8 |
 | Map size | 60 × 24 tiles, fixed |
-| Inventory | 10 slots; consumables stack to 5 per slot |
+| Inventory | 10 slots; consumables stack to `stackMax` per slot |
 | Equipment slots | Weapon, Plating, Attachment |
-| Character levels | 1 → 9; 8 skill points total |
+| Character levels | 1 → 9; 8 skill points total; `levelUpIntegrity` max Integrity per level |
 | Skills | 12 (3 lines × 4) |
 | Speed tiers | Slow (acts every 2nd turn), Normal (1 per turn), Fast (2 per turn) |
 
@@ -173,7 +177,8 @@ These apply to every file in `specs/`.
 | `30-technical.md` | 4 | Stack, module layout, data schemas, PRNG, save format, rendering | Done |
 | `31-balance.md` | 4 | Expected-run model and sanity checks against wave 3 tables | Done |
 | `32-acceptance-tests.md` | 4 | Observable behaviors and edge cases the finished game must satisfy | Done |
-| `40-implementation-plan.md` | — | Thirteen milestones with machine-checkable Definitions of Done, for autonomous agents | Done |
+| `40-implementation-plan.md` | — | Fourteen milestones with machine-checkable Definitions of Done, for autonomous agents | Done |
+| `50-difficulty-plan.md` | — | M13 "The Tower Notices": the ten changes that made the game hard, the tuning module and the balancing ladder | Done |
 
 ## OVR-09 Reading order for a builder
 

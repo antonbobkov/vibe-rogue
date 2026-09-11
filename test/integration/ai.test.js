@@ -12,6 +12,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import * as ai from '../../src/ai.js';
+import { TUNING } from '../../data/tuning.js';
 import * as combat from '../../src/combat.js';
 import { queueRng } from '../../src/rng.js';
 import { TILE } from '../../src/tiles.js';
@@ -19,6 +20,9 @@ import { ENEMIES_BY_NAME } from '../../data/enemies.js';
 import { fixtureGame, d100, die } from '../fixtures/maps.js';
 
 const texts = (result) => result.log.map((l) => l.text);
+
+/** ENM-05's memory, as DIF-10 tunes it: an Active enemy gives up on the turn after this. */
+const MEMORY = TUNING.memoryTurns;
 
 /** Repeat `game.act({type:'wait'})` `n` times and return the last result. */
 function waits(game, n) {
@@ -84,7 +88,7 @@ test('ACC-82: noise 5 wakes a Dormant enemy at distance 5 through a wall, but no
 // ENM-05 — tracking
 // ---------------------------------------------------------------------------------------------
 
-test('ACC-83: a CHASER sleeps once lastKnownAge passes 8, and a GUARD walks home first @m06', () => {
+test('ACC-83: a CHASER sleeps once lastKnownAge passes memoryTurns, and a GUARD walks home first @m06', () => {
   // A Sweeper sealed in its own corridor with `lastKnown` on its own tile: CHASER line 2 says
   // "if already on it and Tick not seen -> Wait", so nothing but the clock moves.
   const chase = fixtureGame(
@@ -93,13 +97,13 @@ test('ACC-83: a CHASER sleeps once lastKnownAge passes 8, and a GUARD walks home
   );
   const sweeper = only(chase);
 
-  waits(chase, 8);
-  assert.equal(sweeper.lastKnownAge, 8, 'ENM-05: one turn of forgetting per action');
-  assert.equal(sweeper.state, 'ACTIVE', 'still awake at exactly 8');
+  waits(chase, MEMORY);
+  assert.equal(sweeper.lastKnownAge, MEMORY, 'ENM-05: one turn of forgetting per action');
+  assert.equal(sweeper.state, 'ACTIVE', 'still awake at exactly memoryTurns');
 
   waits(chase, 1);
-  assert.equal(sweeper.lastKnownAge, 9);
-  assert.equal(sweeper.state, 'DORMANT', 'ENM-05: "if lastKnownAge > 8 … others -> DORMANT"');
+  assert.equal(sweeper.lastKnownAge, MEMORY + 1);
+  assert.equal(sweeper.state, 'DORMANT', 'ENM-05: "if lastKnownAge > memoryTurns … others -> DORMANT"');
   assert.equal(sweeper.energy, 0);
 
   // A Tin Soldier three tiles from its post, with Tick in bounds but behind a wall.
@@ -123,8 +127,8 @@ test('ACC-83: a CHASER sleeps once lastKnownAge passes 8, and a GUARD walks home
 
   waits(post, 3);
   assert.deepEqual({ x: soldier.x, y: soldier.y }, { x: 2, y: 3 }, 'GUARD line 3 walked to lastKnown');
-  waits(post, 5);
-  assert.equal(soldier.lastKnownAge, 8);
+  waits(post, MEMORY - 3);
+  assert.equal(soldier.lastKnownAge, MEMORY);
   assert.equal(soldier.state, 'ACTIVE');
 
   waits(post, 1);
@@ -136,7 +140,7 @@ test('ACC-83: a CHASER sleeps once lastKnownAge passes 8, and a GUARD walks home
   assert.equal(soldier.state, 'DORMANT', 'ENM-03: RETURNING -> DORMANT on arrival');
 });
 
-test('ENM-05: a noise within perception + 3 resets lastKnown, and 9 quiet actions end it @m06 @unit', () => {
+test('ENM-05: a noise within perception + 3 resets lastKnown, and memoryTurns + 1 quiet actions end it @m06 @unit', () => {
   const game = fixtureGame(['##########', '#T.......#', '##########', '#.......s#', '##########'], {
     rng: queueRng([]),
     enemies: { s: { state: 'ACTIVE', lastKnown: { x: 8, y: 3 } } },
@@ -160,12 +164,12 @@ test('ENM-05: a noise within perception + 3 resets lastKnown, and 9 quiet action
   assert.equal(sweeper.lastKnownAge, 1);
 
   state.floor.noises = [];
-  for (let i = 0; i < 7; i++) ai.track(sweeper, state);
-  assert.equal(sweeper.lastKnownAge, 8);
+  for (let i = 0; i < MEMORY - 1; i++) ai.track(sweeper, state);
+  assert.equal(sweeper.lastKnownAge, MEMORY);
   assert.equal(sweeper.state, 'ACTIVE');
   ai.track(sweeper, state);
-  assert.equal(sweeper.lastKnownAge, 9);
-  assert.equal(sweeper.state, 'DORMANT', 'the ninth quiet action is the one that gives up');
+  assert.equal(sweeper.lastKnownAge, MEMORY + 1);
+  assert.equal(sweeper.state, 'DORMANT', 'the action after memoryTurns is the one that gives up');
 });
 
 // ---------------------------------------------------------------------------------------------

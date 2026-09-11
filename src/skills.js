@@ -49,9 +49,15 @@ export const PISTON_FORCE = 2;
 export const PISTON_THRESHOLD = 6;
 export const PISTON_STUN = 1;
 
-/** SKL-03 **Salvage**: every 4th break drops one of these two, in this order. */
+/**
+ * SKL-03 **Salvage**: every 4th break drops one of these, in this order, cycling.
+ *
+ * DIF-04 took Solder and Spring-Key out of it: Salvage was ~16 extra consumables a run, which is
+ * most of the healing and most of the clock. It now pays in throwables, which are tactics rather
+ * than resources.
+ */
 export const SALVAGE_PERIOD = 4;
-export const SALVAGE_CYCLE = Object.freeze(['Solder', 'Spring-Key']);
+export const SALVAGE_CYCLE = Object.freeze(['Grit Bomb', 'Oil Flask', 'Tuning Fork', 'Clatter Can']);
 
 /** SKL-03 **Field Repair**: +12 Integrity, once per floor. */
 export const FIELD_REPAIR_INTEGRITY = 12;
@@ -440,14 +446,15 @@ function salvage(ctx, enemy) {
   if (tick.salvageCounter < SALVAGE_PERIOD) return null;
   tick.salvageCounter = 0;
 
-  const name = SALVAGE_CYCLE.includes(tick.salvageNext) ? tick.salvageNext : SALVAGE_CYCLE[0];
+  const at = SALVAGE_CYCLE.indexOf(tick.salvageNext);
+  const name = at >= 0 ? SALVAGE_CYCLE[at] : SALVAGE_CYCLE[0];
   // ITM-11's placement search: the enemy's own tile, else the nearest free tile within 2.
   const tile = items.dropTile(state.floor, enemy.x, enemy.y, items.DROP_SEARCH_RADIUS);
   if (!tile) return null; // ITM-11: with nothing free within 2, no item is created
 
   const record = { name, count: 1, x: tile.x, y: tile.y };
   state.floor.items.push(record);
-  tick.salvageNext = name === SALVAGE_CYCLE[0] ? SALVAGE_CYCLE[1] : SALVAGE_CYCLE[0];
+  tick.salvageNext = SALVAGE_CYCLE[(Math.max(0, at) + 1) % SALVAGE_CYCLE.length];
   log.say(ctx.lines, 'salvage', { X: name });
   return record;
 }

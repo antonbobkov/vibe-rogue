@@ -12,11 +12,16 @@ enter the world.
 |---|---|---|---|---|
 | **Melee weapon** | `)` | Weapon | No | `dice`, `accuracyMod`, `special` (0 or 1 named on-hit rule) |
 | **Ranged weapon** | `}` | Weapon | No | `dice`, `accuracyMod`, `range`, `tensionCost`, `special` |
-| **Plating** | `[` | Plating | No | `plating` (≥ 1), `evasionPenalty` (≥ 0) |
+| **Plating** | `[` | Plating | No | `plating` (≥ 1), `evasionPenalty` (≥ 0); an *instance* also carries `wear` (`CMB-14`) |
 | **Attachment** | `*` | Attachment | No | `forceMod`, `precisionMod`, `platingMod`, `evasionMod` (each may be 0), `special` |
-| **Consumable (instant)** | `!` | — | Yes, to 5 | `effect` |
-| **Consumable (throwable)** | `{` | — | Yes, to 5 | `range`, `radius`, `effect` |
+| **Consumable (instant)** | `!` | — | Yes, to `stackMax` | `effect` |
+| **Consumable (throwable)** | `{` | — | Yes, to `stackMax` | `range`, `radius`, `effect` |
 | **Record** | `?` | — (goes to Journal) | — | `journalIndex` or `blueprint` |
+
+A piece of equipment is carried as an **instance**, `{name, wear}`, not as a bare name: `CMB-14`'s
+corrosion belongs to the plate, so two Iron Platings in one pack wear separately and a plate's wear
+survives unequipping, dropping, picking up again and a save. A plating instance's effective Plating
+attribute is `max(0, plating − wear)`; its `evasionPenalty` is unchanged.
 
 Every item also has `name`, `color`, `description` (≤ 25 words, `STY-09`), and `floors` (the set of
 floors whose floor and cache tables may contain it; enemy drop tables are exempt — a Tin Soldier may
@@ -33,7 +38,7 @@ new item came from. Unequipping requires a free inventory slot.
 
 - 10 slots, lettered `a`–`j` in display order. Items occupy slots in the order acquired; removing an
   item compacts the list (later items shift up one letter).
-- Consumables of the same name stack up to 5 per slot. Picking up a consumable adds to an existing
+- Consumables of the same name stack up to `stackMax` per slot. Picking up a consumable adds to an existing
   non-full stack of the same name first; otherwise it takes a new slot. If no slot is free and no stack
   has room, pickup is refused.
 - Equipped items do not occupy inventory slots.
@@ -91,13 +96,33 @@ Instant consumables apply on **Use**; the two guaranteed types are:
 
 | Name | Effect |
 |---|---|
-| **Solder** | Integrity +15 (or +25 with **Efficient Springs**), clamped. |
-| **Spring-Key** | Tension +30 (or +45 with **Efficient Springs**), clamped. |
+| **Solder** | Starts a **repair** (below). |
+| **Spring-Key** | Tension +`springKeyAmount` (plus `efficientKeyBonus` with **Efficient Springs**), clamped. |
+
+**The Solder repair.** Using a Solder is not an instant mend:
+
+1. Pay `solderTension`. If Tick cannot afford it the Use is refused **without a turn** and without
+   consuming the Solder; the log says "Not enough spring to heat the solder." (`CHR-04`).
+2. The log says "Tick begins soldering." and a repair of `solderAmount` (plus
+   `efficientSolderBonus` with **Efficient Springs**) begins, running for `solderTurns` turns —
+   *this* turn and the next `solderTurns − 1`.
+3. On each of those turns, at `CMB-02` step 3, Tick regains the even share of the total, with
+   whatever the split leaves over paid on the last turn, and the log says "Tick solders the plate.
+   Integrity {n}."
+4. Tick may act normally while it runs. **Any damage to Tick ends it at once**: the remaining
+   healing is lost and the log says "The solder cracks." A hit that deals 0 after Plating is not
+   damage and does not interrupt.
+5. Using a Solder while one is running is refused without a turn ("Tick is already soldering.").
+   Ascending ends a repair (`CMB-05`).
+
+The repair is shown on panel row 15 like a status, as `Solder(n)`, but it is not one of `CMB-10`'s
+five and **Flux does not clear it** (`UI-03`). **Field Repair** (`SKL-03`) is unchanged and still
+instant — that is the skill's point.
 
 Other consumables (throwables and further instants) are defined in `21-items-catalog.md`. Throwables
-follow `CMB-08`. Using a consumable that would have no effect (e.g. Solder at full Integrity) is still
-allowed and still consumes it; the log says "Nothing needed mending." — *Rationale:* legibility over
-protection; the panel already shows the numbers.
+follow `CMB-08`. Using a consumable that would have no effect (e.g. a Spring-Key at full Tension) is
+still allowed and still consumes it; the log says so — *Rationale:* legibility over protection; the
+panel already shows the numbers.
 
 ## ITM-10 Loot tables
 

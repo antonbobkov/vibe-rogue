@@ -134,7 +134,7 @@ test('clicking Tick own tile picks up, interacts or waits ACC-106 @m10', async (
   await act(page, { type: 'wait' });
   await clickCell(page, 7, 6);
   s = await state(page);
-  expect(s.tick.tension).toBe(100);
+  expect(s.tick.tension).toBe(s.tuning.stationRestore);
   expect(s.floor.stationSpent).toBe(true);
 
   // "else Wait".

@@ -16,7 +16,7 @@
 // Nothing here touches the DOM (PLN-02 R2).
 
 import { W, H, idx, inBounds, chebyshev } from './grid.js';
-import { computeFov } from './fov.js';
+import { computeFov, FOV_RADIUS } from './fov.js';
 import { mulberry32, fnv1a } from './rng.js';
 import { TILE, walkable, blocksSight, HAZARDS, hazardActive, hazardWarning, turnsUntilActive } from './tiles.js';
 import { generateFloor } from './gen.js';
@@ -30,15 +30,42 @@ import { runTurn, hazardEnter, tensionWarnings, diagonalThroughDoor } from './tu
 import { createTick, createEnemy, derive, statsOf, TENSION_MAX } from './actors.js';
 import { SCRIPT } from '../data/script.js';
 import { FLOORS } from '../data/floors.js';
+import { TUNING } from '../data/tuning.js';
+import { SAVE_VERSION } from './save.js';
 
-/** WLD-05: Tick's sight radius. */
-export const FOV_RADIUS = 8;
+/** WLD-05: Tick's sight radius, defined in `fov.js` and re-exported here for M04's callers. */
+export { FOV_RADIUS };
 
 /** The events that stop the turn loop until the player dismisses them (PLN-03, UI-16). */
 const BLOCKING_EVENTS = new Set(['textbox', 'journal', 'descent']);
 
 /** The last floor; there is no ascending from it (FLR-09). */
 const LAST_FLOOR = 8;
+
+/**
+ * DIF-02 — the tuning object a run plays under: `data/tuning.js`'s defaults with a partial
+ * override merged over them. It is frozen and kept on `state.tuning` (TEC-05), so a save restores
+ * the run with the numbers it was played under and every module reads one object.
+ *
+ * @param {object|null|undefined} partial a subset of `TUNING`'s keys
+ * @returns {Readonly<Record<string, number>>}
+ */
+export function mergeTuning(partial) {
+  if (!partial) return TUNING;
+  const unknown = Object.keys(partial).filter((key) => !(key in TUNING));
+  if (unknown.length > 0) {
+    throw new RangeError(`createGame: unknown tuning key(s) ${unknown.join(', ')} (see data/tuning.js)`);
+  }
+  const merged = {};
+  for (const key of Object.keys(TUNING)) {
+    const value = partial[key];
+    if (value !== undefined && (typeof value !== 'number' || !Number.isFinite(value))) {
+      throw new RangeError(`createGame: tuning.${key} must be a finite number, got ${String(value)}`);
+    }
+    merged[key] = value === undefined ? TUNING[key] : value;
+  }
+  return Object.freeze(merged);
+}
 
 /**
  * Create a game.
@@ -74,9 +101,12 @@ export function createGame(options = {}) {
 
   const store = options.store || null;
 
+  const tuning = restored ? Object.freeze(mergeTuning(restored.tuning)) : mergeTuning(options.tuning);
+
   const state = restored || {
-    version: 1,
+    version: SAVE_VERSION,
     seedString,
+    tuning,
     playRngState: typeof rng.getState === 'function' ? rng.getState() : 0,
     turn: 0,
     floorNumber: 0,
@@ -85,7 +115,8 @@ export function createGame(options = {}) {
     journal: { pages: [false, false, false, false, false, false, false, false], blueprint: false },
     uniquesGenerated: [],
     log: [],
-    stats: { enemiesBroken: 0, turns: 0, floorsReached: 1 },
+    // DIF-15's death-cause table reads `wanderersSpawned` and `itemsStolen` back out of here.
+    stats: { enemiesBroken: 0, turns: 0, floorsReached: 1, wanderersSpawned: 0, itemsStolen: 0 },
     // STY-05: the scripted moments fire once per run, so the run remembers which have been shown.
     flags: { tension30Warned: false, momentsSeen: [] },
     dead: null,
@@ -109,6 +140,8 @@ export function createGame(options = {}) {
   const ctx = {
     state,
     rng,
+    // DIF-02: one frozen object every module reads its difficulty numbers from.
+    tuning,
     lines: state.log,
     emit,
     dead: false,
@@ -172,6 +205,9 @@ export function createGame(options = {}) {
       journalPage: data.journalPage,
       noises: [],
       hazardCycle: null,
+      // WLD-14 (DIF-06): turns since Tick arrived, and how many wanderers this floor has sent.
+      turnsHere: 0,
+      wanderersSpawned: 0,
       // WLD-13's spawn markers, sorted by marker number — BST-06's Phase 2 summons stand on them.
       markers: data.markers ? data.markers.map((m) => ({ n: m.n, x: m.x, y: m.y })) : [],
     };
@@ -186,6 +222,9 @@ export function createGame(options = {}) {
           integrity: s.integrity,
           lastKnown: s.lastKnown,
           ai: s.ai,
+          // ENM-12 (DIF-08): the spawn record carries the floor RNG's Overwound roll.
+          elite: s.elite,
+          tuning,
         }),
       );
     }
@@ -199,6 +238,8 @@ export function createGame(options = {}) {
     // CMB-05 Ascend: "All statuses on Tick, and the Flywheel Guard timer, are cleared."
     state.tick.statuses = {};
     state.tick.guardTimer = 0;
+    // DIF-03: "Ascending ends a repair" — the solder is left on the stair, silently.
+    state.tick.repair = null;
     // CHR-03 / SKL-03: the once-per-floor flags reset on arrival.
     state.flags.tension30Warned = false;
     state.tick.fieldRepairUsed = false;
@@ -215,7 +256,7 @@ export function createGame(options = {}) {
 
   /** Generate floor `n` of this run's seed and enter it (WLD-10; floor 8 loads from data). */
   function generateAndEnter(n) {
-    const data = generateFloor(seedString, n, { uniques: state.uniquesGenerated });
+    const data = generateFloor(seedString, n, { uniques: state.uniquesGenerated, tuning });
     return enterFloor(data);
   }
 
@@ -309,6 +350,15 @@ export function createGame(options = {}) {
     if (diagonalThroughDoor(state, tick.x, tick.y, nx, ny)) return { ok: false, reason: 'doorDiagonal' };
 
     const t = state.floor.tiles[ny][nx];
+    // WLD-15 (DIF-12): a Wound Lock on a cache door. Winding it costs Tension and a turn; with too
+    // little spring the bump is refused and costs neither (CMB-05).
+    if (t === TILE.WOUND_LOCK) {
+      if (tick.tension <= tuning.cacheLockCost) return refuse('notEnoughTension', 'lockNoSpring');
+      state.floor.tiles[ny][nx] = TILE.DOOR_OPEN;
+      combat.spendTension(ctx, tuning.cacheLockCost);
+      log.say(state.log, 'lockWound', { n: tick.tension });
+      return { ok: true };
+    }
     if (t === TILE.DOOR_CLOSED) {
       state.floor.tiles[ny][nx] = TILE.DOOR_OPEN;
       log.say(state.log, 'doorOpen');
@@ -339,8 +389,19 @@ export function createGame(options = {}) {
     if (t === TILE.STATION) {
       if (state.floor.stationSpent) return refuse('spent', 'stationSpent');
       state.floor.stationSpent = true;
-      tick.tension = TENSION_MAX;
-      log.say(state.log, 'station');
+      tick.tension = Math.min(TENSION_MAX, tuning.stationRestore);
+      log.say(state.log, 'station', { n: tick.tension });
+      // CHR-05 / CMB-11 (DIF-05): winding is loud. The noise wakes every Dormant enemy inside it
+      // (`combat.noise`), and every Active one re-targets the station tile — ENM-05's refresh with
+      // the station's own radius rather than the enemy's perception, as the Clatter Can does.
+      combat.noise(ctx, tick.x, tick.y, tuning.stationNoise);
+      for (const e of state.floor.enemies) {
+        if (e.state !== 'ACTIVE') continue;
+        if (chebyshev(e.x, e.y, tick.x, tick.y) > tuning.stationNoise) continue;
+        e.lastKnown = { x: tick.x, y: tick.y };
+        e.lastKnownAge = 0;
+      }
+      log.say(state.log, 'stationLoud');
       return { ok: true };
     }
     return refuse('nothing', 'nothingHereToUse');
@@ -459,9 +520,9 @@ export function createGame(options = {}) {
       enemiesBroken: state.stats.enemiesBroken,
       level: state.tick.level,
       skills: state.tick.skills.slice(),
-      weapon: state.tick.equipment.weapon,
-      plating: state.tick.equipment.plating,
-      attachment: state.tick.equipment.attachment,
+      weapon: items.entryName(state.tick.equipment.weapon),
+      plating: items.entryName(state.tick.equipment.plating),
+      attachment: items.entryName(state.tick.equipment.attachment),
       pages: state.journal.pages.filter(Boolean).length,
       seed: state.seedString,
     };

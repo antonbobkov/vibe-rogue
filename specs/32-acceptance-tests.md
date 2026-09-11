@@ -15,7 +15,7 @@ grouped by source document. "Given / When / Then" is implied by the three column
 | ACC-02 | Mid-run on floor 3 | Reload the page, press Continue | State, turn counter, FOV, log tail, and the *next* hit roll are identical to not reloading. |
 | ACC-03 | Mid-run | Die | `localStorage` key is absent on the Death screen; Title shows no Continue. |
 | ACC-04 | Autosave exists | New run → answer `n` to Abandon | Save unchanged; still on Title. Answer `y` | Save deleted; intro shown. |
-| ACC-05 | Save with `version: 0` injected | Load page | Treated as no save; key removed. |
+| ACC-05 | Save with `version: 1` injected (the pre-M13 format) | Load page | Treated as no save; key removed (`TEC-09`; M13 raised the version to 2). |
 | ACC-06 | Any run | Hover, inspect, open screens 100 times | `playRngState` unchanged (`TEC-07` last bullet). |
 
 ## ACC-1x Turn loop and combat (`10`)
@@ -154,6 +154,42 @@ grouped by source document. "Given / When / Then" is implied by the three column
 | ID | Setup | Action | Expected |
 |---|---|---|---|
 | ACC-130 | `BAL-07` S1–S6 bots, 200 seeds each | Run | Each target met. |
-| ACC-131 | Full-explore scripted run on seed `TEST1234` with no Spring-Keys used | Run | Never wound down; Tension at floor 8 entry within 35–65. |
+| ACC-131 | Full-explore scripted run on seed `TEST1234` | Run it twice: spending the Spring-Keys it finds, and spending none | Spending: reaches floor 8, never wound down, Tension at entry within 15–70. Hoarding: winds down before floor 8 — a full explore is no longer free (`DIF-14`). |
 | ACC-132 | All content tables | Static check | Every item name in `23` exists in `21`; every enemy name in `23` exists in `22`; every skill name in `11`/`20` matches; every color name resolves in the palette (`UI-08` + `BST-01`). |
 | ACC-133 | All docs | Search for placeholder markers (to-be-decided notes, question-mark runs) | None; every value in the specs is fixed (`OVR-07` rule 10). |
+
+## ACC-14x–16x M13 "The Tower Notices" (`50-difficulty-plan.md`)
+
+Every expectation below is stated against `data/tuning.js` rather than against a number, because the
+DIF-15 ladder moves the numbers and the rules are what these tests are for (`DIF-02`).
+
+| ID | Setup | Action | Expected |
+|---|---|---|---|
+| ACC-140 | Tension 60, Integrity 1 | Use a Solder | `solderTension` paid once; `solderAmount` restored over `solderTurns` turns — the even share each turn and the remainder on the last — the first tick on the turn it was used (`CMB-02` step 3). |
+| ACC-141 | A repair running, an enemy adjacent | Let it hit, then let it glance | A hit that deals ≥ 1 logs "The solder cracks." and ends the repair, losing the rest; a 0-damage glance does not. |
+| ACC-142 | Tension ≤ `solderTension`; then a repair already running | Use a Solder | Refused with "Not enough spring to heat the solder." / "Tick is already soldering."; no turn, no item (`CMB-05`). |
+| ACC-143 | Efficient Springs taken | Use a Solder | The repair's total is `solderAmount + efficientSolderBonus`, spread the same way (`SKL-03`). |
+| ACC-144 | A repair running | Read the panel; use a Flux | Row 15 shows `Solder(n)`; Flux clears the five statuses and leaves the repair alone (`UI-03`, `CMB-10`). |
+| ACC-145 | All enemy and floor tables | Static check | No regular enemy's drop table holds Solder or a Spring-Key; no table is empty unless its `dropChance` is 0; every floor 1–7 still places both on the floor or in its cache (`DIF-04`). |
+| ACC-146 | A stack at `stackMax` | Pick up one more | It takes a new slot; with every slot full the pickup is refused (`ITM-03`). |
+| ACC-147 | Salvage taken, 16 breaks | Break them | One throwable every 4th break, cycling Grit Bomb → Oil Flask → Tuning Fork → Clatter Can; never Solder or a Spring-Key (`SKL-03`). |
+| ACC-148 | A Dormant enemy inside `stationNoise` and one outside it | Wind the station | Tension to `stationRestore`; "The winding rings through the tower."; the one inside wakes with `lastKnown` on the station, the one outside does not; floor 1's spent station rings nothing (`CHR-05`, `CMB-11`). |
+| ACC-149 | Floor 2, generated | Advance `turnsHere` past the interval repeatedly | One enemy from the floor's wander table each time, Active, flagged `wanderer`, never visible on arrival, never on a feature tile, at most `wanderCap`; floor 8 spawns none (`WLD-14`). |
+| ACC-150 | A floor with no cyclic hazard | Read the panel | Row 16 counts down to the next wanderer, and goes blank once the cap is spent (`UI-06`). |
+| ACC-151 | Floors 1 and 4 | Read the interval | Floor 1 runs the slower per-floor override; floor 4 runs `wanderInterval` (`WLD-14`). |
+| ACC-152 | A Rust-moth adjacent, plating equipped | Let it hit | On a `d100` ≤ `corrosionChance` the plate gains 1 wear and logs "The Rust-moth pits the {X}."; one over does not; a miss never corrodes; with no plating no roll is drawn (`CMB-14`). |
+| ACC-153 | A pitted plate and a fresh one of the same kind | Unequip, re-equip, save and load | Wear is per item instance, travels with it, and round-trips (`ITM-01`, `TEC-09`). |
+| ACC-154 | A plate with 2 wear | Read the panel, inventory and inspect line | `Iron Plating (−2)`, and the fields read `plating 3 − 2 wear = 1` (`UI-03`, `ITM-05`). |
+| ACC-155 | A forced Overwound roll | Create, hit and break it | Name prefixed `Overwound `; Integrity ×`eliteIntegrityMult` (rounded up); accuracy +`eliteAccuracyBonus`; every attack +`eliteDamageBonus` before Plating; XP ×`eliteXpMult`; guards, bosses and pack types never roll it (`ENM-12`). |
+| ACC-156 | An Overwound enemy | Look at it | Same glyph and colour on the dark gold ground; the inspect line and popup name it and spell the bonus out (`UI-09`, `UI-11`). |
+| ACC-157 | Any seed | Generate a floor twice | The same spawns are Overwound both times, and the rate over many floors is `eliteChance` (`TEC-07`). |
+| ACC-158 | XP one short of level 2 | Break an enemy | Max Integrity and Integrity both +`levelUpIntegrity` (`CHR-07`). |
+| ACC-159 | An Active chaser with no sight and no noise | Wait | Still Active at exactly `memoryTurns` quiet actions; Dormant on the next (`ENM-05`). |
+| ACC-160 | A woken Spring-Hound behind a wall | Track it | Its `lastKnown` is refreshed to the target's tile within `houndRange`, walls notwithstanding; one tile further it ages; it never goes Dormant again (`ENM-13`). |
+| ACC-161 | A Cuckoo and a Tin Soldier in its shriek | Shriek | Every Guard inside the radius is woken and runs the CHASER list for `rallyTurns`, logging "The guards leave their doors."; then RETURNING (`ENM-13`). |
+| ACC-162 | A Magpie adjacent, two consumable stacks | Let it hit | One unit of one stack (uniform over stacks) is taken instead of damage, logging "The Magpie snatches the {X}!"; with nothing to take it deals `1d2` as normal (`ENM-06`). |
+| ACC-163 | A Magpie that has stolen | Act, then break it | It only retreats and never attacks again; breaking it returns the item with `ITM-11`'s unlimited search. |
+| ACC-164 | A Magpie spawned as a wanderer | Let it steal | Identical behaviour to a placed one (`WLD-14`, `DIF-11`). |
+| ACC-165 | A Wound Lock ahead, Tension ≤ `cacheLockCost`, then above it | Bump it | Refused with "Not enough spring for the lock." and no turn; then it costs `cacheLockCost` and a turn, becomes an open door, and stays open (`WLD-15`). |
+| ACC-166 | 1,000 generated floors | Static check | Every passable tile that opens onto the cache room is a Wound Lock; the cache guard and every cache item are inside it (`WLD-15`, `WLD-11` step 9). |
+| ACC-167 | A Gear-Golem and a Sweeper against a lock | Let each path through it | `BREAKS` breaks it (noise 6); `YES` treats it as a wall (`ENM-09`, `WLD-15`). |

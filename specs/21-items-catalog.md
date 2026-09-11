@@ -86,9 +86,9 @@ Descriptions:
 
 | Name | Kind | Range | Radius | Effect | Color | Floors |
 |---|---|---|---|---|---|---|
-| **Solder** | instant | — | — | Integrity +15 (Efficient Springs: +25). | green | 1–7 |
-| **Spring-Key** | instant | — | — | Tension +30 (Efficient Springs: +45). | teal | 1–7 |
-| **Flux** | instant | — | — | Remove all five statuses from Tick; Integrity +5 (Efficient Springs: +10). | white | 4–7 |
+| **Solder** | instant | — | — | A **repair** (`ITM-09`): `solderTension` to start, then `solderAmount` Integrity over `solderTurns` turns (+`efficientSolderBonus` with Efficient Springs). Any damage ends it. | green | 1–7 |
+| **Spring-Key** | instant | — | — | Tension +`springKeyAmount` (+`efficientKeyBonus` with Efficient Springs). | teal | 1–7 |
+| **Flux** | instant | — | — | Remove all five statuses from Tick — *not* a running repair — and Integrity +`fluxAmount` (+`efficientFluxBonus` with Efficient Springs). | white | 4–7 |
 | **Oil Flask** | throwable | 5 | 1 | Every actor in the 3×3 area gets **Burning** 3. | orange | 2–7 |
 | **Grit Bomb** | throwable | 5 | 1 | Every actor in the 3×3 area takes 1 damage (ignores Plating) and gets **Blinded** 4. | midGrey | 1–7 |
 | **Tuning Fork** | throwable | 6 | 0 | The actor on the landing tile (if any) gets **Stunned** 2. | violet | 3–7 |
@@ -96,6 +96,7 @@ Descriptions:
 
 Descriptions:
 - Solder: *Tin and flux in a paper twist. Mends plate. Does not mend much else.*
+  (It also takes three turns and a little of the spring to heat: `ITM-09`.)
 - Spring-Key: *A spare key, pre-wound. Thirty turns of the spring. Do not lose it.*
 - Flux: *Cleans a joint of anything that got into it. Stings, she said, if you could sting.*
 - Oil Flask: *Lamp oil. Everything in here runs on it and everything in here burns on it.*

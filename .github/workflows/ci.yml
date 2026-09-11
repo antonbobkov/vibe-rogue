@@ -21,7 +21,8 @@ jobs:
       - run: npm run e2e
 
   # PLN-04 / PLN-06 M11: the full 200-seed BAL-07 sweep. Separate job, 45-minute timeout, no
-  # matrix, no retries. Required for the M11 and M12 DoD.
+  # matrix, no retries. Required for the M11, M12 and M13 DoD — since M13 it also has to come back
+  # green rather than with an accepted skip (`DIF-17`: `BALANCE_SKIPS` is empty).
   sim:
     name: BAL-07 simulation
     runs-on: ubuntu-latest

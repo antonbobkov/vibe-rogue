@@ -15,6 +15,8 @@ import { TILE, blocksSight, walkable, isDoor, hazardActive } from './tiles.js';
 import * as log from './log.js';
 import * as ai from './ai.js';
 import * as combat from './combat.js';
+import * as items from './items.js';
+import { spawnWanderer } from './wander.js';
 import {
   derive,
   actorLabel,
@@ -60,6 +62,9 @@ export function runTurn(ctx, action) {
 
   advanceClock(ctx);
   if (ctx.dead) return result;
+
+  // ---- 3. Tick's repair, then Tick's statuses (CMB-02 step 3, DIF-03) -----------------------
+  items.repairTick(ctx);
 
   playerStatusTick(ctx);
   if (ctx.dead) return result;
@@ -108,8 +113,10 @@ function advanceClock(ctx) {
   const tick = state.tick;
   state.turn += 1;
   state.stats.turns = state.turn;
+  // WLD-14 (DIF-06): the floor's own clock, which the wanderer schedule runs on.
+  state.floor.turnsHere = (state.floor.turnsHere || 0) + 1;
   tick.decayCounter += 1;
-  const period = derive(tick).decayPeriod;
+  const period = derive(tick, ctx.tuning).decayPeriod;
   if (tick.decayCounter >= period) {
     tick.decayCounter = 0;
     combat.spendTension(ctx, 1);
@@ -119,6 +126,8 @@ function advanceClock(ctx) {
   if (tick.tension <= TENSION_SLACK && state.turn % SLACK_PERIOD === 0) {
     log.say(ctx.lines, 'tensionNearlySlack');
   }
+  // WLD-14 (DIF-06): the wanderer schedule, drawn after the decay so the turn's order is fixed.
+  spawnWanderer(ctx);
 }
 
 /**
@@ -327,10 +336,13 @@ export function executeEnemyAction(ctx, enemy, action) {
     case 'ranged': {
       const shot = combat.projectile(state, enemy.x, enemy.y, action.x, action.y);
       if (!shot.actor) {
-        // The line is blocked: the shot still makes its noise (ENM-07) and hits nothing.
+        // The line is blocked: the shot still makes its noise (ENM-07) and hits nothing — and a
+        // Cuckoo's shriek still rallies the guards inside it (ENM-13, DIF-10).
         const type = enemyType(enemy);
         const r = type.ranged;
-        combat.noise(ctx, enemy.x, enemy.y, r && r.noise !== undefined ? r.noise : combat.NOISE.SHOT);
+        const radius = r && r.noise !== undefined ? r.noise : combat.NOISE.SHOT;
+        combat.noise(ctx, enemy.x, enemy.y, radius);
+        combat.rallyGuards(ctx, enemy, radius);
         return;
       }
       combat.rangedAttack(ctx, enemy, shot.actor, action.opts || {});
@@ -343,7 +355,9 @@ export function executeEnemyAction(ctx, enemy, action) {
       return;
     }
     case 'breakDoor': {
-      if (state.floor.tiles[action.y][action.x] !== TILE.DOOR_CLOSED) return;
+      const t = state.floor.tiles[action.y][action.x];
+      // WLD-15 (DIF-12): a Wound Lock breaks like a door for a BREAKS enemy.
+      if (t !== TILE.DOOR_CLOSED && t !== TILE.WOUND_LOCK) return;
       state.floor.tiles[action.y][action.x] = TILE.FLOOR;
       log.say(ctx.lines, 'doorBroken', { A: { name: enemyType(enemy).name, article: true } });
       combat.noise(ctx, action.x, action.y, combat.NOISE.BREAK);
@@ -388,18 +402,19 @@ export function enemyStatusAndHazardTick(ctx) {
 // ---------------------------------------------------------------------------------------------
 
 /**
- * CHR-07: one level per check. `+4` max Integrity and `+4` Integrity, one skill point, the log
- * line, and the `levelUp` event the UI turns into the Skills screen (`hooks.onLevelUp` is the
- * optional seam a screen stack can hang off).
+ * CHR-07: one level per check. `tuning.levelUpIntegrity` max Integrity and as much Integrity
+ * (DIF-09), one skill point, the log line, and the `levelUp` event the UI turns into the Skills
+ * screen (`hooks.onLevelUp` is the optional seam a screen stack can hang off).
  */
 export function levelUpCheck(ctx) {
   const state = ctx.state;
   const tick = state.tick;
   if (tick.level >= MAX_LEVEL) return false;
   if (levelForXp(tick.xp) <= tick.level) return false;
+  const gain = ctx.tuning ? ctx.tuning.levelUpIntegrity : LEVEL_INTEGRITY;
   tick.level += 1;
-  tick.integrityMax += LEVEL_INTEGRITY;
-  tick.integrity = Math.min(tick.integrityMax, tick.integrity + LEVEL_INTEGRITY);
+  tick.integrityMax += gain;
+  tick.integrity = Math.min(tick.integrityMax, tick.integrity + gain);
   tick.skillPoints += 1;
   log.say(ctx.lines, 'levelUp', { n: tick.level });
   ctx.emit({ type: 'levelUp', level: tick.level });

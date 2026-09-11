@@ -413,7 +413,8 @@ test('@unit save: the fields M04-M08 keep outside the TEC-05 headline list are i
   assert.equal(state.tick.guardTimer > 0, true, "SKL-02's Flywheel Guard timer");
   assert.equal(state.tick.fieldRepairUsed, true, 'SKL-03: once per floor');
   assert.equal(state.tick.salvageCounter, 1, "SKL-03's counter");
-  assert.equal(state.tick.salvageNext, 'Solder');
+  // DIF-04: Salvage cycles through the four throwables now, starting at the Grit Bomb.
+  assert.equal(state.tick.salvageNext, 'Grit Bomb');
   assert.equal(state.tick.decayCounter >= 0, true, "CHR-04's decay counter");
   assert.ok(Array.isArray(state.floor.noises), "CMB-11's noise list");
   assert.ok(Array.isArray(state.floor.scrap), 'the scrap piles');
@@ -599,7 +600,9 @@ test('ACC-05: a version 0 save is treated as no save and the key is removed @m09
   assert.equal(adapter.size, 0, 'ACC-05: key removed');
 
   // The same branch for every other unusable value: TEC-09 never migrates (D-081).
-  for (const raw of ['', 'not json at all', '{', 'null', '[]', '{"version":1}', JSON.stringify({ ...state, version: 2 })]) {
+  // ACC-05 as M13 restates it: version 1 is the *old* save format (TEC-09, DIF-07), and every
+  // other unusable value takes the same branch — TEC-09 never migrates (D-081).
+  for (const raw of ['', 'not json at all', '{', 'null', '[]', '{"version":2}', JSON.stringify({ ...state, version: 1 })]) {
     adapter.set(store.key, raw);
     assert.equal(store.load(), null, `unusable: ${raw.slice(0, 20)}`);
     assert.equal(adapter.size, 0, `removed: ${raw.slice(0, 20)}`);

@@ -35,8 +35,10 @@ action. Free actions (CMB-05) do not run this loop.
    application, or death check that the action itself specifies happens here.
 2. **Advance the clock.** `turn += 1`; `decayCounter += 1`. If `decayCounter ≥ decayPeriod` (5; 6 with
    the **Governor** attachment, `CAT-05`), Tick loses 1 Tension and `decayCounter = 0` (`CHR-04`).
-3. **Player status tick** (CMB-10): apply per-turn effects (e.g. Burning damage), then decrement
-   durations, then remove expired statuses.
+3. **Player repair and status tick**: first, if a **Solder repair** is running (`ITM-09`), Tick
+   regains this turn's share of it — that is *before* anything that might kill Tick, and on the turn
+   the Solder was used. Then CMB-10's status tick: apply per-turn effects (e.g. Burning damage),
+   then decrement durations, then remove expired statuses.
 4. **Hazard tick for Tick** (`WLD-08`): if Tick is standing on a hazard tile that is active this turn,
    apply its standing effect.
 5. **Death check** for Tick (CMB-12). If dead, stop and go to the Death screen.
@@ -186,10 +188,30 @@ noise values:
 | Opening a door | 3 |
 | Breaking an enemy (it dies) | 6 |
 | Stepping onto a Grinding Gear | 6 |
+| Winding a Winding Station | `stationNoise` (`CHR-05`) |
+| Breaking a Wound Lock | 6 (`WLD-15`) |
 | Enemy-specific (Cuckoo shriek etc.) | per `22` |
 | Skill-specific | per `20` |
 
 Moving, waiting, picking up, and using instant consumables are silent.
+
+## CMB-14 Corrosion
+
+Some enemies eat the metal rather than the machine. When such an enemy's melee attack **hits** Tick
+— the hit roll succeeded, whatever the damage after Plating turned out to be — and Tick has a
+plating item equipped, roll `d100`; on `≤ corrosionChance` the equipped plating item gains one point
+of **wear** and the log says `The Rust-moth pits the {X}.`
+
+- Wear is permanent, and it belongs to the **item instance**, not to the slot: it travels with the
+  plate into the pack, onto the floor and through a save (`ITM-01`, `TEC-09`).
+- A worn plate's effective Plating is `max(0, base − wear)` (`ITM-02`). Its evasion penalty is
+  unchanged — the weight is still there, only the metal has gone.
+- An **Overwound** corroder (`ENM-12`) rolls against `eliteCorrosionChance` instead.
+- The `d100` is drawn only when there is a plate to pit, so a bare-chested Tick costs no draw
+  (`TEC-07`).
+
+The Rust-moth is the only type that does it (`BST-02`), which is what stops Plating from being a
+solved problem after floor 2.
 
 ## CMB-12 Death
 

@@ -1,6 +1,6 @@
 // Definition-of-Done runner (PLN-04).
 //
-//   node tools/dod.js NN      run the DoD for milestone NN (00..12):
+//   node tools/dod.js NN      run the DoD for milestone NN (00..13):
 //                               1. node --test over unit + integration tests, filtered to the
 //                                  milestone tags @m00..@mNN
 //                               2. node --test over the meta tests (unfiltered — the repo rules
@@ -25,7 +25,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const TEST_DIR = path.join(ROOT, 'test');
 const META_DIR = path.join(TEST_DIR, 'meta');
 const E2E_DIR = path.join(TEST_DIR, 'e2e');
-const MAX_MILESTONE = 12;
+const MAX_MILESTONE = 13;
 
 /** Every `*.test.js` file under `dir`, recursively, in a stable order. */
 function findTestFiles(dir) {
@@ -115,7 +115,7 @@ function main(argv) {
 
   const raw = args.find((a) => /^\d{1,2}$/.test(a));
   if (raw === undefined) {
-    console.error('usage: node tools/dod.js <NN>   (NN = 00..12)   |   node tools/dod.js --node');
+    console.error('usage: node tools/dod.js <NN>   (NN = 00..13)   |   node tools/dod.js --node');
     return 2;
   }
   const milestone = Number(raw);

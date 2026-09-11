@@ -55,8 +55,8 @@ row 29  message log line 5 (newest)
 | 12 | `P ` + plating name or `—` | `P Brass Plating` |
 | 13 | `A ` + attachment name or `—` | `A —` |
 | 14 | blank |
-| 15 | Status effects, comma-separated as the first three letters + `(n)` (`Stu Slo Bur Bli Exp`, plus `Gua` for Flywheel Guard); `—` if none; truncated with `…` at 19 | `Bur(2), Slo(1)` |
-| 16 | Hazard timer if the floor has cyclic hazards: `vents in n` / `pendulum in n` / `ACTIVE`; blank otherwise | `vents in 2` |
+| 15 | Status effects, comma-separated as the first three letters + `(n)` (`Stu Slo Bur Bli Exp`, plus `Gua` for Flywheel Guard and `Solder(n)` for a running repair, `ITM-09`); `—` if none; truncated with `…` at 19 | `Bur(2), Solder(2)` |
+| 16 | Hazard timer if the floor has cyclic hazards: `vents in n` / `pendulum in n` / `ACTIVE`; otherwise the turns until the floor's next wanderer, `next: n` (`WLD-14`); blank when neither applies | `vents in 2` · `next: 34` |
 | 17 | blank |
 | 18 | `1 ` + active skill 1 name + cost right-aligned; `(used)` replaces cost for a once-per-floor skill already used; the name is truncated with `…` so the row is ≤ 19 chars; blank row if no skill | `1 Overwind Strike 8` |
 | 19 | active skill 2 | |
@@ -82,8 +82,11 @@ Bars: fill cells `#` in the bar color, empty cells ` `; fill count = `round(17 �
 Shows one line about whatever the mouse is over (or the look cursor is on, UI-12):
 
 - Enemy: `Sweeper  7/7  hits you 55% for 1–3  · plating 0 · normal · dormant`
-- Item: `Brass Plating  [ plating 2  evasion −2`  /  `Solder ×3  ! +15 Integrity`
-- Feature: `Winding Station (unspent) — stand here and press e` / `Up-stairs — press <`
+- Item: `Brass Plating  [ plating 2  evasion −2`  /  `Solder ×3  ! +50 Integrity over 3, 5 Tension`
+- Worn plating (`CMB-14`): `Iron Plating (−2)  [ plating 3 − 2 wear = 1  evasion −3`
+- Overwound enemy (`ENM-12`): `Overwound Sweeper  11/11  hits you 65% for 3–5 · plating 0 · normal · active`
+- Feature: `Winding Station (unspent) — press e. Loud: wakes the floor.` / `Up-stairs — press <`
+- Wound Lock (`WLD-15`): `Wound Lock — 10 Tension to open.`
 - Hazard: `Steam Vent — active in 2 turns: 4 damage, Burning 2`
 - Floor / wall / door / remembered tile: its name; unseen tile: blank.
 - With nothing hovered: the most recent log line is *not* repeated; the line is blank.
@@ -93,7 +96,9 @@ Shows one line about whatever the mouse is over (or the look cursor is on, UI-12
 - **Tension bar color:** `> 30` green `#60e060`; `16–30` yellow `#ffd75f`; `≤ 15` red `#ff6060`.
 - **Integrity bar color:** `> 50%` `#60c0ff`; `26–50%` `#ffd75f`; `≤ 25%` `#ff6060`.
 - Row 16 shows the countdown to the next active turn of the floor's cyclic hazard
-  (`WLD-08`), or `ACTIVE` in the hazard's bright color while active.
+  (`WLD-08`), or `ACTIVE` in the hazard's bright color while active. On a floor with no cyclic
+  hazard it shows `next: n`, the turns until the next wanderer (`WLD-14`), and goes blank once that
+  floor's `wanderCap` is spent.
 - Skill rows: once-per-floor skills show `(used)` in `#707070` after use until Ascend.
 
 ## UI-07 Glyphs
@@ -106,6 +111,7 @@ Shows one line about whatever the mouse is over (or the look cursor is on, UI-12
 | Floor | `.` | `#3a3a44` |
 | Closed door | `+` | `#b08a4a` |
 | Open door | `'` | `#b08a4a` |
+| Wound Lock (`WLD-15`) | `=` | `#ffd75f` (brass) |
 | Up-stairs | `<` | `#f0e68c` |
 | Winding Station unspent | `&` | `#5ad0ff` |
 | Winding Station spent | `&` | `#2a4a58` |
@@ -153,6 +159,9 @@ The fixed palette. Later docs choose colors from this list by name.
    of its own.
 5. **Burning** actors: background `#5a2a10`. **Stunned**: glyph drawn in `midGrey`. Other statuses have
    no map indication (the inspect line has them).
+5b. **Overwound** enemies (`ENM-12`) keep their own glyph and colour and are drawn on background
+   `#3a3210` (dark gold). A Burning or telegraphing Overwound enemy shows that instead: the states
+   that change what it is about to do win over the one that says what it is.
 6. **Flash:** when Tick takes damage, the whole map's background becomes `#3a1010` for one frame
    (≈ 80 ms), then restores. When an enemy is hit, its cell background flashes `#404040` for one
    frame. These are the only animations.

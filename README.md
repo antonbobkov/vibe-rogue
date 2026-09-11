@@ -88,19 +88,19 @@ never changes its outcome.
 |---|---|
 | `npm test` | Every Node test: unit, integration and the meta tier (repo rules) |
 | `npm run e2e` | The Playwright browser tier against `tools/serve.js` (Chromium only) |
-| `npm run dod -- NN` | The Definition of Done for milestone `NN` (`00`–`12`): the Node tests filtered to tags `@m00`…`@mNN`, then the meta tier unfiltered, then the matching browser specs. The exit code *is* the DoD. |
+| `npm run dod -- NN` | The Definition of Done for milestone `NN` (`00`–`13`): the Node tests filtered to tags `@m00`…`@mNN`, then the meta tier unfiltered, then the matching browser specs. The exit code *is* the DoD. |
 | `npm run sim` | The full `BAL-07` balance simulation: six bots over 200 seeds each (`node tools/sim.js --all --seeds 200`) |
 
 ```sh
 npm test                  # 261 node tests, 1 documented skip (see below)
 npm run e2e               # 37 browser specs, Chromium
-npm run dod -- 12         # the release gate: everything, in order
+npm run dod -- 13         # the release gate: everything, in order
 npm run sim               # the long one; the sim CI job allows 45 minutes
 node tools/sim.js S4 --seeds 50 --json      # one balance check, machine-readable
 ```
 
 Test conventions (`PLN-02` R5, R6): every test title names the acceptance ID it verifies — or `@unit`
-for a module-level test — plus exactly one milestone tag `@m00`…`@m12`. No test uses `Math.random` or
+for a module-level test — plus exactly one milestone tag `@m00`…`@m13`. No test uses `Math.random` or
 wall-clock time, except the four `TEC-14` performance budgets, where the measurement is the test
 (`test/integration/perf.test.js` and `test/e2e/perf.spec.js`). There are no snapshots and no retries:
 every expected value is written into the test from the spec.
@@ -140,7 +140,8 @@ convention.
 | 2 — Systems | [`10`](specs/10-turns-and-combat.md) turns & combat · [`11`](specs/11-character-and-skills.md) character · [`12`](specs/12-items-and-inventory.md) items · [`13`](specs/13-world-and-generation.md) world & generation · [`14`](specs/14-enemies-and-ai.md) enemies & AI · [`15`](specs/15-ui-and-controls.md) UI & controls | Every rule and formula |
 | 3 — Content | [`20`](specs/20-skills.md) skills · [`21`](specs/21-items-catalog.md) items · [`22`](specs/22-bestiary.md) bestiary · [`23`](specs/23-floors.md) floors · [`24`](specs/24-script.md) script | Every number and every string |
 | 4 — Technical | [`30`](specs/30-technical.md) technical · [`31`](specs/31-balance.md) balance · [`32`](specs/32-acceptance-tests.md) acceptance tests | Stack, determinism, save format; the run model; the checklist |
-| Build | [`40`](specs/40-implementation-plan.md) implementation plan | Thirteen milestones, each with a machine-checkable Definition of Done |
+| Build | [`40`](specs/40-implementation-plan.md) implementation plan | Fourteen milestones, each with a machine-checkable Definition of Done |
+| Difficulty | [`50`](specs/50-difficulty-plan.md) difficulty plan | M13 "The Tower Notices": the ten changes, the tuning module, the balancing ladder |
 | Logs | [`DECISIONS.md`](specs/DECISIONS.md) · [`BALANCE-CHANGELOG.md`](specs/BALANCE-CHANGELOG.md) | Every ambiguity resolved while building, and every balance knob turned |
 
 Rules carry IDs like `CMB-06`; tables are authoritative over prose; every entity name is matched

@@ -11,8 +11,9 @@
 import { parseDice } from './rng.js';
 import { ENEMIES_BY_NAME } from '../data/enemies.js';
 import { XP_THRESHOLDS } from '../data/skills.js';
-import { equipmentMods, meleeWeapon, rangedWeapon, tickImmuneTo, BASE_DECAY_PERIOD } from './items.js';
-import { passiveMods } from './skills.js';
+import { equipmentMods, meleeWeapon, rangedWeapon, tickImmuneTo } from './items.js';
+import { passiveMods, SALVAGE_CYCLE } from './skills.js';
+import { TUNING } from '../data/tuning.js';
 
 /** CHR-01 / CHR-03: the mainspring is 100 for the whole game and nothing changes it. */
 export const TENSION_MAX = 100;
@@ -20,9 +21,9 @@ export const TENSION_MAX = 100;
 /** CHR-01's starting numbers. */
 export const START_INTEGRITY = 40;
 
-/** CHR-07: level 9 is the cap; +4 Integrity per level. */
+/** CHR-07: level 9 is the cap; `tuning.levelUpIntegrity` Integrity per level (DIF-09). */
 export const MAX_LEVEL = 9;
-export const LEVEL_INTEGRITY = 4;
+export const LEVEL_INTEGRITY = TUNING.levelUpIntegrity;
 
 /** CMB-03's energy system. */
 export const SPEED_ENERGY = Object.freeze({ SLOW: 50, NORMAL: 100, FAST: 200 });
@@ -64,6 +65,31 @@ export function enemyType(enemy) {
   return type;
 }
 
+/** ENM-12 (DIF-08): what an **Overwound** instance is called. */
+export const ELITE_PREFIX = 'Overwound ';
+
+/** ENM-12: the name this instance answers to — the type's, prefixed when it is Overwound. */
+export function enemyName(enemy) {
+  const type = enemyType(enemy);
+  return enemy.elite === true ? `${ELITE_PREFIX}${type.name}` : type.name;
+}
+
+/**
+ * ENM-12 — may this spawn roll for Overwound? "Cache guards and bosses are never elite. Packs
+ * (Rust-moth, Brass Finch) are never elite."
+ *
+ * @param {{isGuard?: boolean, isBoss?: boolean, pack?: boolean, type?: string}} record a spawn
+ *        record (`gen.js`) or a live instance
+ */
+export function canBeElite(record) {
+  if (!record) return false;
+  if (record.isGuard === true || record.isBoss === true || record.pack === true) return false;
+  const type = ENEMIES_BY_NAME[record.type];
+  if (!type) return false;
+  if (type.archetype === 'BOSS' || type.packSize !== undefined) return false;
+  return true;
+}
+
 /**
  * Tick's starting state (CHR-01), as the `tick` object of TEC-05.
  *
@@ -86,9 +112,11 @@ export function createTick(opts = {}) {
     ],
     statuses: {},
     guardTimer: 0,
+    // DIF-03: the running Solder repair, `{turnsLeft, perTurn, left}` or null (ITM-09).
+    repair: null,
     fieldRepairUsed: false,
     salvageCounter: 0,
-    salvageNext: 'Solder',
+    salvageNext: SALVAGE_CYCLE[0],
     decayCounter: 0,
     x: opts.x === undefined ? 0 : opts.x,
     y: opts.y === undefined ? 0 : opts.y,
@@ -110,13 +138,20 @@ export function createTick(opts = {}) {
 export function createEnemy(typeName, x, y, id, opts = {}) {
   const type = ENEMIES_BY_NAME[typeName];
   if (!type) throw new RangeError(`createEnemy: no enemy type named '${typeName}'`);
+  // ENM-12 (DIF-08): an Overwound instance is the same type with more of it. Only its Integrity is
+  // stored; the accuracy, damage, XP and drop bonuses are applied where they are read, so the
+  // instance never disagrees with the tuning it is played under.
+  const tuning = opts.tuning || TUNING;
+  const elite = opts.elite === true && canBeElite({ type: typeName, ...opts });
+  const integrityMax = elite ? Math.ceil(type.integrity * tuning.eliteIntegrityMult) : type.integrity;
   const enemy = {
     id,
     type: typeName,
     x,
     y,
-    integrity: type.integrity,
-    integrityMax: type.integrity,
+    elite,
+    integrity: integrityMax,
+    integrityMax,
     state: opts.state || 'DORMANT',
     lastKnown: opts.lastKnown ? { x: opts.lastKnown.x, y: opts.lastKnown.y } : null,
     lastKnownAge: 0,
@@ -170,8 +205,8 @@ export function skillMods(tick) {
  *
  * @param {object} tick the TEC-05 `state.tick`
  */
-export function derive(tick) {
-  const eq = equipmentMods(tick);
+export function derive(tick, tuning = TUNING) {
+  const eq = equipmentMods(tick, tuning);
   const sk = skillMods(tick);
 
   const force = Math.max(0, eq.force + sk.force);
@@ -205,7 +240,7 @@ export function derive(tick) {
           special: ranged.special || null,
         }
       : null,
-    decayPeriod: eq.decayPeriod === undefined ? BASE_DECAY_PERIOD : eq.decayPeriod,
+    decayPeriod: eq.decayPeriod === undefined ? tuning.decayPeriod : eq.decayPeriod,
   };
 }
 
@@ -239,10 +274,12 @@ export function statsOf(state, actor) {
     return { name: 'decoy', article: false, accuracy: 0, evasion: 0, plating: 0, attack: dice('0 (flat)'), force: 0, isTick: false };
   }
   const type = enemyType(actor);
+  const tuning = state.tuning || TUNING;
   return {
-    name: type.name,
+    name: enemyName(actor),
     article: true,
-    accuracy: type.accuracy,
+    // ENM-12: the Overwound accuracy bonus, applied where CMB-06 reads accuracy.
+    accuracy: type.accuracy + (actor.elite === true ? tuning.eliteAccuracyBonus : 0),
     evasion: type.evasion,
     plating: type.plating,
     attack: dice(type.attack),

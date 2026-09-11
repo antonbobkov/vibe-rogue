@@ -64,16 +64,18 @@
 ### Salvage
 - Effect: keeps a counter `salvage` (shown on the Skills screen as `Salvage: n/4`) that increments each
   time any enemy breaks (any cause) after the skill is taken. When it reaches 4 it resets to 0 and a
-  consumable is placed on that enemy's tile per `ITM-11` placement: alternately **Solder** then
-  **Spring-Key**, starting with Solder. This is in addition to the enemy's own drop. Counter persists
-  across floors. Summoned enemies count; the Decoy does not.
-- Summary: `Every 4th enemy broken drops Solder, then Spring-Key.`
+  **throwable** is placed on that enemy's tile per `ITM-11` placement, cycling **Grit Bomb** →
+  **Oil Flask** → **Tuning Fork** → **Clatter Can** and starting with the Grit Bomb. Never a Solder
+  or a Spring-Key: those two are scarce by design (`DIF-04`), and Salvage pays in tactics instead.
+  This is in addition to the enemy's own drop. Counter persists across floors. Summoned enemies
+  count; the Decoy does not.
+- Summary: `Every 4th enemy broken drops a throwable.`
 - Description: *Everything in this tower is made of parts. Every fourth one leaves something worth keeping.*
 
 ### Efficient Springs
-- Effect: **Spring-Key** restores 45 instead of 30; **Solder** restores 25 instead of 15; **Flux**
-  restores 10 Integrity instead of 5.
-- Summary: `Spring-Key +45, Solder +25, Flux +10.`
+- Effect: adds `efficientKeyBonus` to a **Spring-Key**, `efficientSolderBonus` to the total of a
+  **Solder** repair (`ITM-09`), and `efficientFluxBonus` to a **Flux**.
+- Summary: `Spring-Key +10, Solder +15, Flux +5.`
 - Description: *Her second-best screwdriver, and the knack of using it. Nothing is wasted.*
 
 ### Field Repair

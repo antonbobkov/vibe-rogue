@@ -15,10 +15,11 @@
 
 import { idx, chebyshev, bresenham, inBounds } from './grid.js';
 import { walkable, isHazardTile, HAZARDS } from './tiles.js';
-import { roll, int } from './rng.js';
+import { roll, int, chance } from './rng.js';
 import * as log from './log.js';
 import * as items from './items.js';
 import * as skills from './skills.js';
+import { tuningOf } from './items.js';
 import {
   statsOf,
   actorLabel,
@@ -156,6 +157,9 @@ export function damage(ctx, target, amount, opts = {}) {
     if (isTick(state, target)) {
       if (target.integrity < 0) target.integrity = 0;
       ctx.emit({ type: 'flash', kind: 'tick', x: target.x, y: target.y });
+      // DIF-03: "Any damage to Tick ends the repair at once." A 0-damage glance never reaches
+      // here, which is the rule's other half.
+      items.endRepair(ctx);
     } else {
       ctx.emit({ type: 'flash', kind: 'enemy', x: target.x, y: target.y });
       // ENM-04 rule 3: any damage wakes a Dormant enemy. `lastKnown` is Tick's tile when Tick is
@@ -228,8 +232,20 @@ export function breakActor(ctx, enemy) {
   log.say(ctx.lines, 'enemyBroken', { D: actorLabel(state, enemy) }, log.LOG_COLORS.tickHits);
 
   state.floor.scrap.push({ x: enemy.x, y: enemy.y, color: type.color });
-  state.tick.xp += type.xp;
+  // ENM-12 (DIF-08): an Overwound enemy is worth `eliteXpMult` times the XP.
+  state.tick.xp += enemy.elite === true ? type.xp * tuningOf(ctx).eliteXpMult : type.xp;
   state.stats.enemiesBroken += 1;
+
+  // DIF-11: "When broken it drops the stolen item (ITM-11 placement, unlimited search — never
+  // lost)", before its own drop table is rolled so the two never fight over the same tile.
+  if (enemy.stolen) {
+    const tile = items.dropTile(state.floor, enemy.x, enemy.y, Infinity);
+    if (tile) {
+      state.floor.items.push({ name: enemy.stolen, count: 1, x: tile.x, y: tile.y });
+      log.say(ctx.lines, 'magpieDrops', { X: enemy.stolen });
+    }
+    enemy.stolen = null;
+  }
 
   items.onBreak(enemy, ctx);
   if (ctx.hooks && ctx.hooks.onEnemyBroken) ctx.hooks.onEnemyBroken(ctx, enemy);
@@ -306,6 +322,8 @@ export function attack(ctx, attacker, defender, opts = {}) {
   // 1. Noise at the attacker's tile.
   const r = opts.noise === undefined ? (ranged ? NOISE.SHOT : NOISE.MELEE) : opts.noise;
   noise(ctx, attacker.x, attacker.y, r);
+  // ENM-13 (DIF-10): the Cuckoo's shriek is a rally as well as a noise.
+  if (ranged && !isTick(state, attacker)) rallyGuards(ctx, attacker, r);
 
   // 2. Wake: a Dormant defender wakes before the hit roll.
   if (!isTick(state, defender) && defender.state === 'DORMANT') {
@@ -322,11 +340,17 @@ export function attack(ctx, attacker, defender, opts = {}) {
     return { hit: false, dealt: 0, roll: d100, chance };
   }
 
+  // ENM-06 THIEF (DIF-11): a Magpie's hit takes something instead of doing something.
+  const stolen = steal(ctx, attacker, defender);
+  if (stolen !== null) return { hit: true, dealt: 0, roll: d100, chance, stolen };
+
   // 4. Damage.
   const attackDice = opts.dice ? dice(opts.dice) : a.attack;
   let raw = roll(ctx.rng, attackDice);
   if (!ranged && opts.force !== false) raw += a.force;
   if (opts.damageBonus) raw += opts.damageBonus;
+  // ENM-12 (DIF-08): "every attack (melee, heavy, ranged) +eliteDamageBonus flat".
+  if (attacker.elite === true) raw += tuningOf(ctx).eliteDamageBonus;
 
   // 5. Apply.
   const dealt = damage(ctx, defender, raw, {
@@ -341,6 +365,10 @@ export function attack(ctx, attacker, defender, opts = {}) {
     log.say(ctx.lines, 'glance', label, color);
   }
 
+  // CMB-14 (DIF-07): the Rust-moth pits Tick's plating on any hit that lands, whatever the
+  // damage after Plating was.
+  corrode(ctx, attacker, defender);
+
   // 6. On-hit effects (the weapon's or the enemy type's; TEC-04 ids).
   const onHit = opts.onHit === undefined ? null : opts.onHit;
   if (onHit) applyOnHit(ctx, onHit, defender, dealt);
@@ -351,6 +379,92 @@ export function attack(ctx, attacker, defender, opts = {}) {
   // 7. Death check.
   checkDeath(ctx, defender, isTick(state, attacker) ? undefined : a.name, label.A);
   return { hit: true, dealt, roll: d100, chance };
+}
+
+/**
+ * CMB-14 (DIF-07) — corrosion. "When a Rust-moth's melee **hits** Tick (hit roll succeeds,
+ * regardless of damage after Plating) and Tick has plating equipped, roll `d100`; if
+ * `<= corrosionChance`, the equipped plating item gains 1 **wear**." An Overwound moth corrodes on
+ * `eliteCorrosionChance` instead (ENM-12).
+ *
+ * The `d100` is only drawn when there is a plate to pit, which is how the rule is written.
+ *
+ * @returns {boolean} whether the plate took a point of wear
+ */
+export function corrode(ctx, attacker, defender) {
+  const state = ctx.state;
+  if (!isTick(state, defender)) return false;
+  if (isTick(state, attacker) || attacker.isDecoy === true) return false;
+  if (enemyType(attacker).corrodes !== true) return false;
+  const worn = state.tick.equipment.plating;
+  if (!worn) return false;
+
+  const tuning = tuningOf(ctx);
+  const percent = attacker.elite === true ? tuning.eliteCorrosionChance : tuning.corrosionChance;
+  if (!chance(ctx.rng, percent)) return false;
+
+  const name = items.entryName(worn);
+  state.tick.equipment.plating = items.equipEntry(name, items.entryWear(worn) + 1);
+  log.say(ctx.lines, 'corrode', { X: name }, log.LOG_COLORS.tickHurt);
+  return true;
+}
+
+/**
+ * ENM-13 (DIF-10) — the Cuckoo's rally. "A Cuckoo shriek (noise 12) makes every **GUARD** within its
+ * radius behave as **CHASER** for `rallyTurns` turns, then RETURNING."
+ *
+ * A rallied guard is woken as well: a shriek it cannot hear is not a shriek (CMB-11's noise has
+ * already woken the Dormant ones inside the radius).
+ *
+ * @returns {number} how many guards left their doors
+ */
+export function rallyGuards(ctx, source, radius) {
+  const state = ctx.state;
+  if (!(radius > 0)) return 0;
+  if (enemyType(source).rallies !== true) return 0;
+  const tuning = tuningOf(ctx);
+  let count = 0;
+  for (const e of state.floor.enemies) {
+    if (e === source) continue;
+    if (chebyshev(e.x, e.y, source.x, source.y) > radius) continue;
+    if (e.isBoss === true) continue;
+    if (!(e.isGuard === true || enemyType(e).archetype === 'GUARD')) continue;
+    e.ralliedUntil = state.turn + tuning.rallyTurns;
+    if (e.state !== 'ACTIVE') wake(e, { x: state.tick.x, y: state.tick.y });
+    count += 1;
+  }
+  if (count > 0) log.say(ctx.lines, 'guardsRally', {}, log.LOG_COLORS.scripted);
+  return count;
+}
+
+/**
+ * ENM-06 THIEF (DIF-11) — the Magpie's theft, resolved in place of CMB-06's damage roll. "One unit
+ * from a random consumable stack in Tick's inventory (play RNG, uniform over stacks); if Tick
+ * carries no consumables, the hit deals `1d2` as normal." The thief then flees and never attacks
+ * again; what it took comes back when it breaks (`breakActor`).
+ *
+ * @returns {string|null} the item taken, or null when this hit is an ordinary one
+ */
+export function steal(ctx, attacker, defender) {
+  const state = ctx.state;
+  if (isTick(state, attacker) || attacker.isDecoy === true) return null;
+  if (!isTick(state, defender)) return null;
+  if (attacker.fleeing === true) return null;
+  if (enemyType(attacker).archetype !== 'THIEF') return null;
+
+  const slots = [];
+  state.tick.inventory.forEach((entry, slot) => {
+    if (entry && items.stacks(entry.name)) slots.push(slot);
+  });
+  if (slots.length === 0) return null;
+
+  const slot = slots[int(ctx.rng, 0, slots.length - 1)];
+  const name = items.takeFromStack(state.tick, slot);
+  attacker.stolen = name;
+  attacker.fleeing = true;
+  state.stats.itemsStolen = (state.stats.itemsStolen || 0) + 1;
+  log.say(ctx.lines, 'magpieSteals', { X: name }, log.LOG_COLORS.tickHurt);
+  return name;
 }
 
 /** TEC-04's enemy on-hit ids. Weapon specials are M05's. */

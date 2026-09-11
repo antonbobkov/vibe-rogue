@@ -28,8 +28,13 @@
 /** TEC-09: the one save slot. */
 export const SAVE_KEY = 'clockworkHollow.save.v1';
 
-/** TEC-09: "if ... `version !== 1`, treat as no save". There is no migration, ever. */
-export const SAVE_VERSION = 1;
+/**
+ * TEC-09: "if ... `version !== SAVE_VERSION`, treat as no save". There is no migration, ever.
+ *
+ * M13 raised it from 1 to 2: `tick.equipment.*` became `{name, wear}` and the state gained
+ * `tuning` (DIF-02, DIF-07), so a version 1 save describes a run these rules cannot resume.
+ */
+export const SAVE_VERSION = 2;
 
 /**
  * The one key `serialize` is allowed to drop: `test/fixtures/maps.js`'s per-enemy `ai` override,
@@ -153,6 +158,8 @@ function isJournalShape(v) {
 const SHAPE = Object.freeze([
   ['version', (v) => v === SAVE_VERSION],
   ['seedString', (v) => typeof v === 'string'],
+  // DIF-02: the difficulty numbers the run was played under travel with it.
+  ['tuning', isObject],
   ['playRngState', (v) => isInt(v) && v >= 0 && v <= 0xffffffff],
   ['turn', isInt],
   ['floorNumber', isInt],
@@ -180,7 +187,8 @@ export function validate(state) {
 }
 
 /**
- * Read a save (TEC-09): "if the key is missing, or `JSON.parse` fails, or `version !== 1`, treat as
+ * Read a save (TEC-09): "if the key is missing, or `JSON.parse` fails, or the version is not the
+ * current one, treat as
  * no save (and delete it). Never attempt migration." The shape check joins the same branch — a
  * truncated or hand-edited save is no more resumable than a version 0 one.
  *

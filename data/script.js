@@ -227,7 +227,7 @@ export const log = Object.freeze({
   knockback: '{D} is knocked back.',
   tensionLoosening: 'The spring is loosening.',
   tensionNearlySlack: "Tick's spring is nearly slack.",
-  station: 'Tick winds the spring. Tension 100.',
+  station: 'Tick winds the spring. Tension {n}.',
   stationSpent: 'This station has run down.',
   springKey: 'Tick fits the Spring-Key. Tension {n}.',
   solder: 'Tick solders the plate. Integrity {n}.',
@@ -255,6 +255,26 @@ export const log = Object.freeze({
   decoyExpires: 'The decoy runs down.',
   decoyBroken: 'The decoy is broken.',
   salvage: 'Something worth keeping: {X}.',
+  // ---- M13 (50-difficulty-plan.md) ----------------------------------------------------
+  // DIF-03: Solder is a repair that runs for three turns and can be interrupted.
+  solderStart: 'Tick begins soldering.',
+  solderCracks: 'The solder cracks.',
+  alreadySoldering: 'Tick is already soldering.',
+  solderNoSpring: 'Not enough spring to heat the solder.',
+  // DIF-05: winding a station is loud.
+  stationLoud: 'The winding rings through the tower.',
+  // DIF-06: the wandering pressure of WLD-14.
+  wanderer: 'Somewhere on this floor, something winds itself up.',
+  // DIF-07: the Rust-moth's corrosion (CMB-14).
+  corrode: 'The Rust-moth pits the {X}.',
+  // DIF-10: the Cuckoo's shriek rallies the guards (ENM-13).
+  guardsRally: 'The guards leave their doors.',
+  // DIF-11: the Magpie's theft (ENM-06 THIEF).
+  magpieSteals: 'The Magpie snatches the {X}!',
+  magpieDrops: 'The Magpie drops the {X}.',
+  // DIF-12: the Wound Locks on the cache room (WLD-15).
+  lockWound: 'Tick winds the lock. Tension {n}.',
+  lockNoSpring: 'Not enough spring for the lock.',
   sympatheticBreak: 'The break carries.',
   indirectDamage: '{D} takes {n} from the {X}.',
   fieldRepair: 'Tick mends the frame. Integrity {n}.',

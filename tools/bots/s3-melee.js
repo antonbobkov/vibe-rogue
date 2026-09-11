@@ -22,6 +22,7 @@ import {
   stepTo,
   stepToward,
   hazardStall,
+  stepsIntoLock,
   chebyshev,
   idx,
   TILE,
@@ -60,7 +61,7 @@ export function createBot() {
           const step = stepTo(state, target);
           if (step) return step;
         }
-        const step = firstStep(state, approachPathTo(state, target.x, target.y));
+        const step = firstStep(state, approachPathTo(state, target.x, target.y, { locks: false }));
         if (step) return hazardStall(state, step) || step;
       }
 
@@ -69,8 +70,10 @@ export function createBot() {
       const equip = equipPolicy(game);
       if (equip) return equip;
       for (const item of rememberedItems(game, unreachable)) {
-        const step = stepToward(state, item.x, item.y);
-        if (step) return hazardStall(state, step) || step;
+        // "never uses ... stations", and WLD-15's locks are the same kind of spending (DIF-12):
+        // the path is planned around them, and an item only a lock reaches is written off.
+        const step = stepToward(state, item.x, item.y, { locks: false });
+        if (step && !stepsIntoLock(state, step)) return hazardStall(state, step) || step;
         unreachable.add(idx(item.x, item.y));
       }
 
@@ -78,8 +81,8 @@ export function createBot() {
       if (state.floor.tiles[tick.y][tick.x] === TILE.STAIRS_UP) return { type: 'ascend' };
       const stairs = state.floor.features.stairs;
       if (!stairs) return null;
-      const step = stepToward(state, stairs.x, stairs.y);
-      if (!step) return null;
+      const step = stepToward(state, stairs.x, stairs.y, { locks: false });
+      if (!step || stepsIntoLock(state, step)) return null;
       return hazardStall(state, step) || step;
     },
   };

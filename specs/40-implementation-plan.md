@@ -142,6 +142,7 @@ Travel and Shift-run are `main.js` timers that call `act` repeatedly (`UI-13`, `
 | 10 | Rendering, input, screens | `render.js`, `main.js`, `screens/*` | ACC-100–122; browser ACC-01–06 | XL |
 | 11 | Bots & balance sim | `tools/sim.js` | ACC-130, 131 | L |
 | 12 | Release | perf tests, empty allowlist, README, tag | ACC-133; TEC-14 | S |
+| 13 | The Tower Notices | `data/tuning.js`, `wander.js`, ten difficulty changes, the DIF-15 ladder | ACC-140–167; re-targeted 130, 131 | XL |
 
 **Order:** strictly sequential, with two exceptions: M02 may run in parallel with M01 (no shared
 files); M05 and M06 may run in parallel after M04 (each replaces only its own stub module from M04 and adds
@@ -610,6 +611,32 @@ for the M11 and M12 DoD. ACC-130's test title states the seed count it ran.
 
 **DoD.** `npm run dod -- 12` green; allowlist `[]`; `git tag v1.0.0`.
 
+---
+
+### M13 — The Tower Notices
+
+**Goal.** The released game is beaten on a first try; make it hard in the way the pillars allow.
+`specs/50-difficulty-plan.md` is this milestone's detail — its DIF-00 diagnosis, its ten changes
+(DIF-03 … DIF-12), its tuning module (DIF-02), its recomputed balance model (DIF-14) and its
+balancing ladder (DIF-15) are normative here and are not repeated.
+
+**Inputs.** `50-difficulty-plan.md`; the M11 sim and its bots; `31-balance.md`.
+
+**Files.** `data/tuning.js` (new), `src/wander.js` (new), `data/{items,enemies,floors,skills,script}.js`,
+`src/{engine,turn,combat,items,ai,gen,tiles,actors,render,save,travel}.js`, `src/screens/{run,inspect}.js`,
+`tools/sim.js`, `tools/bots/*`, `test/integration/m13.test.js` (new), `test/meta/tuning.test.js` (new).
+
+**Tasks.** DIF-13's touch list, in DIF-15's order: the tuning module first, then the economy
+(DIF-03/04), then DIF-05, DIF-06, DIF-09, DIF-10, DIF-07, DIF-08, DIF-11, DIF-12, then the bots,
+then DIF-14's recomputation, then the ladder.
+
+**Tests.** ACC-140–167 (`test/integration/m13.test.js`); `test/meta/tuning.test.js`; the re-targeted
+ACC-130 bands of DIF-01 and the two-halved ACC-131; every earlier ACC still green.
+
+**DoD.** `npm run dod -- 13` green; allowlist `[]`; `BALANCE_SKIPS` empty; `npm run sim` reports
+every DIF-01 target met or a logged, explained gap; `specs/PLAYTEST-M13.md` exists; `git tag
+v1.1.0`.
+
 ## PLN-07 Handling the unknowns
 
 ### 7.1 Ambiguity protocol (`specs/DECISIONS.md`)
@@ -633,6 +660,13 @@ When a `BAL-C*` or `ACC-130/131` target fails:
    `BALANCE: <target> unmet after 3 iterations; see B-nnn`, keep every other test green, and
    continue. Never widen a target band.
 
+**Superseded for M13 and after** by the DIF-15 ladder, which names the knobs, their order and their
+step size, allows ten iterations, and — because every knob now lives in `data/tuning.js` and
+`tools/sim.js --tuning` measures a candidate without a code change — ends differently: a target the
+ladder cannot reach is reported as a **gap** beside its check (printed, explained by its B-row, and
+pinned by an assertion at the number actually reached) rather than as a skipped test. `BALANCE_SKIPS`
+stays empty.
+
 ### 7.3 Unobservable UI behavior
 
 If a `UI-*` rule cannot be asserted through `CH.grid()`/`CH.state`, add the narrowest read-only
@@ -648,11 +682,11 @@ the test tiers or introduce a build step.
 
 The game is done when all of the following hold on `main`:
 
-- [ ] `npm run dod -- 12` is green in CI.
+- [ ] `npm run dod -- 13` is green in CI.
 - [ ] `test/meta/acc-allowlist.json` is `[]` and `acc-coverage` passes.
 - [ ] Every test title carries an ACC ID or `@unit`, and a milestone tag (meta test).
 - [ ] `specs/DECISIONS.md` exists (possibly with zero rows) and every D-entry cites a milestone.
-- [ ] `BAL-C1–C6`, `ACC-130`, `ACC-131` pass, or each failure is a logged B-entry with a skipped test.
+- [ ] `BAL-C1–C6`, `ACC-130`, `ACC-131` pass, or each miss is a logged B-entry and a printed gap.
 - [ ] `npm start` serves a game that can be played from title to either ending with keyboard alone
       and with mouse alone (covered by the M10 tests, but stated as the human-facing outcome).
-- [ ] `README.md` documents run, test, and seed usage; `v1.0.0` is tagged.
+- [ ] `README.md` documents run, test, and seed usage; `v1.1.0` is tagged.

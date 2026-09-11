@@ -4,6 +4,59 @@ All notable changes to Clockwork Hollow. This project is versioned by release, n
 milestones below are the `40-implementation-plan.md` build order, kept because every one of them is a
 reviewable commit with its own green Definition of Done.
 
+## [1.1.0] — 2026-09-11
+
+**The Tower Notices.** The 1.0 game was beaten on a first try: the greedy-explorer bot won 88% of
+runs and the clock never bound. M13 (`specs/50-difficulty-plan.md`) makes it hard the way the
+classics are — scarcity under a clock, and threats that scale with the player — without hiding
+anything, randomising a death, or adding a one-shot.
+
+### Changed — the ten rules
+
+- **Solder is a repair, not a swig** (`ITM-09`). It costs Tension to start, mends over three turns,
+  and **any hit ends it**. Mending is now something you leave a fight to do.
+- **Consumables are scarce** (`ITM-03`, `SKL-03`, drop tables). No regular enemy drops a Solder or a
+  Spring-Key any more; Salvage pays in throwables; floor and cache weights are down.
+- **Winding is loud** (`CHR-05`). A Winding Station wakes what is near it and points what is awake at
+  the noise. The station is still the only free wind — now it is a decision.
+- **The floor keeps sending things** (`WLD-14`). Every so often a new enemy arrives, out of sight and
+  far away, Active and looking for Tick. The panel counts down to it.
+- **Rust** (`CMB-14`). A Rust-moth's bite pits your plating, permanently, per plate.
+- **Overwound** (`ENM-12`). A regular spawn may be the same enemy with more of it: +50% Integrity,
+  +10 accuracy, +2 damage before Plating, double XP. Same glyph, dark gold ground, named in the
+  inspect line.
+- **Level-ups give less** (`CHR-07`): 3 max Integrity per level, not 4.
+- **Attention persists** (`ENM-05`, `ENM-13`). Enemies remember far longer; a woken Spring-Hound
+  hunts by sound through walls and never sleeps again; a Cuckoo's shriek takes the guards off their
+  doors.
+- **The Magpie** (`BST-02`, `ENM-06` THIEF). An aviary bird that steals a consumable and runs. Break
+  it and you get it back.
+- **Wound Locks** (`WLD-15`). Every way into the cache room costs Tension to open — or a Gear-Golem.
+
+### Added
+
+- `data/tuning.js`: **every** difficulty number in one frozen object (`DIF-02`), carried on the save
+  so a run keeps the numbers it was played under. `node tools/sim.js --all --tuning '<json>'`
+  measures a candidate set without a line of code changing.
+- `src/wander.js`: `WLD-14`'s scheduler and placement.
+- `test/integration/m13.test.js` (ACC-140–167) and `test/meta/tuning.test.js`.
+- `specs/50-difficulty-plan.md` and `specs/PLAYTEST-M13.md`.
+
+### Balance
+
+`31-balance.md` is recomputed (`DIF-14`) and the DIF-15 ladder is logged in
+`specs/BALANCE-CHANGELOG.md` as B-005 … B-014. Measured over the full 200 seeds on the shipped
+numbers: the greedy explorer wins **38.5%** of runs (was 88%; target 30–60), the clock causes
+**25%** of its deaths (target 20–40), no single enemy type causes more than **25%** (target ≤ 40),
+the clock-only bot arrives on floor 8 with **64** Tension (was 79; target 40–70), and a skill-less
+bruteforce dies on floors 2–4 in **98%** of runs. The one target the ladder could not reach — the median death floor of
+the explorer's losses, 3 rather than 5–7 — is printed as a `GAP` beside the check and explained in
+B-014; no test is skipped for it and no band was widened.
+
+### Save format
+
+The save version is **2**. A 1.0 save is treated as no save, as `TEC-09` has always said it would be.
+
 ## [1.0.0] — 2026-09-10
 
 The complete game: eight floors, two endings, permadeath, playable in a browser with no build step

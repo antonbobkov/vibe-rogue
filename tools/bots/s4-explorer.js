@@ -23,7 +23,9 @@ import {
   visibleEnemies,
   createChaseTracker,
   stepAwayFromTelegraph,
+  stepAwayFromEnemies,
   consumablePolicy,
+  throwPolicy,
   equipPolicy,
   itemUnderfoot,
   pickupPolicy,
@@ -41,9 +43,12 @@ import {
   stepTo,
   stepToward,
   hazardStall,
+  stepsIntoLock,
   slotWith,
+  SPRING_KEY_AT,
   chebyshev,
   idx,
+  LOCK_TENSION,
 } from './util.js';
 
 export const id = 'S4';
@@ -64,6 +69,29 @@ export const BUILD = Object.freeze([
 /** Above this Tension the bot is willing to spend 8 on an Overwind Strike (BAL-01's model). */
 const OVERWIND_TENSION_FLOOR = 45;
 
+/**
+ * DIF-03 — **breaking off to mend**. A repair takes three turns and any hit ends it, so a bot that
+ * swings at whatever it can see never solders at all: measured on the M13 defaults, the S4 bot
+ * spent 4.6% of its turns below 60% Integrity and was out of contact for 8% of those, so it died
+ * on floor 3 with a full pack of Solder. Getting out is the answer the rule is asking for, and a
+ * fifth-run player gives it (OVR-05), so the bot does too (D-113).
+ *
+ * Below `RETREAT_AT` of maximum Integrity, with Solder in the pack, it steps away from what it can
+ * see instead of trading — for at most `RETREAT_PATIENCE` consecutive turns, so a FAST enemy it
+ * cannot outrun is fought rather than kited around the floor for ever.
+ */
+const RETREAT_AT = 0.55;
+const RETREAT_PATIENCE = 10;
+
+/**
+ * CHR-05 (DIF-05) — **when to wind**. BAL-07 wrote "uses the station on sight", which was free
+ * advice while winding was silent: winding at 90 Tension throws away 90 of the 100 and, since
+ * M13, also rings the floor's every enemy at Tick (`stationNoise`). A fifth-run player winds when
+ * the spring is actually low, so the bot does too (D-114). ACC-131's variant is CHR-03's own
+ * warning, 30.
+ */
+const STATION_AT = 45;
+
 /** An enemy worth an Overwind Strike rather than a plain swing: bosses and the heavy regulars. */
 const OVERWIND_INTEGRITY = 16;
 
@@ -80,7 +108,7 @@ const GOAL_PATIENCE = 120;
  */
 export function createBot(opts = {}) {
   const springKeys = opts.springKeys !== false;
-  const stationAt = opts.stationAt === undefined ? 'sight' : opts.stationAt;
+  const stationAt = opts.stationAt === undefined ? STATION_AT : opts.stationAt;
 
   /** Per-floor memory. */
   let visitedRooms = new Set();
@@ -89,6 +117,7 @@ export function createBot(opts = {}) {
   let avoid = new Set();
   let goal = null;
   let dodgedLastTurn = false;
+  let retreating = 0;
   const chase = createChaseTracker();
 
   return {
@@ -103,6 +132,7 @@ export function createBot(opts = {}) {
       avoid = new Set();
       goal = null;
       dodgedLastTurn = false;
+      retreating = 0;
       chase.reset();
       markRoom(game);
     },
@@ -127,6 +157,27 @@ export function createBot(opts = {}) {
       const consumable = consumablePolicy(game, { springKeys });
       if (consumable) return consumable;
 
+      // 1b. DIF-03: break off and mend. A repair only runs while nothing is looking at Tick, so
+      //     the Solder in the pack is worth nothing until the fight is left behind (D-113).
+      const inContact = visibleEnemies(game).length > 0;
+      if (!inContact) retreating = 0;
+      if (
+        inContact &&
+        tick.integrity < tick.integrityMax * RETREAT_AT &&
+        !tick.repair &&
+        slotWith(tick, 'Solder') >= 0 &&
+        // Backing away costs turns, and turns are spring: with the spring already low there is
+        // nothing to buy the retreat with, so the fight is finished instead (CHR-04).
+        tick.tension > SPRING_KEY_AT &&
+        retreating < RETREAT_PATIENCE
+      ) {
+        const away = stepAwayFromEnemies(game);
+        if (away) {
+          retreating += 1;
+          return away;
+        }
+      }
+
       // 2. Field Repair is the fallback when the Solder has run out (SKL-03, once per floor).
       if (
         tick.integrity < tick.integrityMax * 0.5 &&
@@ -148,6 +199,11 @@ export function createBot(opts = {}) {
         }
       }
       dodgedLastTurn = false;
+
+      // 3b. DIF-04: spend the throwables Salvage pays in, rather than carrying them to the grave
+      //     (D-115). A Stun or a Blind is worth more than the swing it replaces.
+      const thrown = throwPolicy(game);
+      if (thrown) return thrown;
 
       // 4. "fights everything" — a visible boss first, then the nearest, skipping the ones this
       //    floor's chases have given up on (ENM-06's retreating SKIRMISHER).
@@ -171,9 +227,12 @@ export function createBot(opts = {}) {
           const step = stepTo(state, target);
           if (step) return step;
         }
-        const approach = firstStep(state, approachPathTo(state, target.x, target.y));
+        // WLD-15 (DIF-12): the guard inside a locked cache is only worth the spring if there is
+        // spring to spare.
+        const locks = tick.tension >= LOCK_TENSION;
+        const approach = firstStep(state, approachPathTo(state, target.x, target.y, { locks }));
         if (approach) return approach;
-        const far = stepToward(state, target.x, target.y);
+        const far = stepToward(state, target.x, target.y, { locks });
         if (far) return far;
       }
 
@@ -217,8 +276,16 @@ export function createBot(opts = {}) {
           goal = null;
           continue;
         }
-        const step = stepToward(state, goal.x, goal.y);
-        if (step) return hazardStall(state, step) || step;
+        // WLD-15 (DIF-12): the cache costs spring. Below `LOCK_TENSION` the bot plans around the
+        // locks, and a goal only a lock can reach is written off for this floor.
+        const step = stepToward(state, goal.x, goal.y, { locks: tick.tension >= LOCK_TENSION });
+        if (step) {
+          if (stepsIntoLock(state, step) && tick.tension < LOCK_TENSION) {
+            retire(goal);
+            continue;
+          }
+          return hazardStall(state, step) || step;
+        }
         retire(goal);
       }
       return null;

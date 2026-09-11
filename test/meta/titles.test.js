@@ -1,7 +1,7 @@
 // PLN-02 R5 — tests name their spec.
 //
 // Every test title contains the ACC ID(s) it verifies, or `@unit` for module-level tests, and
-// exactly one milestone tag @m00..@m12.
+// exactly one milestone tag @m00..@m13.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -13,7 +13,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '.
 const TEST_DIR = path.join(ROOT, 'test');
 
 const MILESTONE_TAG = /@m\d+/g;
-const VALID_TAG = /^@m(0[0-9]|1[0-2])$/;
+const VALID_TAG = /^@m(0[0-9]|1[0-3])$/;
 const NAMES_A_SPEC = /\bACC-\d{2,3}\b|@unit\b/;
 
 /** Remove comments but keep string bodies intact (titles live in strings). */

@@ -24,6 +24,7 @@
 // inside functions*, never at module-evaluation time.
 
 import { ITEMS_BY_NAME } from '../data/items.js';
+import { TUNING } from '../data/tuning.js';
 import { ENEMIES_BY_NAME } from '../data/enemies.js';
 import { TILE, walkable } from './tiles.js';
 import { chebyshev, inBounds, readingOrder } from './grid.js';
@@ -32,13 +33,70 @@ import * as log from './log.js';
 import * as combat from './combat.js';
 import * as actors from './actors.js';
 
-/** The base Tension decay period of CHR-04; the Governor's REGULATED special is the only change. */
-export const BASE_DECAY_PERIOD = 5;
-export const REGULATED_DECAY_PERIOD = 6;
+/**
+ * DIF-02 — the tuning object behind a call. Every difficulty number in this module comes from it;
+ * `data/tuning.js`'s defaults stand in for the callers that have no run context (the UI's item
+ * descriptions, and the tests that ask about an item rather than about a run).
+ */
+export function tuningOf(ctx) {
+  return (ctx && ctx.tuning) || TUNING;
+}
 
-/** ITM-03: ten slots, lettered a–j, consumables stacking to five. */
+/**
+ * The base Tension decay period of CHR-04 (`tuning.decayPeriod`); the Governor's REGULATED special
+ * adds `REGULATED_BONUS` to whatever that is (CAT-05). Both constants are the *defaults*: a run
+ * reads its own period through `equipmentMods(tick, tuning)`.
+ */
+export const BASE_DECAY_PERIOD = TUNING.decayPeriod;
+export const REGULATED_BONUS = 1;
+export const REGULATED_DECAY_PERIOD = TUNING.decayPeriod + REGULATED_BONUS;
+
+/** ITM-03: ten slots, lettered a–j; consumables stack to `tuning.stackMax` (DIF-04). */
 export const INVENTORY_SLOTS = 10;
-export const STACK_MAX = 5;
+export const STACK_MAX = TUNING.stackMax;
+
+/**
+ * ITM-01/02/03 (DIF-07) — an **equipment entry**. A worn or carried piece of equipment is
+ * `{name, wear}` (in the inventory, `{name, count: 1, wear}`) rather than a bare name, because
+ * CMB-14's corrosion is per item *instance*: two Iron Platings in one pack wear separately, and a
+ * plate's wear survives unequipping, re-equipping and a save (ACC-153).
+ *
+ * A bare string is still read as an unworn entry, so anything that only cares about the name can
+ * keep saying what it means.
+ */
+export function entryName(entry) {
+  if (entry === null || entry === undefined) return null;
+  return typeof entry === 'string' ? entry : entry.name || null;
+}
+
+/** CMB-14: how much wear an equipment entry carries. */
+export function entryWear(entry) {
+  if (!entry || typeof entry === 'string') return 0;
+  return entry.wear > 0 ? entry.wear : 0;
+}
+
+/** An equipment entry built from a name and a wear count, as the slots store it. */
+export function equipEntry(name, wear = 0) {
+  return wear > 0 ? { name, wear } : { name, wear: 0 };
+}
+
+/** CMB-14 / ITM-01: a plating entry's effective Plating — `max(0, base - wear)`. */
+export function platingOf(entry) {
+  const def = itemDef(entryName(entry));
+  if (!def || !def.plating) return 0;
+  return Math.max(0, def.plating - entryWear(entry));
+}
+
+/** ITM-05 / UI-03: how a worn entry is written — `Iron Plating (-2)`. */
+export function displayName(entry) {
+  const name = entryName(entry);
+  if (name === null) return null;
+  const wear = entryWear(entry);
+  return wear > 0 ? `${name} (${MINUS}${wear})` : name;
+}
+
+/** UI-05 writes a negative with a true minus sign. */
+const MINUS = '\u2212';
 
 /** ITM-01's three equipment slots (ITM-02), and the category each accepts. */
 export const EQUIP_SLOTS = Object.freeze(['weapon', 'plating', 'attachment']);
@@ -58,13 +116,32 @@ const EQUIP_LOG = Object.freeze({
 export const QUIET_MELEE_NOISE = 2;
 export const SILENT = 0;
 
-/** CAT-06: the amounts, and the **Efficient Springs** (SKL-03) column of the same table. */
+/** CAT-06: the three instant amounts, and the **Efficient Springs** (SKL-03) bonus on each. */
 export const EFFICIENT_SPRINGS = 'Efficient Springs';
-export const AMOUNTS = Object.freeze({
-  SOLDER: Object.freeze({ plain: 15, efficient: 25 }),
-  SPRING_KEY: Object.freeze({ plain: 30, efficient: 45 }),
-  FLUX: Object.freeze({ plain: 5, efficient: 10 }),
+
+/** The two `tuning` keys behind each CAT-06 amount: the plain total, then the SKL-03 bonus. */
+const AMOUNT_KEYS = Object.freeze({
+  SOLDER: Object.freeze(['solderAmount', 'efficientSolderBonus']),
+  SPRING_KEY: Object.freeze(['springKeyAmount', 'efficientKeyBonus']),
+  FLUX: Object.freeze(['fluxAmount', 'efficientFluxBonus']),
 });
+
+/**
+ * CAT-06 / SKL-03 — what one instant consumable is worth to this Tick: the tuned amount plus
+ * **Efficient Springs**' bonus when Tick has the skill. For Solder this is the *total* of the
+ * DIF-03 repair, not a per-turn figure.
+ *
+ * @param {'SOLDER'|'SPRING_KEY'|'FLUX'} effect
+ * @param {object|null} tick the TEC-05 `state.tick`, or null for "without the skill"
+ * @param {object} [tuning] `data/tuning.js`'s defaults unless a run's own is passed
+ * @returns {number|null} null for an effect with no amount (the four throwables)
+ */
+export function consumableAmount(effect, tick, tuning = TUNING) {
+  const keys = AMOUNT_KEYS[effect];
+  if (!keys) return null;
+  const efficient = tick && Array.isArray(tick.skills) ? tick.skills.includes(EFFICIENT_SPRINGS) : false;
+  return tuning[keys[0]] + (efficient ? tuning[keys[1]] : 0);
+}
 
 /** ITM-11 — how far from its tile a non-boss drop may be placed. */
 export const DROP_SEARCH_RADIUS = 2;
@@ -126,24 +203,25 @@ export function slotOfLetter(letter) {
  * @returns {{force: number, precision: number, plating: number, evasion: number,
  *            decayPeriod: number, meleeAccuracyMod: number, rangedAccuracyMod: number}}
  */
-export function equipmentMods(tick) {
+export function equipmentMods(tick, tuning = TUNING) {
   const eq = (tick && tick.equipment) || {};
-  const weapon = itemDef(eq.weapon || null);
-  const plating = itemDef(eq.plating || null);
-  const attachment = itemDef(eq.attachment || null);
+  const weapon = itemDef(entryName(eq.weapon));
+  const plating = itemDef(entryName(eq.plating));
+  const attachment = itemDef(entryName(eq.attachment));
 
   const mods = {
     force: 0,
     precision: 0,
     plating: 0,
     evasion: 0,
-    decayPeriod: BASE_DECAY_PERIOD,
+    decayPeriod: tuning.decayPeriod,
     meleeAccuracyMod: 0,
     rangedAccuracyMod: 0,
   };
 
   if (plating) {
-    mods.plating += plating.plating || 0;
+    // CMB-14 (DIF-07): wear eats the plate, never the evasion penalty of wearing it.
+    mods.plating += platingOf(eq.plating);
     mods.evasion -= plating.evasionPenalty || 0;
   }
   if (attachment) {
@@ -151,7 +229,7 @@ export function equipmentMods(tick) {
     mods.precision += attachment.precisionMod || 0;
     mods.plating += attachment.platingMod || 0;
     mods.evasion += attachment.evasionMod || 0;
-    if (attachment.special === 'REGULATED') mods.decayPeriod = REGULATED_DECAY_PERIOD;
+    if (attachment.special === 'REGULATED') mods.decayPeriod = tuning.decayPeriod + REGULATED_BONUS;
   }
   if (weapon) {
     if (weapon.category === 'melee') mods.meleeAccuracyMod = weapon.accuracyMod || 0;
@@ -162,19 +240,19 @@ export function equipmentMods(tick) {
 
 /** The equipped melee weapon (ITM-08: a ranged weapon in the slot leaves Tick unarmed, D-043). */
 export function meleeWeapon(tick) {
-  const def = itemDef((tick.equipment && tick.equipment.weapon) || null);
+  const def = itemDef(entryName(tick.equipment && tick.equipment.weapon));
   return def && def.category === 'melee' ? def : null;
 }
 
 /** The equipped ranged weapon, or null when the weapon slot holds something else (CMB-08). */
 export function rangedWeapon(tick) {
-  const def = itemDef((tick.equipment && tick.equipment.weapon) || null);
+  const def = itemDef(entryName(tick.equipment && tick.equipment.weapon));
   return def && def.category === 'ranged' ? def : null;
 }
 
 /** The `special` id of the fitted attachment (CAT-05), or null. */
 export function attachmentSpecial(tick) {
-  const def = itemDef((tick && tick.equipment && tick.equipment.attachment) || null);
+  const def = itemDef(entryName(tick && tick.equipment && tick.equipment.attachment));
   return def ? def.special || null : null;
 }
 
@@ -241,7 +319,9 @@ export function canHoldItem(floor, x, y) {
 export function placeFloorItems(floor, records, ctx) {
   const state = ctx && ctx.state;
   for (const r of records) {
-    floor.items.push({ name: r.name, count: r.count === undefined ? 1 : r.count, x: r.x, y: r.y });
+    const record = { name: r.name, count: r.count === undefined ? 1 : r.count, x: r.x, y: r.y };
+    if (r.wear > 0) record.wear = r.wear;
+    floor.items.push(record);
     if (state && isUnique(r.name)) markUnique(state, r.name);
   }
   return floor.items;
@@ -306,7 +386,9 @@ export function onBreak(enemy, ctx) {
   const boss = enemy.isBoss === true || type.archetype === 'BOSS';
 
   // ITM-11: "roll d100; if <= dropChance". Bosses always drop — their dropChance is 100.
-  if (!chance(ctx.rng, type.dropChance)) return null;
+  // ENM-12 (DIF-08): an Overwound enemy's drop chance is doubled, capped at 100.
+  const dropChance = enemy.elite === true ? Math.min(100, type.dropChance * 2) : type.dropChance;
+  if (!chance(ctx.rng, dropChance)) return null;
   if (!type.dropTable || type.dropTable.length === 0) return null;
 
   const name = rollTable(ctx.rng, type.dropTable, { uniques: state.uniquesGenerated });
@@ -362,18 +444,19 @@ export function slotOf(tick, name) {
  * @returns {{ok: boolean, reason?: string, slot?: number, stacked?: boolean}}
  *          `ok:false, reason:'full'` when neither a stack nor a slot has room (ITM-03, ACC-50).
  */
-export function addToInventory(tick, name, count = 1) {
+export function addToInventory(tick, name, count = 1, tuning = TUNING, wear = 0) {
   if (stacks(name)) {
     for (let i = 0; i < tick.inventory.length; i++) {
       const slot = tick.inventory[i];
-      if (slot.name === name && slot.count + count <= STACK_MAX) {
+      if (slot.name === name && slot.count + count <= tuning.stackMax) {
         slot.count += count;
         return { ok: true, slot: i, stacked: true };
       }
     }
   }
   if (tick.inventory.length >= INVENTORY_SLOTS) return { ok: false, reason: 'full' };
-  tick.inventory.push({ name, count });
+  // DIF-07: equipment carries its wear into the pack; consumables have none.
+  tick.inventory.push(isEquipment(name) ? { name, count, wear } : { name, count });
   return { ok: true, slot: tick.inventory.length - 1, stacked: false };
 }
 
@@ -413,7 +496,7 @@ export function pickUp(ctx) {
     return { ok: true };
   }
 
-  const added = addToInventory(tick, here.name, here.count);
+  const added = addToInventory(tick, here.name, here.count, tuningOf(ctx), entryWear(here));
   if (!added.ok) {
     log.say(ctx.lines, 'inventoryFull');
     return { ok: false, reason: 'full' };
@@ -467,25 +550,98 @@ export function useItem(ctx, slot) {
   const def = itemDef(entry.name);
   if (def.category !== 'instant') return { ok: false, reason: 'notUsable' };
 
+  // ITM-09 / CAT-06 (DIF-03): Solder starts a *repair*. Both of its refusals cost no turn and
+  // neither consumes the item (CMB-05).
+  if (def.effect === 'SOLDER') {
+    const tuning = tuningOf(ctx);
+    if (tick.repair) {
+      log.say(ctx.lines, 'alreadySoldering');
+      return { ok: false, reason: 'alreadySoldering' };
+    }
+    // CHR-03, read as CMB-08 reads it for the ranged weapon: a cost that would wind Tick down is
+    // refused rather than paid.
+    if (tick.tension <= tuning.solderTension) {
+      log.say(ctx.lines, 'solderNoSpring');
+      return { ok: false, reason: 'notEnoughTension' };
+    }
+  }
+
   takeFromStack(tick, slot);
   applyEffect(ctx, def.effect);
   return { ok: true };
+}
+
+// ---------------------------------------------------------------------------------------------
+// ITM-09 / CAT-06 — the Solder repair (DIF-03)
+// ---------------------------------------------------------------------------------------------
+
+/**
+ * Start a repair: pay `solderTension`, then restore `solderAmount` over `solderTurns` turns. The
+ * per-turn share is the even split, and whatever the split leaves over is paid on the last turn —
+ * which is how **Efficient Springs**' bonus lands (DIF-03).
+ *
+ * `repair.left` carries the untouched remainder, so one field does the work of an even share and a
+ * remainder both (D-109).
+ *
+ * @returns {{turnsLeft: number, perTurn: number, left: number}|null}
+ */
+export function startRepair(ctx) {
+  const tuning = tuningOf(ctx);
+  const tick = ctx.state.tick;
+  combat.spendTension(ctx, tuning.solderTension);
+  if (ctx.dead) return null;
+  const total = consumableAmount('SOLDER', tick, tuning);
+  const turns = Math.max(1, tuning.solderTurns);
+  tick.repair = { turnsLeft: turns, perTurn: Math.floor(total / turns), left: total };
+  log.say(ctx.lines, 'solderStart');
+  return tick.repair;
+}
+
+/**
+ * CMB-02 step 3 — one turn of a running repair, applied *before* the status ticks. `turn.js` calls
+ * it on the turn the Solder was used and on each of the next `solderTurns - 1` turns.
+ *
+ * @returns {number} the Integrity actually restored this turn
+ */
+export function repairTick(ctx) {
+  const tick = ctx.state.tick;
+  const repair = tick.repair;
+  if (!repair) return 0;
+  const amount = repair.turnsLeft <= 1 ? repair.left : Math.min(repair.perTurn, repair.left);
+  const healed = combat.heal(ctx.state, tick, amount);
+  repair.left -= amount;
+  repair.turnsLeft -= 1;
+  if (repair.turnsLeft <= 0 || repair.left <= 0) tick.repair = null;
+  log.say(ctx.lines, 'solder', { n: tick.integrity });
+  return healed;
+}
+
+/**
+ * DIF-03 — "Any damage to Tick ends the repair at once (remaining healing lost)". `combat.damage`
+ * calls it for a hit on Tick that dealt 1 or more; a 0-damage glance does not interrupt.
+ *
+ * @returns {boolean} whether a repair was running
+ */
+export function endRepair(ctx) {
+  const tick = ctx.state.tick;
+  if (!tick.repair) return false;
+  tick.repair = null;
+  log.say(ctx.lines, 'solderCracks');
+  return true;
 }
 
 /** CAT-06's instant effects (TEC-04 ids). */
 function applyEffect(ctx, effect) {
   const state = ctx.state;
   const tick = state.tick;
-  const efficient = tick.skills.includes(EFFICIENT_SPRINGS);
-  const amount = (id) => (efficient ? AMOUNTS[id].efficient : AMOUNTS[id].plain);
+  const tuning = tuningOf(ctx);
+  const amount = (id) => consumableAmount(id, tick, tuning);
 
   switch (effect) {
-    case 'SOLDER': {
-      const healed = combat.heal(state, tick, amount('SOLDER'));
-      if (healed > 0) log.say(ctx.lines, 'solder', { n: tick.integrity });
-      else log.say(ctx.lines, 'nothingToMend');
+    case 'SOLDER':
+      // DIF-03: the Solder no longer mends on the spot — it starts a three-turn repair.
+      startRepair(ctx);
       return;
-    }
     case 'SPRING_KEY': {
       const before = tick.tension;
       tick.tension = Math.min(actors.TENSION_MAX, tick.tension + amount('SPRING_KEY'));
@@ -522,13 +678,14 @@ export function equip(ctx, slot) {
   const tick = ctx.state.tick;
   const entry = tick.inventory[slot];
   if (!entry) return { ok: false, reason: 'noSuchSlot' };
-  const def = itemDef(entry.name);
+  const def = itemDef(entryName(entry));
   const which = SLOT_OF_CATEGORY[def.category];
   if (!which) return { ok: false, reason: 'notEquippable' };
 
   const previous = tick.equipment[which] || null;
-  tick.equipment[which] = def.name;
-  if (previous) tick.inventory[slot] = { name: previous, count: 1 };
+  // DIF-07: the wear goes on and comes off with the item, both ways round.
+  tick.equipment[which] = equipEntry(def.name, entryWear(entry));
+  if (previous) tick.inventory[slot] = { name: entryName(previous), count: 1, wear: entryWear(previous) };
   else tick.inventory.splice(slot, 1);
 
   log.say(ctx.lines, EQUIP_LOG[which], { X: def.name });
@@ -542,14 +699,14 @@ export function equip(ctx, slot) {
 export function unequip(ctx, which) {
   const tick = ctx.state.tick;
   if (!EQUIP_SLOTS.includes(which)) return { ok: false, reason: 'noSuchSlot' };
-  const name = tick.equipment[which];
-  if (!name) return { ok: false, reason: 'nothingEquipped' };
+  const worn = tick.equipment[which];
+  if (!worn) return { ok: false, reason: 'nothingEquipped' };
   if (tick.inventory.length >= INVENTORY_SLOTS) {
     log.say(ctx.lines, 'inventoryFull');
     return { ok: false, reason: 'full' };
   }
   tick.equipment[which] = null;
-  tick.inventory.push({ name, count: 1 });
+  tick.inventory.push({ name: entryName(worn), count: 1, wear: entryWear(worn) });
   return { ok: true };
 }
 
@@ -566,7 +723,9 @@ export function drop(ctx, slot) {
   if (isFeatureTile(state.floor, tick.x, tick.y)) return { ok: false, reason: 'featureTile' };
 
   tick.inventory.splice(slot, 1);
-  state.floor.items.push({ name: entry.name, count: entry.count, x: tick.x, y: tick.y });
+  const dropped = { name: entry.name, count: entry.count, x: tick.x, y: tick.y };
+  if (entryWear(entry) > 0) dropped.wear = entryWear(entry);
+  state.floor.items.push(dropped);
   log.say(ctx.lines, 'drop', { X: entry.name });
   return { ok: true };
 }

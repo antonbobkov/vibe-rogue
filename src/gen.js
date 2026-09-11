@@ -21,6 +21,8 @@ import { TILE, walkable, blocksSight, isHazardTile, HAZARD_TILE_OF } from './til
 import { FLOORS } from '../data/floors.js';
 import { ITEMS_BY_NAME } from '../data/items.js';
 import { ENEMIES_BY_NAME } from '../data/enemies.js';
+import { TUNING } from '../data/tuning.js';
+import { canBeElite } from './actors.js';
 
 /** The Pendulum band of FLR-08: every Floor or door tile in these columns becomes a Sweep tile. */
 export const BAND_X0 = 28;
@@ -40,6 +42,23 @@ const VISIBILITY_RETRIES = 20;
 const FOV_RADIUS = 8;
 
 const EQUIPMENT_CATEGORIES = new Set(['melee', 'ranged', 'plating', 'attachment']);
+
+/** DIF-15 knob 1: the two consumables whose table weights `tuning.consumableWeight` scales. */
+const SCALED_ITEMS = new Set(['Solder', 'Spring-Key']);
+
+/**
+ * ITM-10 / DIF-15 — a loot table with the Solder and Spring-Key weights scaled by
+ * `tuning.consumableWeight` (rounded, never below 1). At 100 the table is returned unchanged, and
+ * the roll costs exactly one draw either way, so a seed's other choices do not move when the knob
+ * does (TEC-07).
+ */
+function scaledTable(table, tuning) {
+  const percent = tuning.consumableWeight;
+  if (percent === 100) return table;
+  return table.map((entry) =>
+    SCALED_ITEMS.has(entry[0]) ? [entry[0], Math.max(1, Math.round((entry[1] * percent) / 100))] : entry,
+  );
+}
 
 /** `floorSeed = fnv1a(seedString + ':floor:' + n)` (TEC-07, ACC-80). */
 export function floorSeed(seedString, n) {
@@ -61,9 +80,10 @@ export function generateFloor(seedString, n, options = {}) {
 
   const base = floorSeed(seedString, n);
   const uniques = new Set(options.uniques || []);
+  const tuning = options.tuning || TUNING;
   for (let retries = 0; retries <= MAX_REGENERATIONS; retries++) {
     const rng = mulberry32((base + retries) >>> 0);
-    const floor = attempt(def, rng, new Set(uniques));
+    const floor = attempt(def, rng, new Set(uniques), tuning);
     if (floor) {
       floor.retries = retries;
       floor.seed = (base + retries) >>> 0;
@@ -79,7 +99,7 @@ export function generateFloor(seedString, n, options = {}) {
 // One generation attempt: WLD-11 steps 1-10. Returns null when step 10 fails.
 // ---------------------------------------------------------------------------------------------
 
-function attempt(def, rng, uniques) {
+function attempt(def, rng, uniques, tuning = TUNING) {
   const n = def.number;
   const hasBand = def.hazards.some((h) => h.kind === 'PENDULUM_BAND');
 
@@ -110,10 +130,16 @@ function attempt(def, rng, uniques) {
   }
 
   // --- Step 5: room roles ---------------------------------------------------------------------
-  const roles = assignRoles(rng, tiles, rooms);
+  const roles = assignRoles(rng, tiles, rooms, roomOf);
   if (!roles) return null;
   const dist = roles.dist;
   const startRoom = rooms[roles.start];
+
+  // --- WLD-15 (DIF-12): every way into the cache room becomes a Wound Lock ---------------------
+  // WLD-11 states the rule at step 4, but the cache role is only known after step 5, so it is
+  // applied here — before the features, the hazards and the items, none of which may land on a
+  // boundary tile anyway (D-111).
+  lockCacheRoom(tiles, roomOf, rooms[roles.cache]);
 
   // --- Step 6: features -----------------------------------------------------------------------
   const start = { x: startRoom.cx, y: startRoom.cy };
@@ -168,7 +194,7 @@ function attempt(def, rng, uniques) {
   for (let k = 0; k < cacheCount; k++) {
     if (cacheCands.length === 0) break;
     const table = k === 0 && def.cacheFirstRollTable ? def.cacheFirstRollTable : def.cacheTable;
-    const name = rollItem(rng, table, generatedEquipment, uniques);
+    const name = rollItem(rng, scaledTable(table, tuning), generatedEquipment, uniques);
     const tile = pickFrom(rng, cacheCands);
     cacheCands = cacheCands.filter((p) => p.x !== tile.x || p.y !== tile.y);
     features.cache.push({ x: tile.x, y: tile.y });
@@ -190,8 +216,9 @@ function attempt(def, rng, uniques) {
 
   // --- Step 8: floor items --------------------------------------------------------------------
   const spawnRooms = rooms.filter((r) => r.id !== roles.start);
+  const floorTable = scaledTable(def.floorTable, tuning);
   for (let k = 0; k < def.itemCount; k++) {
-    const name = rollItem(rng, def.floorTable, generatedEquipment, uniques);
+    const name = rollItem(rng, floorTable, generatedEquipment, uniques);
     let placed = null;
     for (let t = 0; t < PLACE_RETRIES && !placed; t++) {
       const room = spawnRooms[int(rng, 0, spawnRooms.length - 1)];
@@ -233,7 +260,10 @@ function attempt(def, rng, uniques) {
         const spot = placeEnemy(rng, spawnRooms, dist, freeForActor);
         if (!spot) continue;
         occupied[spot.p.y * W + spot.p.x] = 1;
-        spawns.push(spawnRecord(entry.type, spot.p, spot.room.id, {}));
+        // ENM-12 (DIF-08): every regular, non-pack instance rolls for Overwound on the floor RNG,
+        // so the elites of a seed are as reproducible as its map (ACC-157).
+        const elite = canBeElite({ type: entry.type }) && chance(rng, tuning.eliteChance);
+        spawns.push(spawnRecord(entry.type, spot.p, spot.room.id, { elite }));
       }
     }
   }
@@ -261,6 +291,13 @@ function attempt(def, rng, uniques) {
 
   // --- Step 10: validate ----------------------------------------------------------------------
   if (!validate(def, rooms, features, hazards, hasBand)) return null;
+  // WLD-15 (DIF-12): a Wound Lock is a wall to anyone who will not pay, and a corridor that runs
+  // along the cache room's edge can be locked with it. The floor is only valid if the stairs, the
+  // station and the journal page are all still reachable *without* opening one — the cache is the
+  // only thing a lock is allowed to shut away (D-111).
+  if (!reachableWithoutLocks(tiles, start, [features.stairs, features.station, features.journal])) {
+    return null;
+  }
 
   return {
     number: n,
@@ -434,7 +471,7 @@ function passableForGen(t) {
   return walkable(t) || t === TILE.DOOR_CLOSED;
 }
 
-function assignRoles(rng, tiles, rooms) {
+function assignRoles(rng, tiles, rooms, roomOf) {
   const start = rooms.reduce((best, r) => (r.cx < best.cx || (r.cx === best.cx && r.cy < best.cy) ? r : best), rooms[0]);
   const dist = bfs((_from, to) => passableForGen(tiles[to.y * W + to.x]), { x: start.cx, y: start.cy });
 
@@ -456,7 +493,16 @@ function assignRoles(rng, tiles, rooms) {
   if (cachePool.length === 0) return null;
   const deadEnds = cachePool.filter((r) => boundaryOpenings(tiles, r) === 1);
   const cachePref = deadEnds.length > 0 ? deadEnds : cachePool;
-  const cache = best(cachePref, (r) => -d.get(r.id));
+  // WLD-15 (DIF-12): the cache room's every entrance becomes a Wound Lock, so the room has to be
+  // one that can be shut without shutting anything else off — a corridor that merely runs along
+  // its wall would otherwise be locked in half. Farthest first, as WLD-11 step 5 asks, and the
+  // first one that can actually be sealed wins (D-111).
+  const start0 = { x: start.cx, y: start.cy };
+  const byDistance = (list) => list.slice().sort((a, b) => d.get(b.id) - d.get(a.id) || a.id - b.id);
+  const lockable = (room) => cacheLockable(tiles, roomOf, rooms, start0, room);
+  const cache =
+    byDistance(cachePref).find(lockable) || byDistance(cachePool).find(lockable) || null;
+  if (!cache) return null;
 
   const journalPool = cachePool.filter((r) => r.id !== cache.id);
   if (journalPool.length === 0) return null;
@@ -472,6 +518,86 @@ function assignRoles(rng, tiles, rooms) {
     distances: d,
     stairsDistance,
   };
+}
+
+/**
+ * WLD-15 (DIF-12) — "if the cache room's boundary has a corridor opening with no door, a door is
+ * forced there; then all its doors become locks". Both halves are one pass: every passable
+ * boundary tile of the cache room — an open corridor mouth, an open door or a closed one —
+ * becomes a Wound Lock, so a cache is never enterable without paying for it.
+ *
+ * @returns {{x: number, y: number}[]} the tiles locked
+ */
+export function lockCacheRoom(tiles, roomOf, room) {
+  const locked = [];
+  for (let y = room.y - 1; y <= room.y + room.h; y++) {
+    for (let x = room.x - 1; x <= room.x + room.w; x++) {
+      if (!inBounds(x, y)) continue;
+      const inside = x >= room.x && x < room.x + room.w && y >= room.y && y < room.y + room.h;
+      if (inside) continue;
+      const i = y * W + x;
+      const t = tiles[i];
+      if (t !== TILE.FLOOR && t !== TILE.DOOR_CLOSED && t !== TILE.DOOR_OPEN) continue;
+      // Only a tile you could step through into the room itself: the diagonal corners of the ring
+      // are not entrances (ENM-08 refuses a diagonal step through a door either way).
+      if (!orthogonallyInRoom(roomOf, x, y, room.id)) continue;
+      tiles[i] = TILE.WOUND_LOCK;
+      locked.push({ x, y });
+    }
+  }
+  return locked;
+}
+
+/** Is one of the four orthogonal neighbours of (x, y) an interior tile of room `id`? */
+function orthogonallyInRoom(roomOf, x, y, id) {
+  if (x > 0 && roomOf[y * W + x - 1] === id) return true;
+  if (x < W - 1 && roomOf[y * W + x + 1] === id) return true;
+  if (y > 0 && roomOf[(y - 1) * W + x] === id) return true;
+  if (y < H - 1 && roomOf[(y + 1) * W + x] === id) return true;
+  return false;
+}
+
+/**
+ * WLD-15 (DIF-12): would locking every entrance of `room` leave the rest of the floor reachable
+ * from the start tile? The cache itself is meant to be shut away; nothing else is.
+ */
+function cacheLockable(tiles, roomOf, rooms, start, room) {
+  // FLR-08: the Pendulum band's tiles are a hazard, not a door, so a cache room the band runs past
+  // cannot be shut at all — that room is not a cache (D-111).
+  if (!cacheSealable(tiles, room)) return false;
+  const copy = Uint8Array.from(tiles);
+  lockCacheRoom(copy, roomOf, room);
+  const open = (i) => passableForGen(copy[i]) && copy[i] !== TILE.WOUND_LOCK;
+  const dist = bfs((_from, to) => open(to.y * W + to.x), start);
+  for (const other of rooms) {
+    if (other.id === room.id) continue;
+    if (dist[other.cy * W + other.cx] < 0) return false;
+  }
+  return true;
+}
+
+/**
+ * WLD-15: is every way into `room` a tile a Wound Lock can replace — a corridor mouth or a door?
+ * A hazard tile in the boundary is a way in that no lock can close.
+ */
+function cacheSealable(tiles, room) {
+  for (let y = room.y - 1; y <= room.y + room.h; y++) {
+    for (let x = room.x - 1; x <= room.x + room.w; x++) {
+      if (!inBounds(x, y)) continue;
+      const inside = x >= room.x && x < room.x + room.w && y >= room.y && y < room.y + room.h;
+      if (inside) continue;
+      const t = tiles[y * W + x];
+      if (t === TILE.WALL || t === TILE.FLOOR || t === TILE.DOOR_CLOSED || t === TILE.DOOR_OPEN) continue;
+      if (orthogonallyTouchesRoom(room, x, y)) return false;
+    }
+  }
+  return true;
+}
+
+/** Is one of the four orthogonal neighbours of (x, y) inside `room`'s rectangle? */
+function orthogonallyTouchesRoom(room, x, y) {
+  const inside = (nx, ny) => nx >= room.x && nx < room.x + room.w && ny >= room.y && ny < room.y + room.h;
+  return inside(x - 1, y) || inside(x + 1, y) || inside(x, y - 1) || inside(x, y + 1);
 }
 
 /** Minimum by `key`, ties broken by lowest room id (WLD-11 step 5). */
@@ -678,6 +804,8 @@ function spawnRecord(type, p, homeRoom, opts) {
     isGuard: opts.isGuard === true,
     isBoss: opts.isBoss === true,
     pack: opts.pack === true,
+    // ENM-12 (DIF-08): guards, bosses and pack members never carry it (`canBeElite`).
+    elite: opts.elite === true,
   };
 }
 
@@ -774,6 +902,19 @@ function validate(def, rooms, features, hazards, hasBand) {
       if (chebyshev(f.x, f.y, h.x, h.y) <= 1) return false;
     }
     if (hasBand && f.x >= BAND_X0 - 1 && f.x <= BAND_X1 + 1) return false;
+  }
+  return true;
+}
+
+/** WLD-15: can Tick reach all of these tiles from the start with every lock treated as a wall? */
+function reachableWithoutLocks(tiles, start, targets) {
+  const dist = bfs(
+    (_from, to) => passableForGen(tiles[to.y * W + to.x]) && tiles[to.y * W + to.x] !== TILE.WOUND_LOCK,
+    start,
+  );
+  for (const t of targets) {
+    if (!t) continue;
+    if (dist[t.y * W + t.x] < 0) return false;
   }
   return true;
 }

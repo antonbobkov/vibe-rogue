@@ -50,7 +50,7 @@ export const SKILLS = Object.freeze([
     discipline: 'Tinkering',
     rank: 1,
     type: 'P',
-    summary: 'Every 4th enemy broken drops Solder, then Spring-Key.',
+    summary: 'Every 4th enemy broken drops a throwable.',
     description: 'Everything in this tower is made of parts. Every fourth one leaves something worth keeping.',
   }),
   Object.freeze({
@@ -58,7 +58,7 @@ export const SKILLS = Object.freeze([
     discipline: 'Tinkering',
     rank: 2,
     type: 'P',
-    summary: 'Spring-Key +45, Solder +25, Flux +10.',
+    summary: 'Spring-Key +10, Solder +15, Flux +5.',
     description: 'Her second-best screwdriver, and the knack of using it. Nothing is wasted.',
   }),
   Object.freeze({

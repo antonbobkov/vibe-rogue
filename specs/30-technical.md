@@ -75,15 +75,25 @@ type Item = {
   journalIndex?: number; blueprint?: true;                   // records
 };
 
+// An *instance* of a piece of equipment, as the slots and the inventory store it (ITM-01, CMB-14).
+type EquipEntry = { name: string; wear: number };
+
+// The difficulty knobs of DIF-02, one frozen object in data/tuning.js. `createGame({tuning})` merges
+// a partial over the defaults and keeps the result on `state.tuning`, so a run — and its save —
+// carries the numbers it was played under.
+type Tuning = Readonly<Record<string, number>>;
+
 type EnemyType = {
   name: string; glyph: string; color: Color; description: string; floors: number[];
   integrity: number; accuracy: number; evasion: number; plating: number;
   attack: Dice; speed: 'SLOW'|'NORMAL'|'FAST';
-  archetype: 'CHASER'|'GUARD'|'SKIRMISHER'|'SWARMER'|'BRUISER'|'ERRATIC'|'BOSS';
+  archetype: 'CHASER'|'GUARD'|'SKIRMISHER'|'SWARMER'|'BRUISER'|'ERRATIC'|'THIEF'|'BOSS';
   perception: number; packSize?: [number, number]; opensDoors: 'YES'|'NO'|'BREAKS';
   ranged?: { dice: Dice; range: number; windUp: boolean; ignoresPlating?: true; onHit?: string; noise: number };
   heavyAttack?: Dice; onHit?: string; immunities: string[];
   xp: number; dropChance: number; dropTable: [string, number][];
+  burnDamage?: number; corrodes?: true;                      // BST-02 special cases (CMB-14)
+  huntsBySound?: true; rallies?: true;                       // ENM-13
   boss?: string;                                             // key into ai.js boss scripts
 };
 
@@ -113,16 +123,23 @@ Adding an id requires adding a spec entry.
 One plain object `state`, serializable to JSON (TEC-09), containing:
 
 ```
-version, seedString, playRngState, turn, floorNumber,
+version, seedString, tuning, playRngState, turn, floorNumber,
 tick: { integrity, integrityMax, tension, xp, level, skillPoints, skills[], activeSlots[],
-        equipment{weapon,plating,attachment}, inventory[{name,count}], statuses{}, guardTimer,
+        equipment{weapon,plating,attachment}      // each null or an EquipEntry {name, wear}
+        inventory[{name,count} | {name,count,wear}], statuses{}, guardTimer,
+        repair: {turnsLeft, perTurn, left} | null,   // the running Solder repair (ITM-09)
         fieldRepairUsed, salvageCounter, salvageNext, decayCounter, x, y },
-floor: { tiles[24][60], memory[24][60], items[{name,count,x,y}], scrap[], hazards[], features{},
-         rooms[], roles{}, enemies[EnemyInstance], decoy?, nextEnemyId, bossFlags{} },
+floor: { tiles[24][60], memory[24][60], items[{name,count,x,y,wear?}], scrap[], hazards[], features{},
+         rooms[], roles{}, enemies[EnemyInstance], decoy?, nextEnemyId, bossFlags{},
+         turnsHere, wanderersSpawned },                      // WLD-14
 journal: { pages: boolean[8], blueprint: boolean }, uniquesGenerated: string[],
-log: string[] (cap 500 with color tags), stats: { enemiesBroken, turns, ... },
+log: string[] (cap 500 with color tags),
+stats: { enemiesBroken, turns, floorsReached, wanderersSpawned, itemsStolen },
 flags: { tension30Warned, scripted1, scripted2, ... }
 ```
+
+An `EnemyInstance` also carries `elite` (`ENM-12`), and, once they apply, `wanderer` (`WLD-14`),
+`ralliedUntil` (`ENM-13`), and `stolen` / `fleeing` (`ENM-06` THIEF).
 
 Derived values (accuracy, evasion, Plating attribute, FOV) are recomputed, never stored.
 
@@ -168,12 +185,14 @@ Pause, Ending choice) push/pop. Title, Death, Victory, Intro replace the stack. 
 
 ## TEC-09 Autosave
 
-- Key: `localStorage['clockworkHollow.save.v1']`. Value: `JSON.stringify(state)`.
+- Key: `localStorage['clockworkHollow.save.v1']`. Value: `JSON.stringify(state)`. The save
+  **version is 2**: M13 made `tick.equipment.*` an `EquipEntry` and added `state.tuning`, so a
+  version 1 save describes a run these rules cannot resume.
 - Written at `CMB-02` step 9 (after every turn) and on Ascend, on skill selection, on any inventory
   action that costs a turn, and when leaving to the title via Pause. Not written on free actions.
 - Deleted on death, on victory (after the Victory screen is shown), and on `Abandon`.
-- On load: if the key is missing, or `JSON.parse` fails, or `version !== 1`, treat as no save (and
-  delete it). Never attempt migration.
+- On load: if the key is missing, or `JSON.parse` fails, or `version` is not the current one, treat
+  as no save (and delete it). Never attempt migration.
 - `Continue` restores `state` verbatim, recomputes derived values and FOV, and shows the Run screen with
   the log line "Tick resumes." Reloading the page mid-run then pressing Continue must reproduce the
   exact pre-reload state, including `playRngState` (this is how save-scumming is made pointless: the
@@ -213,6 +232,10 @@ select it, so `Ctrl+C` copies. The input is positioned off-screen and is the onl
 besides the canvas.
 
 ## TEC-13 Debug and test hooks
+
+`tools/sim.js` takes `--tuning '<json>'` and `--tuning-file <path>`: a partial `Tuning` merged over
+`data/tuning.js`'s defaults and passed to every bot run, so a candidate set of numbers can be
+measured without touching a line of code (`DIF-02`, and the DIF-15 ladder runs on it).
 
 `window.CH` exposes `{ state, game, playRng, floorRng, act(action), newRun(seed), loadFloor(n),
 loadFixture(rows, opts), grid(), events(), queueRng(values), render(), timers(), metrics() }` so that

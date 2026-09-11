@@ -21,8 +21,9 @@ import { ENEMIES, ENEMIES_BY_NAME } from '../../data/enemies.js';
 import { SKILLS_BY_NAME, DISCIPLINES, XP_THRESHOLDS } from '../../data/skills.js';
 import { HAZARDS } from '../../src/tiles.js';
 import { parseDice } from '../../src/rng.js';
-import { START_INTEGRITY, LEVEL_INTEGRITY, TENSION_MAX, MAX_LEVEL, levelForXp } from '../../src/actors.js';
-import { AMOUNTS, BASE_DECAY_PERIOD, REGULATED_DECAY_PERIOD } from '../../src/items.js';
+import { START_INTEGRITY, LEVEL_INTEGRITY, TENSION_MAX, MAX_LEVEL, levelForXp, canBeElite } from '../../src/actors.js';
+import { consumableAmount, BASE_DECAY_PERIOD, REGULATED_DECAY_PERIOD } from '../../src/items.js';
+import { TUNING } from '../../data/tuning.js';
 import { OVERWIND_DICE, PULSE_DICE, VENT_DAMAGE } from '../../src/bosses.js';
 import { prerequisiteOf } from '../../src/skills.js';
 
@@ -48,6 +49,15 @@ const OVR_04_TOTAL_TURNS = 1760;
  * it is quoted here exactly as the table writes it.
  */
 const BAL_01_SKILL_SHOT = [4, 15, 20, 20, 20, 25, 25, 20];
+
+/** BAL-01 (DIF-14): the floor's tables yield this many Spring-Keys, so this much Tension back. */
+const BAL_01_KEYS_PER_FLOOR = 0.7;
+
+/** BAL-01 (DIF-14): ≈ one Solder repair started per floor, at `solderTension` each (CAT-06). */
+const BAL_01_SOLDERS_PER_FLOOR = 1;
+
+/** DIF-14 / BAL-C1: the rushing line is 60% of OVR-04's turns, and it is the one that must hold. */
+const RUSH_FRACTION = 0.6;
 
 /** BAL-01: "the Winding Station is reached at 50% of a floor's turns". */
 const STATION_AT = 0.5;
@@ -75,13 +85,20 @@ function hasUsableStation(n) {
  *            skillShot: number, leave: number}[]}
  */
 function tensionBudget(opts = {}) {
-  const decayPeriod = opts.decayPeriod ?? BASE_DECAY_PERIOD;
+  const tuning = opts.tuning ?? TUNING;
+  const decayPeriod = opts.decayPeriod ?? tuning.decayPeriod;
+  const fraction = opts.fraction ?? 1;
+  const keys = opts.keys === false ? 0 : Math.round(BAL_01_KEYS_PER_FLOOR * tuning.springKeyAmount);
   const rows = [];
   let tension = TENSION_MAX;
   for (let n = 1; n <= 8; n++) {
-    const turns = OVR_04_TURNS[n - 1];
+    const turns = Math.round(OVR_04_TURNS[n - 1] * fraction);
     const arrive = tension;
     const skillShot = BAL_01_SKILL_SHOT[n - 1];
+    // DIF-12 / DIF-03: every floor with a cache pays `cacheLockCost` to open it, and every floor
+    // starts about one repair.
+    const lock = n <= 7 ? tuning.cacheLockCost : 0;
+    const solder = BAL_01_SOLDERS_PER_FLOOR * tuning.solderTension;
     let decayToStation = null;
     let atStation = null;
     let rewind = null;
@@ -90,17 +107,20 @@ function tensionBudget(opts = {}) {
       const before = Math.floor(turns * STATION_AT);
       decayToStation = Math.floor(before / decayPeriod);
       atStation = arrive - decayToStation;
-      rewind = TENSION_MAX;
-      tension = TENSION_MAX;
+      rewind = tuning.stationRestore;
+      tension = tuning.stationRestore;
       decayToStairs = Math.floor((turns - before) / decayPeriod);
     } else {
       // No station this floor: the whole floor's turns decay in one stretch.
       decayToStairs = Math.floor(turns / decayPeriod);
       tension = arrive;
     }
-    const leave = tension - decayToStairs - skillShot;
+    const leave = tension - decayToStairs - skillShot - lock - solder + keys;
     tension = leave;
-    rows.push({ floor: n, turns, arrive, decayToStation, atStation, rewind, decayToStairs, skillShot, leave });
+    rows.push({
+      floor: n, turns, arrive, decayToStation, atStation, rewind, decayToStairs, skillShot,
+      lock, solder, keys, leave,
+    });
   }
   return rows;
 }
@@ -117,39 +137,52 @@ test('BAL-C1: the BAL-01 Tension budget recomputed from OVR-04 turns and CHR-04 
     'BAL-01 Turns column is OVR-04 target turns',
   );
 
-  // BAL-01, column by column.
-  assert.deepEqual(rows.map((r) => r.arrive), [100, 60, 63, 56, 56, 56, 49, 49], 'BAL-01 Arrive');
+  // BAL-01, column by column (DIF-14's recomputation).
+  assert.deepEqual(rows.map((r) => r.arrive), [100, 66, 54, 47, 47, 47, 40, 40], 'BAL-01 Arrive');
   assert.deepEqual(
     rows.map((r) => r.decayToStation),
     [null, 22, 24, 24, 24, 26, 26, null],
     'BAL-01 Decay to station',
   );
-  assert.deepEqual(rows.map((r) => r.atStation), [null, 38, 39, 32, 32, 30, 23, null], 'BAL-01 At station');
-  assert.deepEqual(rows.map((r) => r.rewind), [null, 100, 100, 100, 100, 100, 100, null], 'BAL-01 Rewind');
+  assert.deepEqual(rows.map((r) => r.atStation), [null, 44, 30, 23, 23, 21, 14, null], 'BAL-01 At station');
+  assert.deepEqual(rows.map((r) => r.rewind), [null, 85, 85, 85, 85, 85, 85, null], 'BAL-01 Rewind');
   assert.deepEqual(
     rows.map((r) => r.decayToStairs),
     [36, 22, 24, 24, 24, 26, 26, 24],
     'BAL-01 Decay to stairs',
   );
   assert.deepEqual(rows.map((r) => r.skillShot), BAL_01_SKILL_SHOT, 'BAL-01 Skill/shot use');
-  assert.deepEqual(rows.map((r) => r.leave), [60, 63, 56, 56, 56, 49, 49, 5], 'BAL-01 Leave');
+  assert.deepEqual(rows.map((r) => r.lock), [10, 10, 10, 10, 10, 10, 10, 0], 'BAL-01 Lock (WLD-15)');
+  assert.deepEqual(rows.map((r) => r.leave), [66, 54, 47, 47, 47, 40, 40, 12], 'BAL-01 Leave');
 
-  // BAL-C1: "the Leave column must never go <= 0 with these assumptions. (Passes: minimum 5.)"
-  const minLeave = Math.min(...rows.map((r) => r.leave));
-  assert.ok(minLeave > 0, `BAL-C1: some floor ends wound down (min Leave ${minLeave})`);
-  assert.equal(minLeave, 5, 'BAL-01 finding: 5 Tension to spare on the final turn');
+  // BAL-C1, as DIF-14 restates it: the 60%-turns line is the one that must never go <= 0. The
+  // full-explore line may — and with the Spring-Keys left on the floor, it does.
+  const rush = tensionBudget({ fraction: RUSH_FRACTION });
+  const minRush = Math.min(...rush.map((r) => r.leave));
+  assert.ok(minRush > 0, `BAL-C1: the rushing line winds down (min Leave ${minRush})`);
+  assert.equal(minRush, 33, 'BAL-01 finding: the rush line leaves floor 8 with 33');
+  for (const row of rush) {
+    if (row.atStation === null) continue;
+    assert.ok(row.atStation > 0, `the rushing line wound down before a station: ${row.atStation}`);
+  }
 
-  // The pre-station low points BAL-01 calls out: 30-39 on floors 2-6, 23 on floor 7.
+  const hoarding = tensionBudget({ keys: false });
+  assert.ok(
+    Math.min(...hoarding.map((r) => r.leave)) < 0,
+    'DIF-14: a full explore that spends no Spring-Key must run out — that is ACC-131 second half',
+  );
+
+  // The pre-station low points BAL-01 calls out, all of them under CHR-03's first warning of 30.
   const lows = rows.filter((r) => r.atStation !== null).map((r) => r.atStation);
-  for (const low of lows) assert.ok(low > 0, `a pre-station low point wound Tick down: ${low}`);
-  assert.equal(Math.min(...lows), 23, 'BAL-01 finding: 23 on floor 7 is the run low point');
+  assert.equal(Math.min(...lows), 14, 'BAL-01 finding: 14 on floor 7 is the run low point');
+  for (const low of lows) assert.ok(low <= 44, 'BAL-01: every pre-station low point is a low point');
 
   // BAL-08 knob 3: "changing to 6 is worth ~ +8 Tension per floor". The Governor is the only thing
   // that does it (CHR-04), and it must not turn the model negative either.
   assert.equal(REGULATED_DECAY_PERIOD, 6, 'CAT-05 Governor decay period');
   const governed = tensionBudget({ decayPeriod: REGULATED_DECAY_PERIOD });
   assert.ok(
-    Math.min(...governed.map((r) => r.leave)) > minLeave,
+    Math.min(...governed.map((r) => r.leave)) > Math.min(...rows.map((r) => r.leave)),
     'BAL-01: the Governor must widen the margin, not narrow it',
   );
 });
@@ -165,25 +198,34 @@ function expectedIntegrityMax(n) {
   return START_INTEGRITY + LEVEL_INTEGRITY * (n - 1);
 }
 
-/** BAL-02's "Expected loss" column, worst end of each range. */
-const BAL_02_EXPECTED_LOSS = [18, 13, 33, 25, 22, 37, 32, 51];
+/**
+ * BAL-02's "Expected loss" column, worst end of each range. DIF-14 raises the pre-M13 figures
+ * (18, 13, 33, 25, 22, 37, 32, 51) by `WANDER_ELITE_DAMAGE` for WLD-14's wanderers and ENM-12's
+ * Overwound spawns, and the table in `31-balance.md` is this list rounded.
+ */
+const BAL_02_PRE_M13_LOSS = [18, 13, 33, 25, 22, 37, 32, 51];
+const WANDER_ELITE_DAMAGE = 1.25;
+const BAL_02_EXPECTED_LOSS = BAL_02_PRE_M13_LOSS.map((loss) => Math.round(loss * WANDER_ELITE_DAMAGE));
 
 test('BAL-C2: no floor loses more than 65% of Integrity max + one Solder @unit @m11', () => {
   // The three inputs BAL-02's arithmetic depends on.
   assert.equal(START_INTEGRITY, 40, 'CHR-01 starting Integrity');
-  assert.equal(LEVEL_INTEGRITY, 4, 'CHR-07 Integrity per level');
-  assert.equal(AMOUNTS.SOLDER.plain, 15, 'CAT-06 Solder amount');
+  assert.equal(LEVEL_INTEGRITY, TUNING.levelUpIntegrity, 'CHR-07 Integrity per level (DIF-09)');
+  const solder = consumableAmount('SOLDER', null);
+  assert.equal(solder, TUNING.solderAmount, 'CAT-06 Solder amount');
 
   const maxima = [1, 2, 3, 4, 5, 6, 7, 8].map(expectedIntegrityMax);
-  assert.deepEqual(maxima, [40, 44, 48, 52, 56, 60, 64, 68], 'BAL-02 Integrity max column');
+  assert.deepEqual(maxima, [40, 43, 46, 49, 52, 55, 58, 61], 'BAL-02 Integrity max column');
+  assert.deepEqual(BAL_02_EXPECTED_LOSS, [23, 16, 41, 31, 28, 46, 40, 64], 'BAL-02 Expected loss');
 
-  const ratios = BAL_02_EXPECTED_LOSS.map((loss, i) => loss / (maxima[i] + AMOUNTS.SOLDER.plain));
+  const ratios = BAL_02_EXPECTED_LOSS.map((loss, i) => loss / (maxima[i] + solder));
   const worst = Math.max(...ratios);
   const over = ratios
     .map((r, i) => ({ floor: i + 1, percent: Math.round(r * 1000) / 10 }))
     .filter((r) => r.percent > 65);
   assert.deepEqual(over, [], 'BAL-C2: a floor exceeds 65% of the available Integrity');
   assert.ok(worst <= 0.65, `BAL-C2 worst ratio ${Math.round(worst * 1000) / 10}%`);
+  assert.equal(Math.round(worst * 100), 58, 'BAL-02 finding: floor 8 is the worst, at 58%');
 });
 
 // -----------------------------------------------------------------------------------------------
@@ -220,7 +262,7 @@ test('BAL-C3: 75%-kill cumulative XP reaches level n+1 by the end of floor n @un
   assert.deepEqual(perFloor, [...NOMINAL_XP.byFloor], 'FLR-10 nominal XP per floor');
 
   const total = perFloor.reduce((a, b) => a + b, 0);
-  assert.equal(total, 318, 'FLR-10 total XP placed across a run');
+  assert.equal(total, 334, 'FLR-10 total XP placed across a run (DIF-07 and DIF-11 added to it)');
   // CHR-06: "Wave 3 must place at least 300 XP of enemies across a full run (BAL-03 verifies)".
   assert.ok(total >= 300, `CHR-06 requires >= 300 XP placed; found ${total}`);
 
@@ -233,13 +275,18 @@ test('BAL-C3: 75%-kill cumulative XP reaches level n+1 by the end of floor n @un
   }
   assert.deepEqual(
     cum.map((v) => Math.round(v * 10) / 10),
-    [11.6, 31.9, 56.6, 90.4, 123.4, 167.6, 211.5, 238.5],
+    [11.6, 31.9, 56.6, 93.4, 130.9, 175.1, 223.5, 250.5],
     'BAL-03 cumulative XP at 75% kills',
   );
 
   // BAL-C3: the level-n+1 threshold is crossed during or at the end of floor n, for n in 1..8.
   const levels = cum.map((v) => levelForXp(Math.floor(v)));
-  assert.deepEqual(levels, [2, 3, 4, 5, 6, 7, 8, 9], 'BAL-03 levels at the end of floors 1-8');
+  // M13's extra XP (DIF-07, DIF-11) puts the 75%-kill line a level ahead of OVR-04 from floor 6
+  // on, which is the direction CHR-06 allows: level n+1 is a floor, not a ceiling.
+  assert.deepEqual(levels, [2, 3, 4, 5, 6, 8, 9, 9], 'BAL-03 levels at the end of floors 1-8');
+  for (let n = 1; n <= 8; n++) {
+    assert.ok(levels[n - 1] >= Math.min(n + 1, MAX_LEVEL), `BAL-03: floor ${n} ends below level ${n + 1}`);
+  }
   for (let n = 1; n <= 8; n++) {
     const wanted = XP_THRESHOLDS[n]; // threshold for level n + 1 (XP_THRESHOLDS is 0-based by level - 1)
     assert.ok(
@@ -249,6 +296,14 @@ test('BAL-C3: 75%-kill cumulative XP reaches level n+1 by the end of floor n @un
   }
   // OVR-04's "Expected char. level on exit" column is the same list, and level 9 is the cap.
   assert.equal(levels[7], MAX_LEVEL, 'OVR-04: level 9 on floor 8');
+  // DIF-01 widened the floor-8 arrival band to 7-9, which the 50%-kill line has to land inside.
+  const half = [];
+  let running = 0;
+  for (const xp of perFloor) {
+    running += xp;
+    half.push(levelForXp(Math.floor(running * 0.5)));
+  }
+  assert.ok(half[7] >= 7 && half[7] <= MAX_LEVEL, `BAL-C3: a 50%-kill run reaches level ${half[7]}`);
 });
 
 // -----------------------------------------------------------------------------------------------
@@ -270,9 +325,13 @@ function singleHitSources(n) {
   const out = [];
   for (const e of ENEMIES) {
     if (!e.floors.includes(n)) continue;
-    out.push({ what: `${e.name} melee ${e.attack}`, damage: maxRoll(e.attack) });
-    if (e.heavyAttack) out.push({ what: `${e.name} heavy ${e.heavyAttack}`, damage: maxRoll(e.heavyAttack) });
-    if (e.ranged) out.push({ what: `${e.name} ranged ${e.ranged.dice}`, damage: maxRoll(e.ranged.dice) });
+    // ENM-12 (DIF-08): a regular, non-pack type may be Overwound, which adds `eliteDamageBonus`
+    // to every one of its attacks — melee, heavy and ranged alike.
+    const elite = canBeElite({ type: e.name }) ? TUNING.eliteDamageBonus : 0;
+    const label = elite > 0 ? `Overwound ${e.name}` : e.name;
+    out.push({ what: `${label} melee ${e.attack}`, damage: maxRoll(e.attack) + elite });
+    if (e.heavyAttack) out.push({ what: `${label} heavy ${e.heavyAttack}`, damage: maxRoll(e.heavyAttack) + elite });
+    if (e.ranged) out.push({ what: `${label} ranged ${e.ranged.dice}`, damage: maxRoll(e.ranged.dice) + elite });
     if (e.boss === 'REGULATOR') out.push({ what: 'The Regulator Vent', damage: VENT_DAMAGE });
     if (e.boss === 'UNDERSTUDY') {
       out.push({ what: `The Understudy Overwind ${OVERWIND_DICE}`, damage: maxRoll(OVERWIND_DICE) });
@@ -299,21 +358,22 @@ test('BAL-C4: no single hit exceeds 40% of expected Integrity on its floor @unit
     rows.push({ floor: n, worst: worst.what, damage: worst.damage, cap, ratio: worst.damage / cap });
   }
 
-  // BAL-04's "Largest possible single hit" column, recomputed over each floor's whole roster.
+  // BAL-04's "Largest possible single hit" column, recomputed over each floor's whole roster with
+  // ENM-12's +2 (DIF-14).
   assert.deepEqual(
     rows.map((r) => r.damage),
-    [3, 5, 5, 12, 5, 15, 12, 16],
+    [5, 7, 7, 14, 7, 15, 14, 16],
     'BAL-04 largest single hit per floor (D-097: the table names the notable threat, not the maximum)',
   );
 
-  // BAL-C4: "all ratios <= 40%. (Passes; the worst is 25%.)"
+  // BAL-C4: all ratios <= 40%.
   const over = rows.filter((r) => r.ratio > 0.4);
   assert.deepEqual(over, [], 'BAL-C4 / OVR-05: a single hit exceeds 40% of expected Integrity');
   const worst = Math.max(...rows.map((r) => r.ratio));
   assert.ok(worst <= 0.4, `BAL-C4 worst ratio ${(worst * 100).toFixed(1)}%`);
-  // The worst case is the Regulator's heavy on floor 6: 15 of 60.
-  assert.equal(rows[5].damage, 15);
-  assert.equal(Math.round(worst * 100), 25, 'BAL-C4 finding: the worst is 25%');
+  // The worst case is an Overwound Gear-Golem's heavy on floor 4: 14 of 49.
+  assert.equal(rows[3].damage, 14);
+  assert.equal(Math.round(worst * 100), 29, 'BAL-C4 finding: the worst is 29%');
 });
 
 // -----------------------------------------------------------------------------------------------
@@ -361,8 +421,11 @@ const BAL_06_BUILDS = [
   },
 ];
 
-/** BAL-06's four columns — the questions every build must answer. */
-const BAL_06_QUESTIONS = ['Golem', 'Cuckoo', 'Regulator', 'Understudy'];
+/**
+ * BAL-06's columns — the questions every build must answer. DIF-14 adds the two M13 brings: the
+ * Magpie (DIF-11) and the wanderers (WLD-14).
+ */
+const BAL_06_QUESTIONS = ['Golem', 'Cuckoo', 'Regulator', 'Understudy', 'Magpie', 'Wanderers'];
 
 /** CHR-09's total skill points over a run: one per level-up from 1 to 9. */
 const SKILL_POINTS = MAX_LEVEL - 1;
@@ -384,7 +447,7 @@ function takeOrderFor(spend) {
   return taken;
 }
 
-test('BAL-C6: every BAL-06 build exists, fits 8 points, and answers all four questions @unit @m11', () => {
+test('BAL-C6: every BAL-06 build exists, fits 8 points, and answers every question @unit @m11', () => {
   // The BAL-06 table itself: three rows, four question columns, no empty cell.
   const rows = BALANCE_DOC.split('\n')
     .filter((line) => line.startsWith('| **Frame**') || line.startsWith('| **Bell**') || line.startsWith('| **Apprentice**'))

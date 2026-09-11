@@ -46,13 +46,15 @@
 | Time | 1 per `decayPeriod` turns, counted by `decayCounter` (`CMB-02` step 2). `decayPeriod` is 5; the **Governor** attachment (`CAT-05`) is the only thing that changes it (to 6). Nothing pauses or skips it. |
 | Active skills | Per skill, 5–20 (`20-skills.md`). Paid when the skill is used, before its effect. |
 | Ranged weapons | Per shot, 2–5 (`21-items-catalog.md`). |
+| Solder | `solderTension` to start a repair (`ITM-09`). Refused, without a turn, if Tick cannot afford it — mending costs spring, which is the trade M13 added. |
+| Wound Lock | `cacheLockCost` to wind one open (`WLD-15`). Refused the same way. |
 | Nothing else | No enemy, hazard, or status drains Tension. *Rationale:* the player must always be able to compute how long they have. |
 
 ## CHR-05 Tension restoration
 
 | Source | Amount | Rule |
 |---|---|---|
-| **Winding Station** | To 100 | One per floor 1–7 (floor 1's is spent at start). Interact while standing on it. Becomes **spent** (dim glyph) permanently. Takes a turn. Logs "Tick winds the spring. Tension 100." |
+| **Winding Station** | To `stationRestore` | One per floor 1–7 (floor 1's is spent at start). Interact while standing on it. Becomes **spent** (dim glyph) permanently. Takes a turn. Logs "Tick winds the spring. Tension {n}." and then "The winding rings through the tower." — winding is **loud**: it emits noise `stationNoise` at the station tile (`CMB-11`), so every Dormant enemy within that radius wakes with the station as its `lastKnown`, and every Active enemy inside it re-targets the station (`ENM-05`). A spent station makes no sound. |
 | **Spring-Key** | +30 | Consumable. Modified by the **Efficient Springs** skill. |
 | Skills | — | No skill restores Tension. |
 | The Master Key | ∞ | Ending B only (`STY-07`). |
@@ -76,7 +78,8 @@
 On reaching each new level (checked in `CMB-02` step 8, one level per check; multiple levels from one
 kill resolve in consecutive checks — i.e. the next turn):
 
-1. `integrityMax += 4`; `integrity += 4` (clamped).
+1. `integrityMax += levelUpIntegrity`; `integrity += levelUpIntegrity` (clamped). The level-9 cap is
+   therefore `40 + 8 × levelUpIntegrity`.
 2. `skillPoints += 1`.
 3. The log prints "Tick feels a new gear catch. Level *N*." and the **Skills** screen opens
    automatically. The player may close it without spending; unspent points persist and the panel

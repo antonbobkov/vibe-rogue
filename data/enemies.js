@@ -9,18 +9,19 @@
 //    (BST-04..06, D-018).
 //  - BST-02's per-type special-case numbers that are not in the table are carried as their own
 //    fields: `burnDamage` on the Rust-moth (4 per turn instead of 2) and `tension` on the
-//    Understudy (its own spring, BST-06) (D-019).
+//    Understudy (its own spring, BST-06) (D-019). M13 adds `corrodes` to the Rust-moth, the flag
+//    `combat.corrode` reads for CMB-14 rather than testing the type's name (DIF-07).
 //  - `packSize` is present only for SWARMERs (ENM-01: "else 1"). Floor 1 overrides the Rust-moth
 //    pack to 3–4 through the spawn entry's `size`, not here (FLR-02).
 
-/** @type {readonly object[]} the twelve regular enemies (BST-02) then the three bosses. */
+/** @type {readonly object[]} the thirteen regular enemies (BST-02) then the three bosses. */
 export const ENEMIES = Object.freeze([
   Object.freeze({
     name: 'Rust-moth',
     glyph: 'm',
     color: 'rust',
     description: 'Not hers. They got in through the roof and eat the oil. They come in numbers and they cannot work a door.',
-    floors: Object.freeze([1, 2, 3, 5, 6]),
+    floors: Object.freeze([1, 2, 3, 4, 5, 6, 7]),
     integrity: 2,
     accuracy: 60,
     evasion: 25,
@@ -33,9 +34,11 @@ export const ENEMIES = Object.freeze([
     opensDoors: 'NO',
     immunities: Object.freeze([]),
     burnDamage: 4,
+    // CMB-14 (DIF-07): the one type whose hit pits Tick's plating.
+    corrodes: true,
     xp: 1,
     dropChance: 5,
-    dropTable: Object.freeze([Object.freeze(['Solder', 1])]),
+    dropTable: Object.freeze([Object.freeze(['Grit Bomb', 1])]),
   }),
   Object.freeze({
     name: 'Sweeper',
@@ -55,7 +58,7 @@ export const ENEMIES = Object.freeze([
     immunities: Object.freeze([]),
     xp: 3,
     dropChance: 15,
-    dropTable: Object.freeze([Object.freeze(['Solder', 2]), Object.freeze(['Spring-Key', 1])]),
+    dropTable: Object.freeze([Object.freeze(['Grit Bomb', 1])]),
   }),
   Object.freeze({
     name: 'Spring-Hound',
@@ -73,9 +76,11 @@ export const ENEMIES = Object.freeze([
     perception: 9,
     opensDoors: 'NO',
     immunities: Object.freeze([]),
+    // ENM-13 (DIF-10): once woken it hunts by sound and never settles again.
+    huntsBySound: true,
     xp: 5,
     dropChance: 15,
-    dropTable: Object.freeze([Object.freeze(['Spring-Key', 2]), Object.freeze(['Solder', 1])]),
+    dropTable: Object.freeze([Object.freeze(['Grit Bomb', 1])]),
   }),
   Object.freeze({
     name: 'Tin Soldier',
@@ -95,11 +100,7 @@ export const ENEMIES = Object.freeze([
     immunities: Object.freeze([]),
     xp: 6,
     dropChance: 25,
-    dropTable: Object.freeze([
-      Object.freeze(['Solder', 2]),
-      Object.freeze(['Spring-Key', 2]),
-      Object.freeze(['Tin Plating', 1]),
-    ]),
+    dropTable: Object.freeze([Object.freeze(['Tin Plating', 1])]),
   }),
   Object.freeze({
     name: 'Music-box Dancer',
@@ -119,7 +120,7 @@ export const ENEMIES = Object.freeze([
     immunities: Object.freeze([]),
     xp: 4,
     dropChance: 15,
-    dropTable: Object.freeze([Object.freeze(['Tuning Fork', 1]), Object.freeze(['Solder', 1])]),
+    dropTable: Object.freeze([Object.freeze(['Tuning Fork', 1])]),
   }),
   Object.freeze({
     name: 'Cuckoo',
@@ -143,10 +144,12 @@ export const ENEMIES = Object.freeze([
       ignoresPlating: true,
       noise: 12,
     }),
+    // ENM-13 (DIF-10): the shriek takes every Guard inside it off its door.
+    rallies: true,
     immunities: Object.freeze([]),
     xp: 6,
     dropChance: 20,
-    dropTable: Object.freeze([Object.freeze(['Spring-Key', 2]), Object.freeze(['Grit Bomb', 1])]),
+    dropTable: Object.freeze([Object.freeze(['Grit Bomb', 1])]),
   }),
   Object.freeze({
     name: 'Stoker',
@@ -167,7 +170,7 @@ export const ENEMIES = Object.freeze([
     immunities: Object.freeze(['Burning']),
     xp: 8,
     dropChance: 25,
-    dropTable: Object.freeze([Object.freeze(['Oil Flask', 2]), Object.freeze(['Solder', 1])]),
+    dropTable: Object.freeze([Object.freeze(['Oil Flask', 1])]),
   }),
   Object.freeze({
     name: 'Gear-Golem',
@@ -188,11 +191,7 @@ export const ENEMIES = Object.freeze([
     immunities: Object.freeze([]),
     xp: 12,
     dropChance: 40,
-    dropTable: Object.freeze([
-      Object.freeze(['Spring-Key', 2]),
-      Object.freeze(['Solder', 2]),
-      Object.freeze(['Counterweight', 1]),
-    ]),
+    dropTable: Object.freeze([Object.freeze(['Counterweight', 1])]),
   }),
   Object.freeze({
     name: 'Brass Finch',
@@ -213,7 +212,7 @@ export const ENEMIES = Object.freeze([
     immunities: Object.freeze([]),
     xp: 3,
     dropChance: 10,
-    dropTable: Object.freeze([Object.freeze(['Spring-Key', 1])]),
+    dropTable: Object.freeze([Object.freeze(['Grit Bomb', 1])]),
   }),
   Object.freeze({
     name: 'Archivist',
@@ -240,11 +239,7 @@ export const ENEMIES = Object.freeze([
     immunities: Object.freeze([]),
     xp: 8,
     dropChance: 25,
-    dropTable: Object.freeze([
-      Object.freeze(['Flux', 1]),
-      Object.freeze(['Solder', 1]),
-      Object.freeze(['Clatter Can', 1]),
-    ]),
+    dropTable: Object.freeze([Object.freeze(['Flux', 1]), Object.freeze(['Clatter Can', 1])]),
   }),
   Object.freeze({
     name: 'The Unfinished',
@@ -264,7 +259,7 @@ export const ENEMIES = Object.freeze([
     immunities: Object.freeze(['Blinded']),
     xp: 9,
     dropChance: 20,
-    dropTable: Object.freeze([Object.freeze(['Solder', 2]), Object.freeze(['Flux', 1])]),
+    dropTable: Object.freeze([Object.freeze(['Flux', 1])]),
   }),
   Object.freeze({
     name: 'Pendulum Knight',
@@ -284,12 +279,29 @@ export const ENEMIES = Object.freeze([
     immunities: Object.freeze([]),
     xp: 12,
     dropChance: 40,
-    dropTable: Object.freeze([
-      Object.freeze(['Solder', 2]),
-      Object.freeze(['Spring-Key', 2]),
-      Object.freeze(['Flux', 1]),
-      Object.freeze(['Steel Plating', 1]),
-    ]),
+    dropTable: Object.freeze([Object.freeze(['Flux', 1]), Object.freeze(['Steel Plating', 1])]),
+  }),
+  Object.freeze({
+    name: 'Magpie',
+    glyph: 'b',
+    color: 'silver',
+    description: 'An aviary bird that likes bright things. Takes one, and does not come back for another.',
+    floors: Object.freeze([5, 7]),
+    integrity: 9,
+    accuracy: 85,
+    evasion: 30,
+    plating: 0,
+    attack: '1d2',
+    speed: 'FAST',
+    archetype: 'THIEF',
+    perception: 9,
+    opensDoors: 'NO',
+    immunities: Object.freeze([]),
+    xp: 6,
+    // ITM-11: the stolen item is returned by `combat.breakActor`, so the table is what a Magpie
+    // that stole nothing leaves behind (DIF-11).
+    dropChance: 100,
+    dropTable: Object.freeze([Object.freeze(['Spring-Key', 1])]),
   }),
 
   // ---- Bosses (BST-04, BST-05, BST-06) ---------------------------------------------------
@@ -374,9 +386,10 @@ export const ENEMIES_BY_NAME = Object.freeze({
   'Archivist': ENEMIES[9],
   'The Unfinished': ENEMIES[10],
   'Pendulum Knight': ENEMIES[11],
-  'The Conductor': ENEMIES[12],
-  'The Regulator': ENEMIES[13],
-  'The Understudy': ENEMIES[14],
+  'Magpie': ENEMIES[12],
+  'The Conductor': ENEMIES[13],
+  'The Regulator': ENEMIES[14],
+  'The Understudy': ENEMIES[15],
 });
 
 /** CMB-10's five statuses — the closed set `immunities` draws from. */
@@ -390,6 +403,7 @@ export const ARCHETYPES = Object.freeze([
   'SWARMER',
   'BRUISER',
   'ERRATIC',
+  'THIEF',
   'BOSS',
 ]);
 export const SPEEDS = Object.freeze(['SLOW', 'NORMAL', 'FAST']);

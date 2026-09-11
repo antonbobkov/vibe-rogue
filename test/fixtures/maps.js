@@ -9,6 +9,7 @@
 //   #  Wall                     .  Floor                   +  Closed door      '  Open door
 //   <  Up-stairs                &  Winding Station          T  Tick's start (WLD-13's `@` too)
 //   ^  Grinding Gear            "  Steam Vent               ~  Pendulum Sweep
+//   =  Wound Lock (WLD-15)
 //   E  Escapement wheel (`O` too)                           H  Chair
 //
 // Two of WLD-13's terrain letters collide with a `22-bestiary.md` glyph, and the enemy wins,
@@ -52,6 +53,7 @@ const TERRAIN = Object.freeze({
   '^': TILE.GRINDING_GEAR,
   '"': TILE.STEAM_VENT,
   '~': TILE.PENDULUM_SWEEP,
+  '=': TILE.WOUND_LOCK,
   O: TILE.ESCAPEMENT,
   E: TILE.ESCAPEMENT,
   H: TILE.CHAIR,

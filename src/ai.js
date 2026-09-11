@@ -39,12 +39,16 @@ import * as combat from './combat.js';
 import * as log from './log.js';
 import { int } from './rng.js';
 import * as bosses from './bosses.js';
+import { TUNING } from '../data/tuning.js';
 
 /** The action every actor may always take. */
 export const WAIT = Object.freeze({ type: 'wait' });
 
-/** ENM-05: an Active enemy gives up once `lastKnownAge` passes this — that is, on turn 9. */
-export const MEMORY_TURNS = 8;
+/**
+ * ENM-05: an Active enemy gives up once `lastKnownAge` passes `tuning.memoryTurns` — on turn 26 at
+ * M13's default of 25 (DIF-10). This constant is the default, for callers with no run state.
+ */
+export const MEMORY_TURNS = TUNING.memoryTurns;
 
 /** ENM-05: a noise refreshes `lastKnown` out to `perception + 3`. */
 export const NOISE_BONUS = 3;
@@ -100,7 +104,11 @@ export function decide(enemy, state, ctx) {
 function actionFor(enemy, state, ctx) {
   switch (archetypeOf(enemy)) {
     case 'GUARD':
+      // ENM-13 (DIF-10): a Cuckoo's shriek takes a guard off its door for `rallyTurns`.
+      if (rallied(enemy, state)) return chaser(enemy, state);
       return guard(enemy, state);
+    case 'THIEF':
+      return thief(enemy, state);
     case 'SKIRMISHER':
       return skirmisher(enemy, state);
     case 'BRUISER':
@@ -165,7 +173,28 @@ export function targetOf(state, enemy) {
  */
 export function track(enemy, state) {
   if (enemy.state !== 'ACTIVE') return;
+  const tuning = state.tuning || TUNING;
   const target = targetOf(state, enemy);
+
+  // ENM-13 (DIF-10): a rally that has run out puts the guard back on its way home.
+  if (enemy.ralliedUntil !== undefined && state.turn > enemy.ralliedUntil) {
+    // TEC-05: `undefined` is not JSON, so a spent rally is removed rather than blanked (D-080).
+    delete enemy.ralliedUntil;
+    if (archetypeOf(enemy) === 'GUARD') {
+      enemy.state = 'RETURNING';
+      return;
+    }
+  }
+
+  // ENM-13 (DIF-10): "Spring-Hounds ... hunt by sound." A woken hound keeps the target's tile
+  // fresh while it is within `houndRange`, walls notwithstanding, and never goes Dormant again.
+  if (enemyType(enemy).huntsBySound === true) {
+    if (target && chebyshev(enemy.x, enemy.y, target.x, target.y) <= tuning.houndRange) {
+      enemy.lastKnown = { x: target.x, y: target.y };
+      enemy.lastKnownAge = 0;
+      return;
+    }
+  }
 
   if (target && canSee(state, enemy, target)) {
     enemy.lastKnown = { x: target.x, y: target.y };
@@ -187,12 +216,13 @@ export function track(enemy, state) {
     }
   }
 
-  if (enemy.lastKnownAge <= MEMORY_TURNS) return;
+  if (enemy.lastKnownAge <= tuning.memoryTurns) return;
 
   // ENM-06 / BST-02: "Erratics never go Dormant once woken." BST-03: nor do bosses after their
-  // entry trigger.
+  // entry trigger. ENM-13 (DIF-10): nor does a woken Spring-Hound.
   const archetype = archetypeOf(enemy);
   if (archetype === 'ERRATIC' || archetype === 'BOSS' || enemy.isBoss === true) return;
+  if (enemyType(enemy).huntsBySound === true) return;
   if (archetype === 'GUARD') {
     enemy.state = 'RETURNING';
     return;
@@ -215,6 +245,29 @@ export function chaser(enemy, state) {
 
 /** SWARMER — *eat the oil*. The same list as CHASER (ENM-06); `pathTo` ignores other enemies. */
 export const swarmer = chaser;
+
+/** ENM-13 (DIF-10): is this enemy still off its post because a Cuckoo shrieked? */
+export function rallied(enemy, state) {
+  return enemy.ralliedUntil !== undefined && state.turn <= enemy.ralliedUntil;
+}
+
+/**
+ * THIEF — *take one bright thing* (ENM-06, DIF-11). As CHASER until it has stolen something; then
+ * it only runs, using the SKIRMISHER's retreat step, and never attacks again.
+ *
+ * The theft itself is CMB-06's business (`combat.steal`, called on a hit), so this list only has
+ * to know which of the two halves of the Magpie's life it is in.
+ */
+export function thief(enemy, state) {
+  const target = targetOf(state, enemy);
+  if (enemy.fleeing === true) {
+    if (!target) return WAIT;
+    const tile = retreatTile(enemy, state, target);
+    if (tile) return { type: 'move', x: tile.x, y: tile.y };
+    return WAIT;
+  }
+  return chaser(enemy, state);
+}
 
 /** GUARD — *guard this room*. */
 export function guard(enemy, state) {
@@ -392,8 +445,13 @@ export function stepToward(enemy, state, dest) {
   if (!path || path.length === 0) return WAIT;
   const next = path[0];
 
-  if (state.floor.tiles[next.y][next.x] === TILE.DOOR_CLOSED) {
+  const nextTile = state.floor.tiles[next.y][next.x];
+  if (nextTile === TILE.DOOR_CLOSED || nextTile === TILE.WOUND_LOCK) {
     const opens = enemyType(enemy).opensDoors;
+    // WLD-15: only a BREAKS enemy gets through a lock — a Gear-Golem can open a cache for you.
+    if (nextTile === TILE.WOUND_LOCK) {
+      return opens === 'BREAKS' ? { type: 'breakDoor', x: next.x, y: next.y } : WAIT;
+    }
     if (opens === 'YES') return { type: 'openDoor', x: next.x, y: next.y };
     if (opens === 'BREAKS') return { type: 'breakDoor', x: next.x, y: next.y };
     return WAIT; // `NO` never plans through a door, but never move into one either
@@ -457,6 +515,9 @@ function stepPassable(enemy, state, dest, gearsPassable) {
     const t = tiles[to.y][to.x];
     if (t === TILE.DOOR_CLOSED) {
       if (opens === 'NO') return false;
+    } else if (t === TILE.WOUND_LOCK) {
+      // WLD-15 (DIF-12): "Enemies with `opensDoors: YES` treat it as a wall; `BREAKS` breaks it."
+      if (opens !== 'BREAKS') return false;
     } else if (!walkable(t)) {
       return false;
     }

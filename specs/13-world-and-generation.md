@@ -26,6 +26,7 @@ seeds by following this document and `TEC-07`.
 | **Grinding Gear** (hazard) | `^` | Yes | No | Constant hazard (WLD-08). |
 | **Steam Vent** (hazard) | `^` | Yes | No | Cyclic hazard (WLD-08). Distinct color. |
 | **Pendulum Sweep** (hazard) | `~` | Yes | No | Cyclic hazard (WLD-08). Floor 7 only. |
+| **Wound Lock** | `=` | No (bump winds it open) | Yes | Brass. Closes every entrance of the cache room (`WLD-15`). |
 | **Chair** | `h` | No | No | Floor 8 only (`C` in the WLD-13 legend). |
 | **Escapement wheel** | `O` | No | Yes | Floor 8 only (`E` in the WLD-13 legend). |
 
@@ -135,7 +136,14 @@ All random choices use the floor's PRNG in the order written. Per-floor paramete
      `stairsDistance / 2` (ties: lowest `id`).
    - `cache` = among remaining rooms, prefer those with exactly one door-or-corridor opening in their
      boundary (dead ends); among candidates, the one farthest from start (ties: lowest `id`). If no
-     dead end, the remaining room farthest from start.
+     dead end, the remaining room farthest from start. A room whose boundary cannot be **sealed**
+     is skipped, farthest-first, and the next candidate is taken (`WLD-15`): a room the Pendulum
+     band runs past has a way in that no lock can close, and locking a corridor that merely runs
+     along a room's wall would cut the floor in half.
+   - **Lock the cache** (`WLD-15`): every passable boundary tile of the cache room — an open corridor
+     mouth, an open door or a closed one — becomes a **Wound Lock**. This is the "force a door, then
+     lock it" of the rule, done in one pass. It happens here rather than at step 4 because the cache
+     role is not known until now.
    - `journal` = among remaining rooms, a uniformly random one.
    With exactly 5 rooms all roles are still assignable; with fewer, validation already failed.
 6. **Features** per WLD-07, in the order: player start, stairs, station, journal page, cache items
@@ -159,6 +167,49 @@ All random choices use the floor's PRNG in the order written. Per-floor paramete
 10. **Validate:** ≥ 5 rooms; every room reachable from start; stairs, station, journal page all placed;
     cache has ≥ 2 items; no feature tile (start, stairs, station, journal page, cache items) is within
     Chebyshev 1 of a hazard tile. Otherwise regenerate (WLD-10).
+
+## WLD-14 Wandering pressure
+
+A floor is not a fixed number of enemies. Each floor 1–7 keeps `turnsHere`, the number of turns since
+Tick arrived on it. Every `wanderInterval` turns (`turnsHere mod interval == 0`, `turnsHere > 0`), if
+fewer than `wanderCap` wanderers have already arrived on this floor, **one** enemy is drawn from the
+floor's **wander table** (`23-floors.md`, an `ITM-10` weighted roll on the play PRNG) and placed:
+
+- a random interior tile of a room Tick **cannot see**, at BFS distance ≥ 10 from Tick, with no
+  actor, no item and no feature or hazard on it (plain Floor);
+- 50 rejection samples (room, then `x`, then `y`), then the farthest valid room tile, then nothing —
+  and a spawn that finds nowhere **does not count against the cap**.
+
+The enemy arrives **Active**, with `lastKnown` set to Tick's tile, its type's `opensDoors`, and a
+`wanderer` flag. It gains no energy on the turn it arrives (`ENM-03`: nothing acts on the turn it
+wakes). `ENM-12`'s Overwound roll applies to it like any regular spawn. XP and drops are its type's.
+
+Some floors run the clock on their own interval — floors 1–3 are slower, because they are the floors
+a run is still learning on — and floor 8 has no wander table at all. The log says
+"Somewhere on this floor, something winds itself up." and panel row 16 counts the turns down when the
+floor has no cyclic hazard to show there (`UI-06`), so the pressure is legible rather than a
+surprise.
+
+*Rationale:* this is the rule that prices "explore everything". Standing still costs, going back
+costs, and a cleared floor does not stay cleared.
+
+## WLD-15 Wound Locks
+
+Every entrance of the **cache** room is a **Wound Lock** (`=`, brass). A lock blocks movement and
+sight exactly like a closed door, and:
+
+- **Tick** opens one by bumping it: if `tension > cacheLockCost`, pay `cacheLockCost` and the tile
+  becomes an **open door** — permanently — logging "Tick winds the lock. Tension {n}."; the bump is
+  the turn. With too little spring the bump is refused **without a turn** ("Not enough spring for
+  the lock.").
+- An enemy whose `opensDoors` is `YES` or `NO` treats a lock as a **wall**. One that `BREAKS` breaks
+  it like a door, leaving Floor and noise 6 — a Gear-Golem can open a cache for you.
+- The cache guard is generated **inside** the locked room, with the cache items.
+- Floor 6's cache, with the Understudy Blueprint in it, is locked like any other.
+
+The generator will not choose a cache room whose boundary cannot be locked without cutting the rest
+of the floor off (`WLD-11` step 5), so a floor is always completable without paying: the cache is the
+only thing a lock is allowed to shut away.
 
 ## WLD-12 Item and enemy placement invariants
 

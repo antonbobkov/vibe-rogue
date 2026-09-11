@@ -74,7 +74,7 @@ test('the Inventory greys the actions that do not apply and uses the ones that d
   await press(page, String.fromCharCode(97 + malletSlot));
   await press(page, 'e');
   s = await state(page);
-  expect(s.tick.equipment.weapon).toBe('Mallet');
+  expect(s.tick.equipment.weapon.name).toBe('Mallet');
   expect(s.tick.inventory[malletSlot].name).toBe('Wrench');
   // The inventory stays open for `e` so a second slot can be filled without reopening it.
   expect(screenText(await grid(page))).toContain('INVENTORY');

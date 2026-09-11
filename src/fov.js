@@ -15,6 +15,13 @@
 
 import { W, H, idx, inBounds, chebyshev } from './grid.js';
 
+/**
+ * WLD-05: Tick's sight radius. It lives here rather than in `engine.js` so that the modules which
+ * need "what Tick can see" without an engine — `wander.js`'s placement, `gen.js`'s WLD-12 check —
+ * read one number. `engine.js` re-exports it.
+ */
+export const FOV_RADIUS = 8;
+
 /** Quadrant transforms: (depth, col) in quadrant `q` -> map tile. */
 function transformX(q, ox, depth, col) {
   if (q === 0 || q === 2) return ox + col; // north, south

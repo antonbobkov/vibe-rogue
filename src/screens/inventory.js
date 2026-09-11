@@ -12,7 +12,9 @@ import {
   MAP_W, MAP_H, BG_PANEL, box, write, fit, twoColumn, invertRow,
 } from '../render.js';
 import { listIntent } from '../input.js';
-import { itemDef, slotLetter, slotOfLetter, INVENTORY_SLOTS, EQUIP_SLOTS } from '../items.js';
+import {
+  itemDef, slotLetter, slotOfLetter, entryName, displayName, INVENTORY_SLOTS, EQUIP_SLOTS,
+} from '../items.js';
 import { itemFields, itemLine } from './inspect.js';
 import { drawInspect } from './run.js';
 
@@ -51,7 +53,7 @@ export function applicable(entry) {
     out.equip = Boolean(entry.name);
     return out;
   }
-  const def = itemDef(entry.name);
+  const def = itemDef(entryName(entry.name));
   out.drop = true;
   out.equip = ['melee', 'ranged', 'plating', 'attachment'].includes(def.category);
   out.use = def.category === 'instant';
@@ -69,7 +71,8 @@ export function createInventoryScreen(app) {
     const out = [];
     tick().inventory.forEach((slot, i) => {
       if (!slot) return;
-      out.push({ kind: 'item', slot: i, letter: slotLetter(i), name: slot.name, count: slot.count });
+      // DIF-07: `wear` travels with a carried plate, so the entry carries it too.
+      out.push({ kind: 'item', slot: i, letter: slotLetter(i), name: slot.name, count: slot.count, wear: slot.wear });
     });
     for (const [letter, which] of Object.entries(EQUIP_LETTERS)) {
       out.push({ kind: 'equipped', which, letter, name: tick().equipment[which] || null });
@@ -115,7 +118,7 @@ export function createInventoryScreen(app) {
         app.markDirty();
         return true;
       case 'throw': {
-        const def = itemDef(entry.name);
+        const def = itemDef(entryName(entry.name));
         close();
         app.push(app.screens.targeting({
           mode: 'target',
@@ -149,23 +152,23 @@ export function createInventoryScreen(app) {
           write(buf, inner.x, y, `${slotLetter(i)})`, 'midGrey', BG_PANEL, inner.w);
           return;
         }
-        const def = itemDef(slot.name);
+        const def = itemDef(entryName(slot));
         const count = slot.count > 1 ? ` ×${slot.count}` : '';
-        write(buf, inner.x, y, fit(`${slotLetter(i)}) ${slot.name}${count}`, FIELDS_X - 1), 'lightGrey', BG_PANEL);
+        write(buf, inner.x, y, fit(`${slotLetter(i)}) ${displayName(slot)}${count}`, FIELDS_X - 1), 'lightGrey', BG_PANEL);
         const glyph = def.category === 'record' ? '?' : def.glyph;
-        write(buf, inner.x + FIELDS_X, y, fit(`${glyph} ${itemFields(def, tick())}`, inner.w - FIELDS_X),
+        write(buf, inner.x + FIELDS_X, y, fit(`${glyph} ${itemFields(def, tick(), slot)}`, inner.w - FIELDS_X),
           'lightGrey', BG_PANEL);
       });
 
       write(buf, inner.x, inner.y + ROW_EQUIPPED, 'EQUIPPED', 'brass', BG_PANEL, inner.w);
       EQUIP_SLOTS.forEach((which, i) => {
         const letter = Object.keys(EQUIP_LETTERS).find((k) => EQUIP_LETTERS[k] === which);
-        const name = tick().equipment[which];
+        const worn = tick().equipment[which];
         const y = inner.y + ROW_FIRST_EQUIP + i;
-        write(buf, inner.x, y, fit(`${letter}) ${name || DASH}`, FIELDS_X - 1), 'lightGrey', BG_PANEL);
-        if (name) {
-          const def = itemDef(name);
-          write(buf, inner.x + FIELDS_X, y, fit(`${def.glyph} ${itemFields(def, tick())}`, inner.w - FIELDS_X),
+        write(buf, inner.x, y, fit(`${letter}) ${displayName(worn) || DASH}`, FIELDS_X - 1), 'lightGrey', BG_PANEL);
+        if (worn) {
+          const def = itemDef(entryName(worn));
+          write(buf, inner.x + FIELDS_X, y, fit(`${def.glyph} ${itemFields(def, tick(), worn)}`, inner.w - FIELDS_X),
             'lightGrey', BG_PANEL);
         }
       });
@@ -192,8 +195,10 @@ export function createInventoryScreen(app) {
       const entry = list[selected];
       if (!entry) return '';
       if (!entry.name) return `${entry.which} — empty`;
-      if (entry.kind === 'equipped') return itemLine({ name: entry.name }, tick());
-      return itemLine({ name: entry.name, count: entry.count }, tick());
+      // DIF-07: `entry.name` is an EquipEntry for an equipped slot and for carried equipment, so
+      // the wear travels into the line `inspect.js` writes.
+      if (entry.kind === 'equipped') return itemLine(entry.name, tick());
+      return itemLine({ name: entryName(entry.name), count: entry.count, wear: entry.wear }, tick());
     },
 
     onKey(ev) {

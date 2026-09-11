@@ -12,13 +12,16 @@
 //    BAL-01's own model puts the player when they reach the station ("the pre-station low points
 //    (30-39 on floors 2-6 ...) cross the yellow/red warnings (CHR-03), which is the moment the game
 //    asks 'station first, or loot first?'"). See D-098.
+//  * **Wanderers.** WLD-14 (DIF-06) keeps sending enemies at a floor for as long as Tick is on
+//    it, so "enemies removed" has to be applied after every action rather than once on arrival —
+//    otherwise this bot measures a fight it is not meant to be in, and dies to it (D-112).
 //  * **Hazards.** The path avoids WLD-08 hazards when another one exists (UI-13's rule), and
 //    crosses them only when the stairs are otherwise unreachable. Walking a Grinding Gear line at
 //    level 1 kills the bot outright, and a dead bot measures nothing. See D-099.
 //
 // "enemies removed" is the one liberty this bot takes with the state, and BAL-07 names it.
 
-import { bfsField, stepDownField, hazardStall, idx, TILE } from './util.js';
+import { bfsField, stepDownField, hazardStall, stepsIntoLock, idx, TILE } from './util.js';
 
 export const id = 'S2';
 export const label = 'Clock only';
@@ -32,9 +35,10 @@ export const WIND_AT = 30;
 /** A BFS field toward `(x, y)` that routes around hazards when it can (UI-13). */
 function fieldTo(state, target) {
   if (!target) return null;
-  const avoiding = bfsField(state, target.x, target.y);
+  // WLD-15 (DIF-12): a clock bot never spends spring on a lock, so it plans around them.
+  const avoiding = bfsField(state, target.x, target.y, { locks: false });
   if (avoiding[idx(state.tick.x, state.tick.y)] >= 0) return avoiding;
-  return bfsField(state, target.x, target.y, { hazardsPassable: true });
+  return bfsField(state, target.x, target.y, { hazardsPassable: true, locks: false });
 }
 
 export function createBot() {
@@ -48,6 +52,11 @@ export function createBot() {
     stopOnFloor: STOP_ON_FLOOR,
     /** No skills: an unspent point is left unspent, which changes nothing about the clock. */
     build: [],
+
+    /** WLD-14: the floor keeps making more, so they keep being removed (D-112). */
+    afterAction(game) {
+      game.state.floor.enemies.length = 0;
+    },
 
     onFloorEntered(game) {
       const state = game.state;
@@ -65,13 +74,13 @@ export function createBot() {
       const station = state.floor.features.station;
       if (station && !state.floor.stationSpent && stationField && tick.tension <= WIND_AT) {
         if (tick.x === station.x && tick.y === station.y) return { type: 'interact' };
-        const step = stepDownField(state, stationField);
+        const step = stepDownField(state, stationField, { locks: false });
         if (step) return hazardStall(state, step) || step;
       }
 
       if (state.floor.tiles[tick.y][tick.x] === TILE.STAIRS_UP) return { type: 'ascend' };
       if (!stairsField) return null;
-      const step = stepDownField(state, stairsField);
+      const step = stepDownField(state, stairsField, { locks: false });
       if (!step) return null;
       return hazardStall(state, step) || step;
     },

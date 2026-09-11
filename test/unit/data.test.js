@@ -98,7 +98,7 @@ const FLOOR_REQUIRED = [
   'guard',
   'journalPage',
 ];
-const FLOOR_OPTIONAL = ['cacheFirstRollTable', 'cacheExtra', 'boss', 'fixedMap'];
+const FLOOR_OPTIONAL = ['cacheFirstRollTable', 'cacheExtra', 'boss', 'fixedMap', 'wanderTable'];
 
 /** The twelve skill names, hard-coded from `11-character-and-skills.md` / `20-skills.md`. */
 const SPEC_SKILL_NAMES = [
@@ -328,6 +328,8 @@ test('data/enemies: BST-07 XP inventory is transcribed exactly @unit @m02', () =
     'Archivist': 8,
     'The Unfinished': 9,
     'Pendulum Knight': 12,
+    // DIF-11: the Magpie, M13's thirteenth regular enemy.
+    'Magpie': 6,
     'The Conductor': 10,
     'The Regulator': 12,
     'The Understudy': 0,
@@ -391,8 +393,9 @@ test('data/skills: the SKL-02..04 ranks, types, costs, targets and summaries are
     'Melee hit: double weapon dice, +25 accuracy. 8 Tension.',
     '4 turns: +3 Plating, immune to Stun and knockback. 10 Tension.',
     '+2 Force. Melee hits of 6+ knock back and Stun 1.',
-    'Every 4th enemy broken drops Solder, then Spring-Key.',
-    'Spring-Key +45, Solder +25, Flux +10.',
+    // DIF-04: Salvage pays in throwables, and Efficient Springs is a bonus on each amount.
+    'Every 4th enemy broken drops a throwable.',
+    'Spring-Key +10, Solder +15, Flux +5.',
     '+12 Integrity. Once per floor. 12 Tension.',
     'Place a 12-Integrity decoy; enemies within 8 target it for 6 turns. 15 Tension.',
     '+1 Precision. Ranged shots −1 Tension, +5 accuracy.',
@@ -509,14 +512,18 @@ test('data/floors: nominal XP per floor equals FLR-10 @unit @m02', () => {
     }
     return xp;
   });
-  assert.deepEqual(nominal, [15.5, 27, 33, 45, 44, 59, 58.5, 36]);
+  // M13: floor 4 gains a Rust-moth pack (DIF-07) and floors 5 and 7 a Magpie (DIF-11). WLD-14's
+  // wanderers are *not* counted — they are a live stream, like the Conductor's dancers (FLR-10).
+  assert.deepEqual(nominal, [15.5, 27, 33, 49, 50, 59, 64.5, 36]);
   assert.deepEqual(nominal, [...NOMINAL_XP.byFloor]);
-  assert.equal(nominal.reduce((a, b) => a + b, 0), 318, 'FLR-10 total without the Conductor summons');
+  assert.equal(nominal.reduce((a, b) => a + b, 0), 334, 'FLR-10 total without the Conductor summons');
   const conductor = FLOORS[3].boss;
   assert.equal(conductor.summonCap * ENEMIES_BY_NAME[conductor.summonType].xp, 16, 'FLR-04 up to 16 summon XP');
-  assert.equal(318 + 16, 334, 'FLR-10 total with the Conductor summons');
+  assert.equal(334 + 16, 350, 'FLR-10 total with the Conductor summons');
+  assert.equal(NOMINAL_XP.total, 334);
+  assert.equal(NOMINAL_XP.totalWithConductorSummons, 350);
   // CHR-06 wants >= 300 XP placed across a run (BAL-03).
-  assert.ok(318 >= 300);
+  assert.ok(334 >= 300);
 });
 
 // ---------------------------------------------------------------------------------------
@@ -735,7 +742,7 @@ test('data/script: the SCR-10 log templates use only the documented placeholders
   assert.deepEqual(problems, []);
   assert.equal(SCRIPT.log.hit, '{A} hits {D} for {n}.');
   assert.equal(SCRIPT.log.enemyBroken, 'The {D} breaks.');
-  assert.equal(SCRIPT.log.station, 'Tick winds the spring. Tension 100.');
+  assert.equal(SCRIPT.log.station, 'Tick winds the spring. Tension {n}.');
   assert.equal(SCRIPT.log.stationSpent, 'This station has run down.');
   assert.equal(SCRIPT.log.stairs, 'Tick climbs. Floor {n}: {floor name}.');
   assert.equal(SCRIPT.log.levelUp, 'Tick feels a new gear catch. Level {n}.');

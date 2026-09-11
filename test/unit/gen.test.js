@@ -37,8 +37,12 @@ function roomMap(floor) {
   return map;
 }
 
-/** WLD-11 step 5's connectivity: walkable tiles plus closed doors. */
-const passableForGen = (t) => walkable(t) || t === TILE.DOOR_CLOSED;
+/**
+ * WLD-11 step 5's connectivity: walkable tiles plus closed doors — and, since M13, the Wound Locks
+ * of WLD-15, which Tick opens by bumping them like any other door (DIF-12). Step 5's own BFS runs
+ * before the locks exist, so this is the same graph it walked.
+ */
+const passableForGen = (t) => walkable(t) || t === TILE.DOOR_CLOSED || t === TILE.WOUND_LOCK;
 
 function distancesFrom(floor, from) {
   return bfs((_a, b) => passableForGen(tileAt(floor, b.x, b.y)), from);

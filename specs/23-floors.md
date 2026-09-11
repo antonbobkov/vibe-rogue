@@ -22,17 +22,24 @@ the given range.
 Each floor has a **short name** (≤ 11 characters) for the panel (`UI-03` row 5), in floor order:
 `Workshop` · `Gallery` · `Music Room` · `Furnace` · `Aviary` · `Archive` · `Stair` · `Escapement`.
 
+Every floor 1–7 also has a **wander table** (`WLD-14`): the `[name, weight]` list the floor draws
+from when it sends something after Tick, and a **locked cache** (`WLD-15`): every way into the cache
+room is a Wound Lock, so the room's items and its guard cost `cacheLockCost` Tension to reach. Floor
+8 has neither.
+
 ## FLR-02 Floor 1 — The Workshop
 
 - **Theme:** benches, vices, part racks, a cold forge. Tick's home. Tutorial floor; no hazards.
 - **Generator:** `roomTarget 7`, `extraCorridors 1`, `doorChance 60`.
 - **Hazards:** none.
 - **Station:** spent at start (`CHR-01`); the start tile is the station tile.
-- **Floor items:** 3. Floor table: `Solder 6, Spring-Key 4, Tin Plating 3, Mallet 3, Grit Bomb 2,
+- **Floor items:** 3. Floor table: `Solder 6, Spring-Key 2, Tin Plating 3, Mallet 3, Grit Bomb 2,
   Balance Wheel 1`.
 - **Cache:** count 2–3. **Guarantee:** the first cache roll uses the table `Tin Plating 1, Brass Plating 1`
-  (`ITM-12`); remaining rolls use `Mallet 3, Balance Wheel 2, Solder 3, Spring-Key 3, Grit Bomb 1`.
+  (`ITM-12`); remaining rolls use `Mallet 3, Balance Wheel 2, Solder 3, Spring-Key 1, Grit Bomb 1`.
 - **Spawn list:** `Rust-moth pack (3–4)`, `Sweeper × 3`. Cache guard: **Sweeper**.
+- **Wander table** (`WLD-14`): `Sweeper 3, Rust-moth 1` — a single moth, not a pack. The tutorial
+  floor runs the slowest wanderer clock of any.
 - **Journal:** page 1.
 - Nominal XP: 3.5 + 9 + 3 = **15.5**. Enemies 7–8.
 
@@ -41,12 +48,13 @@ Each floor has a **short name** (≤ 11 characters) for the panel (`UI-03` row 5
 - **Theme:** the transmission — floor-to-ceiling gears, catwalks. Grinding Gears in the corridors.
 - **Generator:** `roomTarget 8`, `extraCorridors 2`, `doorChance 60`.
 - **Hazards:** **Grinding Gear × 6** on corridor tiles.
-- **Floor items:** 4. Floor table: `Solder 6, Spring-Key 5, Cog Saw 2, Spring-Bolt Launcher 2,
+- **Floor items:** 4. Floor table: `Solder 6, Spring-Key 2, Cog Saw 2, Spring-Bolt Launcher 2,
   Brass Plating 2, Counterweight 1, Oil Flask 2, Clatter Can 2`.
 - **Cache:** 2–3 from `Cog Saw 3, Spring-Bolt Launcher 3, Brass Plating 3, Counterweight 2,
-  Balance Wheel 2, Spring-Key 2`.
+  Balance Wheel 2, Spring-Key 1`.
 - **Spawn list:** `Sweeper × 2`, `Spring-Hound × 1`, `Tin Soldier × 1`, `Rust-moth pack`.
   Cache guard: **Tin Soldier**.
+- **Wander table:** `Sweeper 2, Spring-Hound 3, Tin Soldier 1`, on a slower clock than floors 4–7.
 - **Journal:** page 2.
 - Nominal XP: 6 + 5 + 6 + 4 + 6 = **27**. Enemies 8–10.
 
@@ -55,17 +63,19 @@ Each floor has a **short name** (≤ 11 characters) for the panel (`UI-03` row 5
 - **Theme:** an automaton orchestra on a stage, music boxes, a dance floor.
 - **Generator:** `roomTarget 8`, `extraCorridors 2`, `doorChance 70`.
 - **Hazards:** none.
-- **Floor items:** 4. Floor table: `Solder 5, Spring-Key 5, Tuning Fork 2, Iron Plating 2, Oil Flask 2,
+- **Floor items:** 4. Floor table: `Solder 2, Spring-Key 2, Tuning Fork 2, Iron Plating 2, Oil Flask 2,
   Grit Bomb 2, Cog Saw 1, Oil Reservoir 1`.
 - **Cache:** 2–3 from `Iron Plating 3, Oil Reservoir 2, Spring-Bolt Launcher 2, Tuning Fork 2,
-  Solder 2, Spring-Key 2, Balance Wheel 1`.
+  Solder 1, Spring-Key 1, Balance Wheel 1`.
 - **Spawn list:** `Music-box Dancer × 1`, `Cuckoo × 1`, `Sweeper × 1`, `Rust-moth pack`.
   Cache guard: **Tin Soldier**.
+- **Wander table:** `Sweeper 3, Spring-Hound 2, Music-box Dancer 1`, on a slower clock than floors
+  4–7 — the Conductor already keeps up to four dancers on the board (`B-012`).
 - **Boss:** **The Conductor** in the **stairs room** (`BST-04`). The stairs room is the "stage".
   **Scripted moment 1** (`SCR-05`) fires the first time any interior tile of the stairs room enters
   Tick's FOV; at that moment the Conductor counts Tick as seen.
 - **Journal:** page 3.
-- Nominal XP: 4 + 6 + 3 + 4 + 6 + 10 + up to 4 summoned dancers (16) = **33 + up to 16**. Enemies 8–10 + summons.
+- Nominal XP: 4 + 6 + 3 + 4 + 6 + 10 + up to 4 summoned dancers (16) = **33 + up to 16**. Enemies 8–10 + summons + wanderers.
 
 ## FLR-05 Floor 4 — The Furnace Deck
 
@@ -73,40 +83,46 @@ Each floor has a **short name** (≤ 11 characters) for the panel (`UI-03` row 5
 - **Generator:** `roomTarget 8`, `extraCorridors 2`, `doorChance 50`.
 - **Hazards:** **Steam Vent × 10**, placed on interior tiles of rooms with no role (`WLD-09`), at most
   4 per room, never adjacent to each other.
-- **Floor items:** 4. Floor table: `Solder 5, Spring-Key 5, Flux 2, Escapement Blade 2, Iron Plating 2,
+- **Floor items:** 4. Floor table: `Solder 2, Spring-Key 2, Flux 2, Escapement Blade 2, Iron Plating 2,
   Oil Reservoir 1, Grit Bomb 1, Clatter Can 1`.
 - **Cache:** 2–3 from `Escapement Blade 3, Iron Plating 2, Oil Reservoir 2, Counterweight 1, Flux 2,
-  Spring-Key 2, Solder 2`.
-- **Spawn list:** `Stoker × 2`, `Gear-Golem × 1`, `Spring-Hound × 1`, `Sweeper × 2`.
-  Cache guard: **Tin Soldier**.
+  Spring-Key 1, Solder 1`.
+- **Spawn list:** `Stoker × 2`, `Gear-Golem × 1`, `Spring-Hound × 1`, `Sweeper × 2`,
+  `Rust-moth pack` — the moths follow the oil up here, so the plating a player has just bought is
+  threatened as soon as it is bought (`CMB-14`). Cache guard: **Tin Soldier**.
+- **Wander table:** `Stoker 3, Spring-Hound 2, Sweeper 1`.
 - **Journal:** page 4.
-- Nominal XP: 16 + 12 + 5 + 6 + 6 = **45**. Enemies 7.
+- Nominal XP: 16 + 12 + 5 + 6 + 6 + 4 = **49**. Enemies 11–12 + wanderers.
 
 ## FLR-06 Floor 5 — The Aviary
 
 - **Theme:** open galleries, perches, cages, a shattered skylight. Long sightlines.
 - **Generator:** `roomTarget 9`, `extraCorridors 3`, `doorChance 40`.
 - **Hazards:** none.
-- **Floor items:** 4. Floor table: `Solder 5, Spring-Key 5, Harmonic Rifle 2, Pendulum Flail 1,
+- **Floor items:** 4. Floor table: `Solder 2, Spring-Key 2, Harmonic Rifle 2, Pendulum Flail 1,
   Steel Plating 1, Lacquered Plating 2, Sounding Plate 1, Tuning Fork 2, Grit Bomb 2`.
 - **Cache:** 2–3 from `Harmonic Rifle 3, Steel Plating 2, Lacquered Plating 2, Sounding Plate 2,
-  Pendulum Flail 2, Spring-Key 2, Solder 2`.
-- **Spawn list:** `Cuckoo × 3`, `Brass Finch pack`, `Brass Finch pack`, `Spring-Hound × 1`.
-  Cache guard: **Tin Soldier**.
+  Pendulum Flail 2, Spring-Key 1, Solder 1`.
+- **Spawn list:** `Cuckoo × 3`, `Brass Finch pack`, `Brass Finch pack`, `Spring-Hound × 1`,
+  `Magpie × 1`. Cache guard: **Tin Soldier**.
+- **Wander table:** `Cuckoo 2, Brass Finch 2` (a single finch, not a pack), `Spring-Hound 2,
+  Magpie 2`.
 - **Journal:** page 5.
-- Nominal XP: 18 + 7.5 + 7.5 + 5 + 6 = **44**. Enemies 9–11.
+- Nominal XP: 18 + 7.5 + 7.5 + 5 + 6 + 6 = **50**. Enemies 10–12 + wanderers.
 
 ## FLR-07 Floor 6 — The Archive
 
 - **Theme:** blueprint cabinets, drafting tables, shelves of parts for things never finished.
 - **Generator:** `roomTarget 9`, `extraCorridors 1`, `doorChance 80`.
 - **Hazards:** none.
-- **Floor items:** 4. Floor table: `Solder 5, Spring-Key 5, Flux 2, Piston Hammer 1, Escapement Blade 2,
+- **Floor items:** 4. Floor table: `Solder 2, Spring-Key 2, Flux 2, Piston Hammer 1, Escapement Blade 2,
   Steel Plating 2, Oil Flask 2, Clatter Can 2, Sounding Plate 1`.
 - **Cache:** 2–3 from `Piston Hammer 3, Steel Plating 2, Lacquered Plating 2, Harmonic Rifle 2, Flux 2,
-  Solder 2, Spring-Key 2`, **plus** the **Understudy Blueprint** on an additional tile (`CAT-07`).
+  Solder 1, Spring-Key 1`, **plus** the **Understudy Blueprint** on an additional tile (`CAT-07`).
+  The Blueprint is behind the same Wound Locks as the rest of it (`WLD-15`).
 - **Spawn list:** `The Unfinished × 1`, `Archivist × 2`, `Tin Soldier × 1`, `Rust-moth pack`.
   Cache guard: **Pendulum Knight**.
+- **Wander table:** `Archivist 3, The Unfinished 2, Tin Soldier 1`.
 - **Boss:** **The Regulator** in the **stairs room** (`BST-05`).
 - **Journal:** page 6. **Scripted moment 2** (`SCR-05`) fires on picking up the Blueprint.
 - Nominal XP: 9 + 16 + 6 + 4 + 12 + 12 = **59**. Enemies 9–11.
@@ -121,14 +137,15 @@ Each floor has a **short name** (≤ 11 characters) for the panel (`UI-03` row 5
   band are excluded from feature placement; if a role room has no tile outside the band, regenerate).
   If after feature placement any feature tile is within Chebyshev 1 of the band, regenerate
   (`WLD-11` step 10).
-- **Floor items:** 5. Floor table: `Solder 6, Spring-Key 6, Flux 2, Piston Hammer 1, Pendulum Flail 1,
+- **Floor items:** 5. Floor table: `Solder 3, Spring-Key 3, Flux 2, Piston Hammer 1, Pendulum Flail 1,
   Steel Plating 1, Lacquered Plating 1, Oil Flask 2, Grit Bomb 2, Tuning Fork 2`.
 - **Cache:** 2–3 from `Piston Hammer 2, Pendulum Flail 2, Steel Plating 2, Harmonic Rifle 1, Flux 2,
-  Spring-Key 3, Solder 3`.
+  Spring-Key 1, Solder 1`.
 - **Spawn list:** `Pendulum Knight × 1`, `Stoker × 1`, `Cuckoo × 1`, `Music-box Dancer × 1`,
-  `The Unfinished × 1`, `Brass Finch pack`. Cache guard: **Pendulum Knight**.
+  `The Unfinished × 1`, `Brass Finch pack`, `Magpie × 1`. Cache guard: **Pendulum Knight**.
+- **Wander table:** `The Unfinished 3, Stoker 2, Cuckoo 1, Magpie 1`.
 - **Journal:** page 7.
-- Nominal XP: 12 + 8 + 6 + 4 + 9 + 7.5 + 12 = **58.5**. Enemies 8–9.
+- Nominal XP: 12 + 8 + 6 + 4 + 9 + 7.5 + 12 + 6 = **64.5**. Enemies 9–10 + wanderers.
 
 ## FLR-09 Floor 8 — The Escapement (handcrafted)
 
@@ -172,7 +189,11 @@ Each floor has a **short name** (≤ 11 characters) for the panel (`UI-03` row 5
 
 ## FLR-10 Totals (for `31-balance.md`)
 
-Nominal XP by floor: 15.5 · 27 · 33 (+16 summons) · 45 · 44 · 59 · 58.5 · 36 → **318** without
-Conductor summons, **334** with. Cumulative at 75% kills: 11.6 · 31.9 · 56.6 · 90.4 · 123.4 · 167.7 ·
-211.6 · 238.6 — reaching level 2, 3, 4, 5, 6, 7, 8, 9 at the end of floors 1–8 respectively
-(`CHR-06` thresholds), matching `OVR-04`.
+Nominal XP by floor: 15.5 · 27 · 33 (+16 summons) · 49 · 50 · 59 · 64.5 · 36 → **334** without
+Conductor summons, **350** with. Cumulative at 75% kills: 11.6 · 31.9 · 56.6 · 93.4 · 130.9 · 175.1 ·
+223.5 · 250.5 — reaching level 2, 3, 4, 5, 6, 8, 9, 9 at the end of floors 1–8 respectively
+(`CHR-06` thresholds): `OVR-04`'s curve to floor 5 and a level ahead of it after that.
+
+`WLD-14`'s wanderers are **not** counted here, for the same reason the Conductor's dancers are not:
+they are a live stream rather than a fixed roster. A player who fights them is worth another ≈ 12 XP
+a floor, and an **Overwound** spawn (`ENM-12`) is worth double its row.

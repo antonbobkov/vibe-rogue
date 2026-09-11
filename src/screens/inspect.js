@@ -8,11 +8,12 @@
 
 import { idx, chebyshev } from '../grid.js';
 import { TILE, TILE_NAME, HAZARDS, hazardActive, hazardWarning, turnsUntilActive } from '../tiles.js';
-import { itemDef, AMOUNTS, EFFICIENT_SPRINGS } from '../items.js';
-import { enemyType, statsOf, speedOf, derive, isTick } from '../actors.js';
+import { itemDef, consumableAmount as amountOf, entryName, entryWear, platingOf, displayName } from '../items.js';
+import { enemyType, enemyName, statsOf, speedOf, derive, isTick, START_INTEGRITY } from '../actors.js';
 import * as combat from '../combat.js';
-import * as skills from '../skills.js';
+
 import { isWindingUp, box, write, wrap, COLS, ROWS, MAP_W, MAP_H, BG_PANEL } from '../render.js';
+import { TUNING } from '../../data/tuning.js';
 
 /** UI-05 writes a range with an en dash and a negative with a true minus sign. */
 const EN_DASH = '–';
@@ -60,7 +61,7 @@ function diceRange(spec) {
 /** ENM-11: "damage range vs. Tick after Plating". */
 export function damageRangeVsTick(game, enemy) {
   const type = enemyType(enemy);
-  const plating = derive(game.state.tick).plating;
+  const plating = derive(game.state.tick, game.state.tuning).plating;
   const dice = diceRange(attackDiceOf(type));
   const ignores = type.ranged && type.ranged.ignoresPlating;
   const reduce = ignores ? 0 : plating;
@@ -87,7 +88,8 @@ export function enemyLine(game, enemy) {
   const type = enemyType(enemy);
   const dmg = damageRangeVsTick(game, enemy);
   const parts = [
-    `${type.name}  ${enemy.integrity}/${enemy.integrityMax}`,
+    // ENM-12 (DIF-08): an Overwound enemy says so before it says anything else.
+    `${enemyName(enemy)}  ${enemy.integrity}/${enemy.integrityMax}`,
     `hits you ${hitChanceVsTick(game, enemy)}% for ${dmg.min}${EN_DASH}${dmg.max}`,
     `· plating ${type.plating}`,
     `· ${speedOf(game.state, enemy).toLowerCase()}`,
@@ -98,8 +100,11 @@ export function enemyLine(game, enemy) {
   return parts.join('  ');
 }
 
-/** ITM-05: an item's fields as numbers, in one line. */
-export function itemFields(def, tick) {
+/**
+ * ITM-05: an item's fields as numbers, in one line. `entry` is the record or equipment entry the
+ * fields belong to, so a pitted plate shows what it is worth now (CMB-14, DIF-07).
+ */
+export function itemFields(def, tick, entry) {
   switch (def.category) {
     case 'melee': {
       const bits = [def.dice];
@@ -113,8 +118,13 @@ export function itemFields(def, tick) {
       if (def.special) bits.push(def.special.toLowerCase());
       return bits.join('  ');
     }
-    case 'plating':
-      return `plating ${def.plating}  evasion ${signed(-def.evasionPenalty)}`;
+    case 'plating': {
+      const wear = entryWear(entry);
+      const plating = wear > 0
+        ? `plating ${def.plating} ${MINUS} ${wear} wear = ${platingOf(entry)}`
+        : `plating ${def.plating}`;
+      return `${plating}  evasion ${signed(-def.evasionPenalty)}`;
+    }
     case 'attachment': {
       const bits = [];
       if (def.forceMod) bits.push(`force ${signed(def.forceMod)}`);
@@ -137,16 +147,14 @@ export function itemFields(def, tick) {
 
 /** CAT-06's amounts, with SKL-03 **Efficient Springs** applied when Tick has it. */
 function consumableAmount(effect, tick) {
-  const row = AMOUNTS[effect];
-  if (!row) return null;
-  const efficient = tick ? skills.has(tick, EFFICIENT_SPRINGS) : false;
-  return efficient ? row.efficient : row.plain;
+  return amountOf(effect, tick, TUNING);
 }
 
 function consumableFields(def, tick) {
   switch (def.effect) {
     case 'SOLDER':
-      return `+${consumableAmount('SOLDER', tick)} Integrity`;
+      // DIF-03: the Solder is a repair, so the line names both halves of the bargain.
+      return `+${consumableAmount('SOLDER', tick)} Integrity over ${TUNING.solderTurns}, ${TUNING.solderTension} Tension`;
     case 'SPRING_KEY':
       return `+${consumableAmount('SPRING_KEY', tick)} Tension`;
     case 'FLUX':
@@ -166,19 +174,26 @@ function consumableFields(def, tick) {
 
 /** UI-05's one-line item form: `Brass Plating  [ plating 2  evasion −2`. */
 export function itemLine(record, tick) {
-  const def = itemDef(record.name);
+  const def = itemDef(entryName(record));
   const count = record.count === undefined || record.count <= 1 ? '' : ` ×${record.count}`;
-  return `${def.name}${count}  ${def.category === 'record' ? '?' : def.glyph} ${itemFields(def, tick)}`;
+  const name = displayName(record);
+  return `${name}${count}  ${def.category === 'record' ? '?' : def.glyph} ${itemFields(def, tick, record)}`;
 }
 
 /** UI-05's feature forms. */
 export function featureLine(game, tile) {
   if (tile === TILE.STATION) {
+    // CHR-05 (DIF-05): the station says what winding costs as well as what it gives.
     return game.state.floor.stationSpent
       ? 'Winding Station (spent) — this station has run down'
-      : 'Winding Station (unspent) — stand here and press e';
+      : 'Winding Station (unspent) — press e. Loud: wakes the floor.';
   }
   if (tile === TILE.STAIRS_UP) return 'Up-stairs — press <';
+  // WLD-15 (DIF-12): the lock says its price before you walk into it (OVR-02 pillar 3).
+  if (tile === TILE.WOUND_LOCK) {
+    const tuning = game.state.tuning || TUNING;
+    return `Wound Lock — ${tuning.cacheLockCost} Tension to open.`;
+  }
   return TILE_NAME[tile] || '';
 }
 
@@ -223,7 +238,9 @@ export function inspectLine(game, x, y) {
   const tile = visible ? floor.tiles[y][x] : floor.memory[y][x];
   const hazard = HAZARD_KIND_OF[tile];
   if (hazard) return hazardLine(game, hazard);
-  if (tile === TILE.STATION || tile === TILE.STAIRS_UP) return featureLine(game, tile);
+  if (tile === TILE.STATION || tile === TILE.STAIRS_UP || tile === TILE.WOUND_LOCK) {
+    return featureLine(game, tile);
+  }
   return TILE_NAME[tile] || '';
 }
 
@@ -236,7 +253,7 @@ const HAZARD_KIND_OF = Object.freeze({
 /** Tick's own tile: the panel already carries the numbers, so this names what is underfoot. */
 export function tickLine(game) {
   const state = game.state;
-  const d = derive(state.tick);
+  const d = derive(state.tick, state.tuning);
   const bits = [
     `Tick  ${state.tick.integrity}/${state.tick.integrityMax}`,
     `tension ${state.tick.tension}/100`,
@@ -299,26 +316,31 @@ export function enemyPopup(game, enemy) {
   const type = enemyType(enemy);
   const dmg = damageRangeVsTick(game, enemy);
   const statuses = statusText(enemy.statuses);
-  return {
-    title: type.name,
-    lines: [
-      `Integrity ${enemy.integrity}/${enemy.integrityMax}`,
-      `Hits you ${hitChanceVsTick(game, enemy)}%`,
-      `Damage ${dmg.min}${EN_DASH}${dmg.max} after your plating`,
-      `Plating ${type.plating}`,
-      `Speed ${speedOf(game.state, enemy).toLowerCase()}`,
-      `State ${enemyStateText(enemy)}`,
-      `Statuses ${statuses.length > 0 ? statuses.join(', ') : '—'}`,
-      '',
-      type.description,
-    ],
-  };
+  const tuning = game.state.tuning || TUNING;
+  const lines = [
+    `Integrity ${enemy.integrity}/${enemy.integrityMax}`,
+    `Hits you ${hitChanceVsTick(game, enemy)}%`,
+    `Damage ${dmg.min}${EN_DASH}${dmg.max} after your plating`,
+    `Plating ${type.plating}`,
+    `Speed ${speedOf(game.state, enemy).toLowerCase()}`,
+    `State ${enemyStateText(enemy)}`,
+    `Statuses ${statuses.length > 0 ? statuses.join(', ') : '—'}`,
+  ];
+  // ENM-12 (DIF-08): the popup spells out exactly what Overwound costs the player.
+  if (enemy.elite === true) {
+    const percent = Math.round((tuning.eliteIntegrityMult - 1) * 100);
+    lines.push(
+      `overwound: +${percent}% Integrity, +${tuning.eliteAccuracyBonus} accuracy, +${tuning.eliteDamageBonus} damage`,
+    );
+  }
+  lines.push('', type.description);
+  return { title: enemyName(enemy), lines };
 }
 
 /** ITM-05: "every field in ITM-01 as numbers, its description". */
 export function itemPopup(record, tick) {
-  const def = itemDef(record.name);
-  const lines = [`Kind ${def.category}`, itemFields(def, tick)];
+  const def = itemDef(entryName(record));
+  const lines = [`Kind ${def.category}`, itemFields(def, tick, record)];
   if (record.count > 1) lines.unshift(`Count ${record.count}`);
   lines.push('', def.description);
   return { title: def.name, lines };
@@ -341,7 +363,7 @@ export function hazardPopup(game, kind) {
 
 export function tickPopup(game) {
   const state = game.state;
-  const d = derive(state.tick);
+  const d = derive(state.tick, state.tuning);
   return {
     title: 'Tick',
     lines: [
@@ -361,14 +383,14 @@ export function tickPopup(game) {
 export function statPopup(game, stat) {
   const state = game.state;
   const tick = state.tick;
-  const d = derive(tick);
+  const d = derive(tick, state.tuning);
   switch (stat) {
     case 'integrity':
       return {
         title: 'Integrity',
         lines: [
           `${tick.integrity} of ${tick.integrityMax}`,
-          `Base 40 + 4 per level above 1 (level ${tick.level})`,
+          `Base ${START_INTEGRITY} + ${TUNING.levelUpIntegrity} per level above 1 (level ${tick.level})`,
           'It never heals on its own (CHR-02).',
         ],
       };

@@ -10,17 +10,36 @@
 
 import { W, H, idx, chebyshev, readingOrder, neighbors8, bfs } from '../../src/grid.js';
 import { TILE, walkable, hazardActive } from '../../src/tiles.js';
-import { hazardAt } from '../../src/combat.js';
+import { hazardAt, projectile } from '../../src/combat.js';
 import { travelPathTo, approachPathTo, tickPassable } from '../../src/travel.js';
-import { itemDef, itemAt, isEquipment, stacks, canHoldItem, INVENTORY_SLOTS, STACK_MAX } from '../../src/items.js';
+import {
+  itemDef, itemAt, isEquipment, stacks, canHoldItem, entryName, platingOf, INVENTORY_SLOTS,
+} from '../../src/items.js';
 import { ENEMIES_BY_NAME } from '../../data/enemies.js';
 import { parseDice } from '../../src/rng.js';
 
 /** CHR-05 / BAL-07 S4: "uses ... Spring-Key < 30". */
 export const SPRING_KEY_AT = 30;
 
-/** BAL-07 S3/S4: "uses Solder at < 50%". */
-export const SOLDER_AT = 0.5;
+/**
+ * DIF-03 — Solder is now a three-turn repair that any hit cancels, so BAL-07's policy ("uses
+ * Solder at < 50%") becomes "get out of the fight and mend": no enemy in sight, below `SOLDER_AT`
+ * of maximum Integrity, and enough spring left over afterwards to be worth the 5 it costs.
+ */
+export const SOLDER_AT = 0.6;
+export const SOLDER_TENSION_MARGIN = 10;
+
+/**
+ * DIF-03 — the exception to "only out of contact". A repair started in a fight is ended by the
+ * first hit that lands, but the first tick is applied at CMB-02 step 3, *before* the enemy phase,
+ * so it is always worth at least `solderAmount / solderTurns`. At this much Integrity left there
+ * is nothing better to spend the turn on, and a bot that dies holding a full pack of Solder is
+ * not modelling a player (D-113).
+ */
+export const SOLDER_CRITICAL = 0.35;
+
+/** BAL-07 S4 / WLD-15 (DIF-12): the Tension below which the bot leaves a Wound Lock alone. */
+export const LOCK_TENSION = 45;
 
 /** A tile is on the map and Tick could stand on it right now. */
 function standable(state, x, y) {
@@ -53,15 +72,17 @@ export function firstStep(state, path) {
  * Everything else is `tickPassable`'s rule: closed doors passable (bumping opens them), hazards
  * avoided unless `hazardsPassable`, and ENM-08's diagonal-door step refused.
  */
-function passableIgnoringActors(state, hazardsPassable) {
-  const solid = tickPassable(state, hazardsPassable);
+function passableIgnoringActors(state, hazardsPassable, opts = {}) {
+  const solid = tickPassable(state, hazardsPassable, opts);
   const tick = state.tick;
+  const locks = opts.locks !== false;
   return (from, to) => {
     if (solid(from, to)) return true;
     // The only reason to override is an actor standing there; re-check the terrain by asking the
     // same predicate about a tile with nothing on it, which is what `standable` decides.
     const t = state.floor.tiles[to.y][to.x];
-    if (t !== TILE.DOOR_CLOSED && !walkable(t)) return false;
+    if (t === TILE.WOUND_LOCK && !locks) return false;
+    if (t !== TILE.DOOR_CLOSED && t !== TILE.WOUND_LOCK && !walkable(t)) return false;
     if (!hazardsPassable) {
       const cfg = hazardAt(state, to.x, to.y);
       if (cfg && (cfg.mechanism === 'CONSTANT' || hazardActive(cfg.kind, state.turn) || hazardActive(cfg.kind, state.turn + 1))) {
@@ -104,8 +125,8 @@ function isDoorTile(t) {
  */
 export function bfsField(state, tx, ty, opts = {}) {
   const pass = opts.ignoreActors
-    ? passableIgnoringActors(state, opts.hazardsPassable === true)
-    : tickPassable(state, opts.hazardsPassable === true);
+    ? passableIgnoringActors(state, opts.hazardsPassable === true, opts)
+    : tickPassable(state, opts.hazardsPassable === true, opts);
   return bfs((from, to) => pass(from, to) && pass(to, from), { x: tx, y: ty });
 }
 
@@ -119,8 +140,8 @@ export function bfsField(state, tx, ty, opts = {}) {
 export function stepDownField(state, field, opts = {}) {
   const tick = state.tick;
   const pass = opts.ignoreActors
-    ? passableIgnoringActors(state, true)
-    : tickPassable(state, true);
+    ? passableIgnoringActors(state, true, opts)
+    : tickPassable(state, true, opts);
   const here = field[idx(tick.x, tick.y)];
   let bestDistance = here < 0 ? Infinity : here;
   let best = null;
@@ -143,16 +164,19 @@ export function stepDownField(state, field, opts = {}) {
  *
  * @returns {object|null} a move action
  */
-export function stepToward(state, tx, ty) {
-  const direct = firstStep(state, travelPathTo(state, tx, ty));
+export function stepToward(state, tx, ty, opts = {}) {
+  // WLD-15 (DIF-12): `locks: false` routes around a Wound Lock rather than up to it, which is what
+  // a bot that will not pay `cacheLockCost` needs — walking to it and refusing is a stalled run.
+  const locks = opts.locks !== false;
+  const direct = firstStep(state, travelPathTo(state, tx, ty, { locks }));
   if (direct) return direct;
-  for (const opts of [
-    { hazardsPassable: false, ignoreActors: false },
-    { hazardsPassable: false, ignoreActors: true },
-    { hazardsPassable: true, ignoreActors: true },
+  for (const step of [
+    { hazardsPassable: false, ignoreActors: false, locks },
+    { hazardsPassable: false, ignoreActors: true, locks },
+    { hazardsPassable: true, ignoreActors: true, locks },
   ]) {
-    const step = stepDownField(state, bfsField(state, tx, ty, opts), opts);
-    if (step) return step;
+    const action = stepDownField(state, bfsField(state, tx, ty, step), step);
+    if (action) return action;
   }
   return null;
 }
@@ -196,7 +220,10 @@ export function visibleEnemies(game, opts = {}) {
   const state = game.state;
   const tick = state.tick;
   const out = state.floor.enemies.filter((e) => visible.has(idx(e.x, e.y)));
-  const rank = (e) => (opts.bossesFirst && e.isBoss ? 0 : 1);
+  // DIF-11: a fleeing Magpie holding something of Tick's is worth hitting before anything else —
+  // but only while it is still adjacent. It is FAST, and chasing one costs a floor.
+  const thief = (e) => Boolean(e.stolen) && chebyshev(tick.x, tick.y, e.x, e.y) === 1;
+  const rank = (e) => (thief(e) ? -1 : opts.bossesFirst && e.isBoss ? 0 : 1);
   out.sort(
     (a, b) =>
       rank(a) - rank(b) ||
@@ -286,17 +313,21 @@ export function isHeavyTelegraph(enemy) {
 }
 
 /**
- * BAL-07 S4: "steps away from telegraphs". If any enemy within reach of its telegraphed attack is
- * winding up, step to the adjacent free tile that is furthest from it (ties by reading order).
+ * DIF-03 — one step away from everything Tick can see, for a bot that wants to stop being looked
+ * at long enough to solder. The free neighbour that leaves the nearest visible enemy furthest
+ * away, ties by reading order; `null` when nothing is safer than standing still.
  *
- * @returns {object|null} a move action, or null when nothing is telegraphing or nowhere is safer
+ * `stepAwayFromTelegraph` is the same walk with a different set of threats, so both go through
+ * `stepAwayFrom`.
  */
-export function stepAwayFromTelegraph(game, reach = 2) {
+export function stepAwayFromEnemies(game) {
+  return stepAwayFrom(game, visibleEnemies(game));
+}
+
+/** The step that maximises the distance to `threats`, or null when none of them improves it. */
+function stepAwayFrom(game, threats) {
   const state = game.state;
   const tick = state.tick;
-  const threats = visibleEnemies(game).filter(
-    (e) => isHeavyTelegraph(e) && chebyshev(tick.x, tick.y, e.x, e.y) <= reach,
-  );
   if (threats.length === 0) return null;
   const distance = (x, y) => Math.min(...threats.map((e) => chebyshev(x, y, e.x, e.y)));
   const here = distance(tick.x, tick.y);
@@ -313,8 +344,108 @@ export function stepAwayFromTelegraph(game, reach = 2) {
       bestDistance = d;
     }
   }
-  if (!best) return null;
-  return stepTo(state, best);
+  return best ? stepTo(state, best) : null;
+}
+
+/**
+ * BAL-07 S4: "steps away from telegraphs". If any enemy within reach of its telegraphed attack is
+ * winding up, step to the adjacent free tile that is furthest from it (ties by reading order).
+ *
+ * @returns {object|null} a move action, or null when nothing is telegraphing or nowhere is safer
+ */
+export function stepAwayFromTelegraph(game, reach = 2) {
+  const state = game.state;
+  const tick = state.tick;
+  const threats = visibleEnemies(game).filter(
+    (e) => isHeavyTelegraph(e) && chebyshev(tick.x, tick.y, e.x, e.y) <= reach,
+  );
+  return stepAwayFrom(game, threats);
+}
+
+/**
+ * DIF-04 — **throwing what Salvage pays in**. Every fourth break now leaves a throwable rather
+ * than a Solder, which is ~16 of them over a run: a bot that carries them and never throws one is
+ * not measuring the economy M13 built, it is measuring a hoarder (D-115).
+ *
+ * The policy is the obvious one, in the order a player reaches for them (CAT-06):
+ *   * a **Tuning Fork** into the adjacent enemy that is hurting most — Stunned 2 is two actions it
+ *     does not get;
+ *   * a **Grit Bomb** into the thickest group of two or more — Blinded 4 is -30 accuracy each;
+ *   * an **Oil Flask** into a group of two or more that is not already burning.
+ *
+ * It only spends one while the fight is worth it: two or more enemies in sight, or one that is
+ * both adjacent and heavy. `Clatter Can` is never thrown — its noise is a lure, which is a plan
+ * this bot does not have.
+ *
+ * @returns {object|null} a `throw` action, or null
+ */
+export function throwPolicy(game) {
+  const state = game.state;
+  const tick = state.tick;
+  const seen = visibleEnemies(game).filter((e) => !e.isDecoy);
+  if (seen.length === 0) return null;
+
+  const adjacent = seen.filter((e) => chebyshev(tick.x, tick.y, e.x, e.y) === 1);
+  const heavy = adjacent.find((e) => e.integrity >= THROW_HEAVY_INTEGRITY || e.isBoss);
+  if (seen.length < 2 && !heavy) return null;
+
+  // A Tuning Fork stuns exactly one tile, so it goes into the worst thing in reach.
+  if (heavy) {
+    const fork = slotWith(tick, 'Tuning Fork');
+    if (fork >= 0 && !(heavy.statuses && heavy.statuses.Stunned > 0)) {
+      return { type: 'throw', slot: fork, x: heavy.x, y: heavy.y };
+    }
+  }
+
+  // The other two are area effects: the tile with the most enemies around it wins.
+  const cluster = bestCluster(game, seen);
+  if (!cluster || cluster.count < 2) return null;
+
+  const grit = slotWith(tick, 'Grit Bomb');
+  if (grit >= 0 && !cluster.blinded) return { type: 'throw', slot: grit, x: cluster.x, y: cluster.y };
+  const oil = slotWith(tick, 'Oil Flask');
+  if (oil >= 0 && !cluster.burning) return { type: 'throw', slot: oil, x: cluster.x, y: cluster.y };
+  return null;
+}
+
+/** An enemy this big is worth a Tuning Fork on its own. */
+const THROW_HEAVY_INTEGRITY = 14;
+
+/** The throwables' reach (CAT-06): every one of them is range 5 or less. */
+const THROW_RANGE = 5;
+
+/** CAT-06: the area throwables cover a 3x3 — radius 1 around where they land. */
+const THROW_BLAST = 1;
+
+/**
+ * The visible enemy tile with the most enemies within 1 of it — where a 3x3 throwable is worth
+ * the most — provided Tick can see it and reach it, and is not standing in the blast.
+ */
+function bestCluster(game, seen) {
+  const state = game.state;
+  const tick = state.tick;
+  const visible = game.view().visible;
+  let best = null;
+  for (const e of seen) {
+    if (chebyshev(tick.x, tick.y, e.x, e.y) > THROW_RANGE) continue;
+    if (!visible.has(idx(e.x, e.y))) continue;
+    // CMB-08: a throwable stops at the first actor in its line, so what matters is where it
+    // actually lands — a flask lobbed past something adjacent lands next to Tick and burns Tick.
+    const landing = projectile(state, tick.x, tick.y, e.x, e.y).landing;
+    if (chebyshev(tick.x, tick.y, landing.x, landing.y) <= THROW_BLAST + 1) continue;
+    if (landing.x !== e.x || landing.y !== e.y) continue;
+    const around = seen.filter((o) => chebyshev(o.x, o.y, e.x, e.y) <= 1);
+    const count = around.length;
+    if (best !== null && count <= best.count) continue;
+    best = {
+      x: e.x,
+      y: e.y,
+      count,
+      blinded: around.every((o) => o.statuses && o.statuses.Blinded > 0),
+      burning: around.every((o) => o.statuses && o.statuses.Burning > 0),
+    };
+  }
+  return best;
 }
 
 /** The inventory slot holding `name`, or -1 (ITM-03 keeps the inventory dense). */
@@ -331,8 +462,21 @@ export function slotWith(tick, name) {
  * @returns {object|null} a `use` action, or null
  */
 export function consumablePolicy(game, opts = {}) {
-  const tick = game.state.tick;
-  if (tick.integrity < tick.integrityMax * SOLDER_AT) {
+  const state = game.state;
+  const tick = state.tick;
+  const tuning = state.tuning;
+  const enemyInSight = visibleEnemies(game).length > 0;
+
+  // DIF-03: a repair already under way is worth standing still for — one hit ends it.
+  if (tick.repair && !enemyInSight) return { type: 'wait' };
+
+  const quietEnough = !enemyInSight || tick.integrity < tick.integrityMax * SOLDER_CRITICAL;
+  if (
+    !tick.repair &&
+    quietEnough &&
+    tick.integrity < tick.integrityMax * SOLDER_AT &&
+    tick.tension >= tuning.solderTension + SOLDER_TENSION_MARGIN
+  ) {
     const slot = slotWith(tick, 'Solder');
     if (slot >= 0) return { type: 'use', slot };
   }
@@ -343,6 +487,15 @@ export function consumablePolicy(game, opts = {}) {
   return null;
 }
 
+/** WLD-15 (DIF-12): would this step bump a Wound Lock? */
+export function stepsIntoLock(state, action) {
+  if (!action || action.type !== 'move') return false;
+  const y = state.tick.y + action.dy;
+  const x = state.tick.x + action.dx;
+  if (y < 0 || y >= H || x < 0 || x >= W) return false;
+  return state.floor.tiles[y][x] === TILE.WOUND_LOCK;
+}
+
 /** The expected roll of a dice string (`TEC-07`), for comparing two weapons. */
 function meanRoll(spec) {
   const { n, sides, mod } = parseDice(spec);
@@ -350,7 +503,7 @@ function meanRoll(spec) {
 }
 
 /** How good a piece of equipment is for the bot, per category. Higher is better. */
-function equipmentScore(def) {
+function equipmentScore(def, entry) {
   switch (def.category) {
     case 'melee':
       return meanRoll(def.dice) + def.accuracyMod / 20;
@@ -358,7 +511,8 @@ function equipmentScore(def) {
       return meanRoll(def.dice) + def.accuracyMod / 20 + def.range / 10;
     case 'plating':
       // BAL-02: "Plating 2 by floor 2 makes 1d3 enemies harmless" — Plating dominates evasion.
-      return def.plating * 2 - def.evasionPenalty / 4;
+      // CMB-14 (DIF-07): a pitted plate is worth what is left of it, not what it was.
+      return (entry === undefined ? def.plating : platingOf(entry)) * 2 - def.evasionPenalty / 4;
     case 'attachment':
       return (
         def.forceMod + def.precisionMod + def.platingMod + def.evasionMod / 10 +
@@ -385,14 +539,15 @@ export function equipPolicy(game, opts = {}) {
   let best = null;
   for (let slot = 0; slot < tick.inventory.length; slot++) {
     const entry = tick.inventory[slot];
-    if (!entry || !isEquipment(entry.name)) continue;
-    const def = itemDef(entry.name);
+    if (!entry || !isEquipment(entryName(entry))) continue;
+    const def = itemDef(entryName(entry));
     if (def.category === 'ranged' && !allowRanged) continue;
     const which = SLOT_OF_CATEGORY[def.category];
-    const worn = tick.equipment[which] ? itemDef(tick.equipment[which]) : null;
+    const wornEntry = tick.equipment[which] || null;
+    const worn = wornEntry ? itemDef(entryName(wornEntry)) : null;
     // The weapon slot compares like with like: a rifle never displaces a hammer on damage alone.
     if (which === 'weapon' && worn && worn.category !== def.category) continue;
-    const gain = equipmentScore(def) - (worn ? equipmentScore(worn) : -1);
+    const gain = equipmentScore(def, entry) - (worn ? equipmentScore(worn, wornEntry) : -1);
     if (gain > 0 && (best === null || gain > best.gain)) best = { slot, gain };
   }
   return best ? { type: 'equip', slot: best.slot } : null;
@@ -405,10 +560,11 @@ export function itemUnderfoot(game) {
 }
 
 /** ITM-03: would `count` of `name` fit — a non-full stack of the same name, or a free slot? */
-export function hasRoomFor(tick, name, count) {
+export function hasRoomFor(tick, name, count, tuning) {
   if (stacks(name)) {
+    const cap = tuning ? tuning.stackMax : Infinity;
     for (const entry of tick.inventory) {
-      if (entry.name === name && entry.count + count <= STACK_MAX) return true;
+      if (entry.name === name && entry.count + count <= cap) return true;
     }
   }
   return tick.inventory.length < INVENTORY_SLOTS;
@@ -421,20 +577,22 @@ export function hasRoomFor(tick, name, count) {
 const DROPPABLE = 10;
 
 function dropScore(tick, entry) {
-  const def = itemDef(entry.name);
+  const def = itemDef(entryName(entry));
   if (def.category === 'instant') {
     // The two consumables every check's policy is written around (BAL-07 S3/S4).
     if (def.effect === 'SOLDER' || def.effect === 'SPRING_KEY') return null;
     return 5;
   }
-  if (isEquipment(entry.name)) {
+  if (isEquipment(entryName(entry))) {
     const which = SLOT_OF_CATEGORY[def.category];
-    const worn = tick.equipment[which] ? itemDef(tick.equipment[which]) : null;
+    const wornEntry = tick.equipment[which] || null;
+    const worn = wornEntry ? itemDef(entryName(wornEntry)) : null;
     // Something already superseded by what is worn is dead weight (ITM-02).
-    if (worn && equipmentScore(def) <= equipmentScore(worn)) return 1;
+    if (worn && equipmentScore(def, entry) <= equipmentScore(worn, wornEntry)) return 1;
     return DROPPABLE + 10;
   }
-  if (def.category === 'throwable') return 8;
+  // DIF-04: throwables are what Salvage pays in now, so they are kept rather than shed.
+  if (def.category === 'throwable') return DROPPABLE + 2;
   return DROPPABLE + 10;
 }
 
@@ -464,7 +622,9 @@ export function pickupPolicy(game) {
   if (!here) return null;
   const def = itemDef(here.name);
   if (def.category === 'record') return { type: 'pickup' };
-  if (hasRoomFor(tick, here.name, here.count === undefined ? 1 : here.count)) return { type: 'pickup' };
+  if (hasRoomFor(tick, here.name, here.count === undefined ? 1 : here.count, state.tuning)) {
+    return { type: 'pickup' };
+  }
   return null;
 }
 

@@ -13,6 +13,9 @@
 //    and are included.
 //  - Floor 8 still names `journalPage: 8`, the page the ending sequence delivers (SCR-07); there is
 //    no journal room on it (D-022).
+//  - `wanderTable` is WLD-14's per-floor list (M13, DIF-06): the `[name, weight]` table the floor
+//    draws a wanderer from every `tuning.wanderInterval` turns. Floor 8's is empty — the Escapement
+//    spawns nothing.
 
 /**
  * FLR-09's map, verbatim: 60 columns × 24 rows in the WLD-13 legend.
@@ -66,7 +69,7 @@ export const FLOORS = Object.freeze([
     itemCount: 3,
     floorTable: Object.freeze([
       Object.freeze(['Solder', 6]),
-      Object.freeze(['Spring-Key', 4]),
+      Object.freeze(['Spring-Key', 2]),
       Object.freeze(['Tin Plating', 3]),
       Object.freeze(['Mallet', 3]),
       Object.freeze(['Grit Bomb', 2]),
@@ -81,12 +84,16 @@ export const FLOORS = Object.freeze([
       Object.freeze(['Mallet', 3]),
       Object.freeze(['Balance Wheel', 2]),
       Object.freeze(['Solder', 3]),
-      Object.freeze(['Spring-Key', 3]),
+      Object.freeze(['Spring-Key', 1]),
       Object.freeze(['Grit Bomb', 1]),
     ]),
     spawns: Object.freeze([
       Object.freeze({ pack: 'Rust-moth', size: Object.freeze([3, 4]) }),
       Object.freeze({ type: 'Sweeper', count: 3 }),
+    ]),
+    wanderTable: Object.freeze([
+      Object.freeze(['Sweeper', 3]),
+      Object.freeze(['Rust-moth', 1]),
     ]),
     guard: 'Sweeper',
     journalPage: 1,
@@ -104,7 +111,7 @@ export const FLOORS = Object.freeze([
     itemCount: 4,
     floorTable: Object.freeze([
       Object.freeze(['Solder', 6]),
-      Object.freeze(['Spring-Key', 5]),
+      Object.freeze(['Spring-Key', 2]),
       Object.freeze(['Cog Saw', 2]),
       Object.freeze(['Spring-Bolt Launcher', 2]),
       Object.freeze(['Brass Plating', 2]),
@@ -119,13 +126,18 @@ export const FLOORS = Object.freeze([
       Object.freeze(['Brass Plating', 3]),
       Object.freeze(['Counterweight', 2]),
       Object.freeze(['Balance Wheel', 2]),
-      Object.freeze(['Spring-Key', 2]),
+      Object.freeze(['Spring-Key', 1]),
     ]),
     spawns: Object.freeze([
       Object.freeze({ type: 'Sweeper', count: 2 }),
       Object.freeze({ type: 'Spring-Hound', count: 1 }),
       Object.freeze({ type: 'Tin Soldier', count: 1 }),
       Object.freeze({ pack: 'Rust-moth' }),
+    ]),
+    wanderTable: Object.freeze([
+      Object.freeze(['Sweeper', 2]),
+      Object.freeze(['Spring-Hound', 3]),
+      Object.freeze(['Tin Soldier', 1]),
     ]),
     guard: 'Tin Soldier',
     journalPage: 2,
@@ -142,8 +154,8 @@ export const FLOORS = Object.freeze([
     hazards: Object.freeze([]),
     itemCount: 4,
     floorTable: Object.freeze([
-      Object.freeze(['Solder', 5]),
-      Object.freeze(['Spring-Key', 5]),
+      Object.freeze(['Solder', 2]),
+      Object.freeze(['Spring-Key', 2]),
       Object.freeze(['Tuning Fork', 2]),
       Object.freeze(['Iron Plating', 2]),
       Object.freeze(['Oil Flask', 2]),
@@ -157,8 +169,8 @@ export const FLOORS = Object.freeze([
       Object.freeze(['Oil Reservoir', 2]),
       Object.freeze(['Spring-Bolt Launcher', 2]),
       Object.freeze(['Tuning Fork', 2]),
-      Object.freeze(['Solder', 2]),
-      Object.freeze(['Spring-Key', 2]),
+      Object.freeze(['Solder', 1]),
+      Object.freeze(['Spring-Key', 1]),
       Object.freeze(['Balance Wheel', 1]),
     ]),
     spawns: Object.freeze([
@@ -166,6 +178,14 @@ export const FLOORS = Object.freeze([
       Object.freeze({ type: 'Cuckoo', count: 1 }),
       Object.freeze({ type: 'Sweeper', count: 1 }),
       Object.freeze({ pack: 'Rust-moth' }),
+    ]),
+    // DIF-15 step 2 (B-012): floor 3's own boss already keeps up to four Music-box Dancers on the
+    // board (BST-04), and a wander table that sent more of them made this floor 45% of every loss.
+    // The weights are turned around; the table is the same three types.
+    wanderTable: Object.freeze([
+      Object.freeze(['Sweeper', 3]),
+      Object.freeze(['Spring-Hound', 2]),
+      Object.freeze(['Music-box Dancer', 1]),
     ]),
     guard: 'Tin Soldier',
     boss: Object.freeze({
@@ -188,8 +208,8 @@ export const FLOORS = Object.freeze([
     hazards: Object.freeze([Object.freeze({ kind: 'STEAM_VENT', count: 10 })]),
     itemCount: 4,
     floorTable: Object.freeze([
-      Object.freeze(['Solder', 5]),
-      Object.freeze(['Spring-Key', 5]),
+      Object.freeze(['Solder', 2]),
+      Object.freeze(['Spring-Key', 2]),
       Object.freeze(['Flux', 2]),
       Object.freeze(['Escapement Blade', 2]),
       Object.freeze(['Iron Plating', 2]),
@@ -204,14 +224,21 @@ export const FLOORS = Object.freeze([
       Object.freeze(['Oil Reservoir', 2]),
       Object.freeze(['Counterweight', 1]),
       Object.freeze(['Flux', 2]),
-      Object.freeze(['Spring-Key', 2]),
-      Object.freeze(['Solder', 2]),
+      Object.freeze(['Spring-Key', 1]),
+      Object.freeze(['Solder', 1]),
     ]),
     spawns: Object.freeze([
       Object.freeze({ type: 'Stoker', count: 2 }),
       Object.freeze({ type: 'Gear-Golem', count: 1 }),
       Object.freeze({ type: 'Spring-Hound', count: 1 }),
       Object.freeze({ type: 'Sweeper', count: 2 }),
+      // DIF-07: the moths follow the oil up to the Furnace Deck, so plating is threatened here too.
+      Object.freeze({ pack: 'Rust-moth' }),
+    ]),
+    wanderTable: Object.freeze([
+      Object.freeze(['Stoker', 3]),
+      Object.freeze(['Spring-Hound', 2]),
+      Object.freeze(['Sweeper', 1]),
     ]),
     guard: 'Tin Soldier',
     journalPage: 4,
@@ -228,8 +255,8 @@ export const FLOORS = Object.freeze([
     hazards: Object.freeze([]),
     itemCount: 4,
     floorTable: Object.freeze([
-      Object.freeze(['Solder', 5]),
-      Object.freeze(['Spring-Key', 5]),
+      Object.freeze(['Solder', 2]),
+      Object.freeze(['Spring-Key', 2]),
       Object.freeze(['Harmonic Rifle', 2]),
       Object.freeze(['Pendulum Flail', 1]),
       Object.freeze(['Steel Plating', 1]),
@@ -245,14 +272,22 @@ export const FLOORS = Object.freeze([
       Object.freeze(['Lacquered Plating', 2]),
       Object.freeze(['Sounding Plate', 2]),
       Object.freeze(['Pendulum Flail', 2]),
-      Object.freeze(['Spring-Key', 2]),
-      Object.freeze(['Solder', 2]),
+      Object.freeze(['Spring-Key', 1]),
+      Object.freeze(['Solder', 1]),
     ]),
     spawns: Object.freeze([
       Object.freeze({ type: 'Cuckoo', count: 3 }),
       Object.freeze({ pack: 'Brass Finch' }),
       Object.freeze({ pack: 'Brass Finch' }),
       Object.freeze({ type: 'Spring-Hound', count: 1 }),
+      // DIF-11: the aviary's thief.
+      Object.freeze({ type: 'Magpie', count: 1 }),
+    ]),
+    wanderTable: Object.freeze([
+      Object.freeze(['Cuckoo', 2]),
+      Object.freeze(['Brass Finch', 2]),
+      Object.freeze(['Spring-Hound', 2]),
+      Object.freeze(['Magpie', 2]),
     ]),
     guard: 'Tin Soldier',
     journalPage: 5,
@@ -269,8 +304,8 @@ export const FLOORS = Object.freeze([
     hazards: Object.freeze([]),
     itemCount: 4,
     floorTable: Object.freeze([
-      Object.freeze(['Solder', 5]),
-      Object.freeze(['Spring-Key', 5]),
+      Object.freeze(['Solder', 2]),
+      Object.freeze(['Spring-Key', 2]),
       Object.freeze(['Flux', 2]),
       Object.freeze(['Piston Hammer', 1]),
       Object.freeze(['Escapement Blade', 2]),
@@ -286,8 +321,8 @@ export const FLOORS = Object.freeze([
       Object.freeze(['Lacquered Plating', 2]),
       Object.freeze(['Harmonic Rifle', 2]),
       Object.freeze(['Flux', 2]),
-      Object.freeze(['Solder', 2]),
-      Object.freeze(['Spring-Key', 2]),
+      Object.freeze(['Solder', 1]),
+      Object.freeze(['Spring-Key', 1]),
     ]),
     cacheExtra: Object.freeze(['Understudy Blueprint']),
     spawns: Object.freeze([
@@ -295,6 +330,11 @@ export const FLOORS = Object.freeze([
       Object.freeze({ type: 'Archivist', count: 2 }),
       Object.freeze({ type: 'Tin Soldier', count: 1 }),
       Object.freeze({ pack: 'Rust-moth' }),
+    ]),
+    wanderTable: Object.freeze([
+      Object.freeze(['Archivist', 3]),
+      Object.freeze(['The Unfinished', 2]),
+      Object.freeze(['Tin Soldier', 1]),
     ]),
     guard: 'Pendulum Knight',
     boss: Object.freeze({ type: 'The Regulator', room: 'stairs' }),
@@ -315,8 +355,8 @@ export const FLOORS = Object.freeze([
     ]),
     itemCount: 5,
     floorTable: Object.freeze([
-      Object.freeze(['Solder', 6]),
-      Object.freeze(['Spring-Key', 6]),
+      Object.freeze(['Solder', 3]),
+      Object.freeze(['Spring-Key', 3]),
       Object.freeze(['Flux', 2]),
       Object.freeze(['Piston Hammer', 1]),
       Object.freeze(['Pendulum Flail', 1]),
@@ -333,8 +373,8 @@ export const FLOORS = Object.freeze([
       Object.freeze(['Steel Plating', 2]),
       Object.freeze(['Harmonic Rifle', 1]),
       Object.freeze(['Flux', 2]),
-      Object.freeze(['Spring-Key', 3]),
-      Object.freeze(['Solder', 3]),
+      Object.freeze(['Spring-Key', 1]),
+      Object.freeze(['Solder', 1]),
     ]),
     spawns: Object.freeze([
       Object.freeze({ type: 'Pendulum Knight', count: 1 }),
@@ -343,6 +383,14 @@ export const FLOORS = Object.freeze([
       Object.freeze({ type: 'Music-box Dancer', count: 1 }),
       Object.freeze({ type: 'The Unfinished', count: 1 }),
       Object.freeze({ pack: 'Brass Finch' }),
+      // DIF-11: the Magpie follows the bright things up the stair.
+      Object.freeze({ type: 'Magpie', count: 1 }),
+    ]),
+    wanderTable: Object.freeze([
+      Object.freeze(['The Unfinished', 3]),
+      Object.freeze(['Stoker', 2]),
+      Object.freeze(['Cuckoo', 1]),
+      Object.freeze(['Magpie', 1]),
     ]),
     guard: 'Pendulum Knight',
     journalPage: 7,
@@ -362,6 +410,7 @@ export const FLOORS = Object.freeze([
     cacheCount: Object.freeze([0, 0]),
     cacheTable: Object.freeze([]),
     spawns: Object.freeze([Object.freeze({ type: 'The Unfinished', count: 2 })]),
+    wanderTable: Object.freeze([]),
     guard: null,
     boss: Object.freeze({
       type: 'The Understudy',
@@ -397,10 +446,10 @@ export const FIXED_MAP_LEGEND = Object.freeze({
 
 /** FLR-10's nominal XP per floor, and the totals it derives from them. */
 export const NOMINAL_XP = Object.freeze({
-  byFloor: Object.freeze([15.5, 27, 33, 45, 44, 59, 58.5, 36]),
+  byFloor: Object.freeze([15.5, 27, 33, 49, 50, 59, 64.5, 36]),
   conductorSummons: 16,
-  total: 318,
-  totalWithConductorSummons: 334,
+  total: 334,
+  totalWithConductorSummons: 350,
 });
 
 /** WLD-08's hazard kinds, as they appear in `FloorDef.hazards`. */

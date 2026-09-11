@@ -73,7 +73,14 @@ At the start of each of its actions an Active enemy updates:
 - If it sees Tick: `lastKnown = Tick's tile`, `lastKnownAge = 0`.
 - Else: `lastKnownAge += 1`. Any noise event during the previous player turn within its
   `perception + 3` sets `lastKnown` to the noise tile and `lastKnownAge = 0`.
-- If `lastKnownAge > 8`: `GUARD` → RETURNING; others → DORMANT (and `energy = 0`).
+- If `lastKnownAge > memoryTurns`: `GUARD` → RETURNING; others → DORMANT (and `energy = 0`).
+
+Three types never forget on that clock:
+
+- **Erratics** and **bosses** never go Dormant once woken (`ENM-06`, `BST-03`).
+- A woken **Spring-Hound** hunts by sound: while its target is within `houndRange`, walls
+  notwithstanding, its `lastKnown` is refreshed to that tile every action, and it never goes Dormant
+  again (`ENM-13`).
 
 ## ENM-06 Archetypes
 
@@ -87,6 +94,20 @@ enemy's current target, which is the Decoy while `SKL-03` redirects it.
 1. If adjacent to Tick → **Melee Attack** (`CMB-06`).
 2. If `lastKnown` is set → step toward `lastKnown`. If already on it and Tick not seen → Wait.
 3. Else → Wait.
+
+### THIEF — *take one bright thing*
+
+Has two halves. Until it has stolen something it is a **CHASER**; on a **hit** against Tick (the hit
+roll succeeded) it takes instead of damaging:
+
+1. One unit from a random consumable stack in Tick's inventory — uniform over stacks, on the play
+   PRNG. If Tick carries no consumables the hit deals its dice as normal.
+2. The log says "The Magpie snatches the {X}!" and the thief enters **FLEEING**.
+
+While FLEEING every action is the SKIRMISHER's retreat step away from its target, it never attacks
+again, and it goes Dormant on `ENM-05`'s clock like anyone — still holding the item. When it breaks,
+the stolen item is placed with `ITM-11`'s search and **no distance limit**: what it took is never
+lost.
 
 ### GUARD — *guard this room*
 
@@ -189,9 +210,46 @@ Enemies never close doors.
 
 ## ENM-10 Spawning during play
 
-There are no random spawns after floor generation. The only enemies added during a floor are those a
-boss script summons (`22`), and they appear on the marked tiles (`WLD-13`) or, for floors 3 and 6,
-on the boss's room tiles chosen by `23`.
+Enemies are added to a live floor by exactly two rules, and no others: a boss script's summons (`22`),
+which appear on the marked tiles (`WLD-13`) or, for floors 3 and 6, on the boss's room tiles chosen by
+`23`; and `WLD-14`'s **wanderers**, which arrive out of sight and far from Tick on the floor's own
+clock. There is no random respawning of a cleared room, and nothing ever appears where Tick can see
+it appear.
+
+## ENM-12 Overwound
+
+At generation, and at every `WLD-14` wanderer spawn, each **regular, non-pack** enemy instance rolls
+`d100` — on the floor PRNG at generation, the play PRNG for a wanderer. On `≤ eliteChance` it is
+**Overwound**:
+
+| | |
+|---|---|
+| Name | prefixed `Overwound ` |
+| Integrity | `integrityMax × eliteIntegrityMult`, rounded up |
+| Accuracy | `+ eliteAccuracyBonus` |
+| Damage | `+ eliteDamageBonus` flat on **every** attack — melee, heavy and ranged — applied *before* Plating |
+| XP | `× eliteXpMult` |
+| Drop chance | doubled, capped at 100 |
+
+Speed, archetype, evasion, plating and immunities are unchanged: it is the same enemy with more of
+it, which is what makes it legible. **Cache guards, bosses and pack types (Rust-moth, Brass Finch)
+are never Overwound.**
+
+It is drawn with its own glyph and colour on a dark gold ground (`UI-09`), the inspect line names it,
+and the popup spells the bonus out (`UI-11`) — nothing here is hidden.
+
+## ENM-13 Pursuit
+
+Three rules make attention persistent, so that walking away is a decision rather than a reset:
+
+- **Memory.** `ENM-05`'s `memoryTurns` is long enough that a room is not safe because Tick left it.
+- **Spring-Hounds hunt by sound.** A woken hound refreshes `lastKnown` to its target's tile every
+  action while within `houndRange`, walls notwithstanding, and never sleeps again (`STY-03`: it was
+  built to fetch).
+- **Rally.** A **Cuckoo**'s shriek — its ranged attack's noise — makes every **GUARD** within that
+  radius behave as a **CHASER** for `rallyTurns` turns, waking it if it was Dormant; when the rally
+  runs out the guard goes RETURNING. If at least one guard rallied, the log says "The guards leave
+  their doors."
 
 ## ENM-11 Legibility requirements (binding on `22`)
 

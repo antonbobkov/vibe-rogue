@@ -13,7 +13,8 @@ import assert from 'node:assert/strict';
 import * as skills from '../../src/skills.js';
 import * as combat from '../../src/combat.js';
 import * as items from '../../src/items.js';
-import { derive, levelForXp, XP_THRESHOLDS, MAX_LEVEL } from '../../src/actors.js';
+import { derive, levelForXp, XP_THRESHOLDS, MAX_LEVEL, START_INTEGRITY } from '../../src/actors.js';
+import { TUNING } from '../../data/tuning.js';
 import { queueRng, mulberry32, fnv1a } from '../../src/rng.js';
 import { SKILLS, DISCIPLINES } from '../../data/skills.js';
 import { fixtureGame, floorFromAscii, d100, die, DROP_ROLL, aiWait, aiAttackAdjacent } from '../fixtures/maps.js';
@@ -76,8 +77,9 @@ test('@m07 @unit CHR-06: the cumulative XP table maps totals to levels 1-9 and c
   for (const [xp, level] of table) assert.equal(levelForXp(xp), level, `xp ${xp}`);
 });
 
-test('ACC-30: XP 9 plus a 1-XP break is level 2 — +4/+4 Integrity, a skill point and the event @m07', () => {
-  // CHR-06: the Rust-moth is worth 1 XP; CHR-07 gives +4 max Integrity, +4 Integrity and 1 point.
+test('ACC-30: XP 9 plus a 1-XP break is level 2 — +2/+2 Integrity, a skill point and the event @m07', () => {
+  // CHR-06: the Rust-moth is worth 1 XP; CHR-07 gives `levelUpIntegrity` max Integrity, as much
+  // Integrity, and 1 point (DIF-09 halved it from 4).
   const game = fixtureGame(['############', '#..........#', '#.Tm.......#', '#..........#', '############'], {
     enemies: { m: { ai: aiWait } },
     // d100 hit (chance 80 - 25 evasion = 55), 1d4 = 1 so the Wrench deals 2 to a 2-Integrity moth,
@@ -93,8 +95,8 @@ test('ACC-30: XP 9 plus a 1-XP break is level 2 — +4/+4 Integrity, a skill poi
   assert.equal(game.state.floor.enemies.length, 0, 'the moth broke');
   assert.equal(tick.xp, 10, 'CHR-06: XP is awarded when the enemy breaks');
   assert.equal(tick.level, 2);
-  assert.equal(tick.integrityMax, 44);
-  assert.equal(tick.integrity, 44);
+  assert.equal(tick.integrityMax, START_INTEGRITY + TUNING.levelUpIntegrity);
+  assert.equal(tick.integrity, START_INTEGRITY + TUNING.levelUpIntegrity);
   assert.equal(tick.skillPoints, 1, "UI-03 shows SP:1 until it is spent");
   assert.ok(texts(result).includes('Tick feels a new gear catch. Level 2.'));
   assert.deepEqual(
@@ -389,7 +391,7 @@ test('ACC-36: a Piston Drive melee hit of exactly 6 knocks back and Stuns 1, cap
 // SKL-03 Tinkering
 // ---------------------------------------------------------------------------------------------
 
-test('ACC-37: Salvage drops a Solder on the 4th break and a Spring-Key on the 8th @m07', () => {
+test('ACC-37: Salvage drops a Grit Bomb on the 4th break and an Oil Flask on the 8th @m07', () => {
   // The counter increments on *any* break, so the breaks are driven straight through CMB-12's
   // `breakActor`; each one still consumes the ITM-11 drop roll (a Rust-moth's 5% never lands on 100).
   const rows = ['############', '#.mmmm.....#', '#.T........#', '#.mmmm.....#', '############'];
@@ -409,17 +411,19 @@ test('ACC-37: Salvage drops a Solder on the 4th break and a Spring-Key on the 8t
   }
 
   assert.deepEqual(counters, [1, 2, 3, 0, 1, 2, 3, 0], 'SKL-03: the counter shows n/4 and resets at 4');
+  // DIF-04: the cycle is the four throwables, in CAT-06's order, and never a Solder or a
+  // Spring-Key — those are the two the plan took out of every drop table.
   assert.deepEqual(
     game.state.floor.items,
     [
-      { name: 'Solder', count: 1, x: moths[3].x, y: moths[3].y },
-      { name: 'Spring-Key', count: 1, x: moths[7].x, y: moths[7].y },
+      { name: 'Grit Bomb', count: 1, x: moths[3].x, y: moths[3].y },
+      { name: 'Oil Flask', count: 1, x: moths[7].x, y: moths[7].y },
     ],
-    'alternately Solder then Spring-Key, on the breaking enemy tile (ITM-11 placement)',
+    'the throwable cycle, on the breaking enemy tile (ITM-11 placement)',
   );
-  assert.equal(tick.salvageNext, 'Solder', 'the cycle comes back round');
+  assert.equal(tick.salvageNext, 'Tuning Fork', 'the cycle moves on');
   const lines = logText(game).filter((t) => t.startsWith('Something worth keeping'));
-  assert.deepEqual(lines, ['Something worth keeping: Solder.', 'Something worth keeping: Spring-Key.']);
+  assert.deepEqual(lines, ['Something worth keeping: Grit Bomb.', 'Something worth keeping: Oil Flask.']);
 });
 
 test('@m07 @unit SKL-03: the Salvage counter survives the floor change Ascend performs', () => {
@@ -444,7 +448,7 @@ test('@m07 @unit SKL-03: the Salvage counter survives the floor change Ascend pe
     enemies: { m: { ai: aiWait } },
   }));
   assert.equal(tick.salvageCounter, 2, 'SKL-03: "Counter persists across floors"');
-  assert.equal(tick.salvageNext, 'Solder');
+  assert.equal(tick.salvageNext, 'Grit Bomb');
   assert.equal(tick.fieldRepairUsed, false, 'SKL-03: the once-per-floor flag resets');
   assert.equal(tick.guardTimer, 0, 'CMB-05: the Flywheel Guard timer is cleared');
 
@@ -454,10 +458,10 @@ test('@m07 @unit SKL-03: the Salvage counter survives the floor change Ascend pe
   }
   assert.equal(tick.salvageCounter, 0, 'the 4th break of the run, two floors apart');
   assert.equal(game.state.floor.items.length, 1);
-  assert.equal(game.state.floor.items[0].name, 'Solder');
+  assert.equal(game.state.floor.items[0].name, 'Grit Bomb');
 });
 
-test('ACC-38: Efficient Springs makes the Spring-Key +45 and the Solder +25 @m07', () => {
+test('ACC-38: Efficient Springs adds its bonus to the Spring-Key and to the Solder repair @m07', () => {
   const game = fixtureGame(ROOM, { rng: queueRng([]) });
   const tick = grant(game, 'Salvage', 'Efficient Springs');
   tick.tension = 50;
@@ -467,16 +471,32 @@ test('ACC-38: Efficient Springs makes the Spring-Key +45 and the Solder +25 @m07
     { name: 'Solder', count: 1 },
   ];
 
+  const keyTotal = TUNING.springKeyAmount + TUNING.efficientKeyBonus;
   const key = game.act({ type: 'use', slot: 0 });
   assert.equal(key.ok, true);
-  assert.equal(tick.tension, 95, 'CAT-06: 45 instead of 30');
-  assert.ok(texts(key).includes('Tick fits the Spring-Key. Tension 95.'));
+  assert.equal(tick.tension, 50 + keyTotal, `CAT-06: ${keyTotal} instead of ${TUNING.springKeyAmount}`);
+  assert.ok(texts(key).includes(`Tick fits the Spring-Key. Tension ${50 + keyTotal}.`));
 
+  // DIF-03: the Solder is a repair, so the bonus lands over `solderTurns` turns — the even share
+  // first and whatever the split leaves over on the last one.
+  const solderTotal = TUNING.solderAmount + TUNING.efficientSolderBonus;
   const solder = game.act({ type: 'use', slot: 0 });
   assert.equal(solder.ok, true);
-  assert.equal(tick.integrity, 35, 'CAT-06: 25 instead of 15');
-  assert.ok(texts(solder).includes('Tick solders the plate. Integrity 35.'));
   assert.deepEqual(tick.inventory, []);
+  for (let i = 1; i < TUNING.solderTurns; i++) game.act({ type: 'wait' });
+  assert.equal(tick.repair, null, 'the repair ran to its end');
+  // CHR-02 clamps at Integrity max, so the bonus is checked on the repair's own book-keeping as
+  // well as on what actually landed.
+  assert.equal(
+    tick.integrity,
+    Math.min(tick.integrityMax, 10 + solderTotal),
+    `CAT-06: ${solderTotal} instead of ${TUNING.solderAmount}`,
+  );
+  assert.equal(
+    solderTotal,
+    TUNING.solderAmount + TUNING.efficientSolderBonus,
+    'SKL-03: Efficient Springs adds its bonus to the repair total',
+  );
 });
 
 test('ACC-39: Field Repair mends 12 once a floor and is refused until the next Ascend @m07', () => {

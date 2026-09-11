@@ -12,12 +12,13 @@ import { idx, chebyshev } from '../grid.js';
 import { TILE } from '../tiles.js';
 import { HAZARDS } from '../tiles.js';
 import { derive, TENSION_MAX } from '../actors.js';
-import { itemDef, itemAt, slotLetter } from '../items.js';
+import { itemDef, itemAt, slotLetter, displayName, entryName, entryWear, platingOf } from '../items.js';
 import { activeSlotRows } from '../skills.js';
 import * as log from '../log.js';
 import * as combat from '../combat.js';
 import { runIntent, clickTarget, regionOf, REGION } from '../input.js';
 import { inspectLine } from './inspect.js';
+import { turnsUntilWanderer } from '../wander.js';
 
 /** UI-03: the integrity and tension bars are 19 cells — `[` + 17 fill cells + `]`. */
 export const BAR_CELLS = 17;
@@ -43,7 +44,10 @@ export function barText(cur, max) {
   return { fill: n, text: `[${'#'.repeat(n)}${' '.repeat(BAR_CELLS - n)}]` };
 }
 
-/** UI-03 row 15: the status abbreviations, plus `Gua` for the Flywheel Guard. */
+/**
+ * UI-03 row 15: the status abbreviations, plus `Gua` for the Flywheel Guard and `Solder` for a
+ * running DIF-03 repair. Neither of those two is one of CMB-10's five, and neither is removable.
+ */
 export function panelStatuses(tick) {
   const parts = [];
   for (const name of Object.keys(tick.statuses || {})) {
@@ -51,13 +55,21 @@ export function panelStatuses(tick) {
     if (n > 0) parts.push(`${name.slice(0, 3)}(${n})`);
   }
   if (tick.guardTimer > 0) parts.push(`Gua(${tick.guardTimer})`);
+  if (tick.repair && tick.repair.turnsLeft > 0) parts.push(`Solder(${tick.repair.turnsLeft})`);
   return parts.length === 0 ? '—' : parts.join(', ');
 }
 
-/** UI-03 row 16 / UI-06: the countdown to the floor's cyclic hazard, or `''`. */
-export function hazardRow(floor) {
+/**
+ * UI-03 row 16 / UI-06: the countdown to the floor's cyclic hazard; with no cyclic hazard, WLD-14's
+ * countdown to the next wanderer (DIF-06), so the pressure is legible rather than a surprise.
+ */
+export function hazardRow(floor, state) {
   const cycle = floor.hazardCycle;
-  if (!cycle) return { text: '', color: 'lightGrey' };
+  if (!cycle) {
+    const next = state ? turnsUntilWanderer(state) : null;
+    if (next === null) return { text: '', color: 'lightGrey' };
+    return { text: `next: ${next}`, color: 'lightGrey' };
+  }
   if (cycle.active) {
     const bright = cycle.kind === 'STEAM_VENT' ? '#ffe0a0' : '#ffffff';
     return { text: 'ACTIVE', color: bright };
@@ -129,7 +141,7 @@ export function drawPanel(buf, game) {
   const state = game.state;
   const tick = state.tick;
   const floor = state.floor;
-  const d = derive(tick);
+  const d = derive(tick, state.tuning);
   const X = PANEL_TEXT_X;
   const w = PANEL_W;
 
@@ -162,15 +174,15 @@ export function drawPanel(buf, game) {
   write(buf, X, 9, pad(`ACC ${d.accuracy}%  EVA ${d.evasion}`, w), 'lightGrey', BG, w);
 
   // Rows 11-13 — equipment.
-  write(buf, X, 11, `W ${fit(tick.equipment.weapon || '—', w - 2)}`, 'lightGrey', BG, w);
-  write(buf, X, 12, `P ${fit(tick.equipment.plating || '—', w - 2)}`, 'lightGrey', BG, w);
-  write(buf, X, 13, `A ${fit(tick.equipment.attachment || '—', w - 2)}`, 'lightGrey', BG, w);
+  write(buf, X, 11, `W ${fit(displayName(tick.equipment.weapon) || '—', w - 2)}`, 'lightGrey', BG, w);
+  write(buf, X, 12, `P ${fit(displayName(tick.equipment.plating) || '—', w - 2)}`, 'lightGrey', BG, w);
+  write(buf, X, 13, `A ${fit(displayName(tick.equipment.attachment) || '—', w - 2)}`, 'lightGrey', BG, w);
 
   // Row 15 — statuses.
   write(buf, X, 15, fit(panelStatuses(tick), w), 'lightGrey', BG, w);
 
-  // Row 16 — the cyclic hazard countdown.
-  const haz = hazardRow(floor);
+  // Row 16 — the cyclic hazard countdown, or WLD-14's wanderer countdown.
+  const haz = hazardRow(floor, state);
   write(buf, X, 16, fit(haz.text, w), haz.color, BG, w);
 
   // Rows 18-21 — the four active-skill hotkeys.
@@ -505,7 +517,7 @@ export { SKILL_TARGETS, SKILL_RANGE };
 export function panelHoverText(game, row) {
   const state = game.state;
   const tick = state.tick;
-  const d = derive(tick);
+  const d = derive(tick, state.tuning);
   switch (row) {
     case 0:
       return tick.skillPoints > 0
@@ -533,7 +545,10 @@ export function panelHoverText(game, row) {
       return equipmentText(tick.equipment.attachment, tick);
     case 16: {
       const cycle = state.floor.hazardCycle;
-      if (!cycle) return '';
+      if (!cycle) {
+        const next = turnsUntilWanderer(state);
+        return next === null ? '' : `Something arrives on this floor in ${next} turns (WLD-14)`;
+      }
       const cfg = HAZARDS[cycle.kind];
       return cycle.active
         ? `${cfg.name} — ACTIVE: ${cfg.damage} damage`
@@ -551,10 +566,14 @@ export function panelHoverText(game, row) {
   }
 }
 
-function equipmentText(name, tick) {
+function equipmentText(entry, tick) {
+  const name = entryName(entry);
   if (!name) return '—';
   const def = itemDef(name);
-  return `${def.name}  ${def.glyph} ${def.description}`;
+  const wear = entryWear(entry);
+  // CMB-14: a pitted plate says what it is actually worth now (UI-05, DIF-07).
+  const worn = wear > 0 ? `  plating ${def.plating} − ${wear} wear = ${platingOf(entry)}` : '';
+  return `${def.name}  ${def.glyph} ${def.description}${worn}`;
 }
 
 /** The `t` key's letter list (UI-10: "choose a throwable from a letter list"). */

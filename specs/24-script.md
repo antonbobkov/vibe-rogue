@@ -306,7 +306,19 @@ the start of a sentence: "The Sweeper breaks."), unless the name itself begins w
 | Tension decay (every 5th turn) | *(no message; the panel changes)* |
 | Tension ≤ 30 first time on a floor | `The spring is loosening.` |
 | Tension ≤ 15, every 5th turn | `Tick's spring is nearly slack.` |
-| Station | `Tick winds the spring. Tension 100.` |
+| Station | `Tick winds the spring. Tension {n}.` |
+| Station (loud) | `The winding rings through the tower.` |
+| Solder begins | `Tick begins soldering.` |
+| Solder interrupted | `The solder cracks.` |
+| Solder already running | `Tick is already soldering.` |
+| Solder unaffordable | `Not enough spring to heat the solder.` |
+| Wanderer | `Somewhere on this floor, something winds itself up.` (violet) |
+| Corrosion | `The Rust-moth pits the {X}.` |
+| Guards rallied | `The guards leave their doors.` |
+| Magpie steals | `The Magpie snatches the {X}!` |
+| Magpie drops | `The Magpie drops the {X}.` |
+| Wound Lock opened | `Tick winds the lock. Tension {n}.` |
+| Wound Lock unaffordable | `Not enough spring for the lock.` |
 | Station already spent | `This station has run down.` |
 | Spring-Key / Solder / Flux | `Tick fits the Spring-Key. Tension {n}.` / `Tick solders the plate. Integrity {n}.` / `Tick cleans the joints. Integrity {n}.` |
 | Nothing to mend / already tight | `Nothing needed mending.` / `The spring is already tight.` |

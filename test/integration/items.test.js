@@ -11,9 +11,10 @@ import assert from 'node:assert/strict';
 
 import * as items from '../../src/items.js';
 import * as combat from '../../src/combat.js';
-import { createTick, derive } from '../../src/actors.js';
+import { createTick, derive, TENSION_MAX } from '../../src/actors.js';
 import { queueRng } from '../../src/rng.js';
 import { TILE } from '../../src/tiles.js';
+import { TUNING } from '../../data/tuning.js';
 import { fixtureGame, floorFromAscii, d100, die, aiWait } from '../fixtures/maps.js';
 
 const texts = (result) => result.log.map((l) => l.text);
@@ -53,7 +54,7 @@ test('ACC-50: a pickup with all ten slots full is refused, spends no turn and sa
   assert.equal(game.state.tick.inventory.length, items.INVENTORY_SLOTS);
 });
 
-test('ACC-51: a full stack of five takes a new slot, and is refused when no slot is free @m05', () => {
+test('ACC-51: a full stack takes a new slot, and is refused when no slot is free @m05', () => {
   // ITM-03: "Picking up a consumable adds to an existing non-full stack of the same name first;
   // otherwise it takes a new slot."
   const roomy = fixtureGame(ROOM, { rng: queueRng([]) });
@@ -62,7 +63,7 @@ test('ACC-51: a full stack of five takes a new slot, and is refused when no slot
 
   assert.equal(roomy.act({ type: 'pickup' }).ok, true);
   assert.deepEqual(roomy.state.tick.inventory, [
-    { name: 'Solder', count: 5 },
+    { name: 'Solder', count: items.STACK_MAX },
     { name: 'Solder', count: 1 },
   ]);
   assert.equal(roomy.state.turn, 1, 'ITM-07: a pickup costs a turn');
@@ -79,12 +80,15 @@ test('ACC-51: a full stack of five takes a new slot, and is refused when no slot
 
   // A non-full stack is filled before any free slot is taken.
   const stacking = fixtureGame(ROOM, { rng: queueRng([]) });
-  stacking.state.tick.inventory = [{ name: 'Mallet', count: 1 }, { name: 'Solder', count: 2 }];
+  stacking.state.tick.inventory = [
+    { name: 'Mallet', count: 1, wear: 0 },
+    { name: 'Solder', count: items.STACK_MAX - 1 },
+  ];
   itemUnderTick(stacking, 'Solder', 1);
   assert.equal(stacking.act({ type: 'pickup' }).ok, true);
   assert.deepEqual(stacking.state.tick.inventory, [
-    { name: 'Mallet', count: 1 },
-    { name: 'Solder', count: 3 },
+    { name: 'Mallet', count: 1, wear: 0 },
+    { name: 'Solder', count: items.STACK_MAX },
   ]);
   assert.equal(
     texts(stacking.act({ type: 'wait' })).length,
@@ -174,14 +178,15 @@ test('ACC-52: equipping a weapon swaps the old one into the slot it came from @m
   const tick = game.state.tick;
   tick.inventory.push({ name: 'Mallet', count: 1 }); // slot c (CHR-01 fills a and b)
   assert.equal(items.slotLetter(2), 'c');
-  assert.equal(tick.equipment.weapon, 'Wrench');
+  assert.equal(items.entryName(tick.equipment.weapon), 'Wrench');
 
   const result = game.act({ type: 'equip', slot: 2 });
   assert.equal(result.ok, true);
   assert.equal(game.state.turn, 1, 'ITM-07: equipping costs a turn');
   assert.deepEqual(texts(result), ['Tick wields the Mallet.']);
-  assert.equal(tick.equipment.weapon, 'Mallet');
-  assert.deepEqual(tick.inventory[2], { name: 'Wrench', count: 1 }, 'ITM-02: the old item takes slot c');
+  // DIF-07: an equipment entry is `{name, wear}`, in the slots and in the pack alike.
+  assert.deepEqual(tick.equipment.weapon, { name: 'Mallet', wear: 0 });
+  assert.deepEqual(tick.inventory[2], { name: 'Wrench', count: 1, wear: 0 }, 'ITM-02: the old item takes slot c');
   assert.equal(tick.inventory.length, 3, 'and no letter moved');
   assert.deepEqual(derive(tick).attack, { n: 1, sides: 6, mod: 1 }, 'CAT-02: the Mallet is 1d6+1');
   assert.equal(derive(tick).accuracy, 75, '80 + the Mallet is -5');
@@ -189,7 +194,7 @@ test('ACC-52: equipping a weapon swaps the old one into the slot it came from @m
   // An empty slot takes the item straight out of the inventory and compacts (ITM-03).
   tick.inventory.push({ name: 'Balance Wheel', count: 1 }); // slot d
   assert.equal(game.act({ type: 'equip', slot: 3 }).ok, true);
-  assert.equal(tick.equipment.attachment, 'Balance Wheel');
+  assert.equal(items.entryName(tick.equipment.attachment), 'Balance Wheel');
   assert.equal(tick.inventory.length, 3);
   assert.equal(derive(tick).precision, 1, 'CAT-05: +1 Precision');
   assert.equal(derive(tick).evasion, 15, 'and +5 evasion on CMB-01 base 10');
@@ -201,12 +206,12 @@ test('ACC-52: equipping a weapon swaps the old one into the slot it came from @m
   assert.equal(refused.ok, false);
   assert.equal(refused.reason, 'full');
   assert.equal(game.state.turn, turnBefore);
-  assert.equal(tick.equipment.attachment, 'Balance Wheel');
+  assert.equal(items.entryName(tick.equipment.attachment), 'Balance Wheel');
 
   tick.inventory.pop();
   assert.equal(game.act({ type: 'unequip', which: 'attachment' }).ok, true);
   assert.equal(tick.equipment.attachment, null);
-  assert.deepEqual(tick.inventory.at(-1), { name: 'Balance Wheel', count: 1 });
+  assert.deepEqual(tick.inventory.at(-1), { name: 'Balance Wheel', count: 1, wear: 0 });
 });
 
 test('ACC-53: Brass Plating reads PLT 2 and EVA 8 on the panel @m05', () => {
@@ -257,26 +262,54 @@ test('ACC-54: dropping onto a tile that already holds an item is refused without
 // ITM-09 / CAT-06 — consumables
 // ---------------------------------------------------------------------------------------------
 
-test('ITM-09: Solder mends 15 and Spring-Key winds 30, and a wasted one is still spent @m05 @unit', () => {
+test('ITM-09: Solder repairs 15 over three turns and Spring-Key winds 30, and a wasted one is still spent @m05 @unit', () => {
   const game = fixtureGame(ROOM, { rng: queueRng([]) });
   const tick = game.state.tick;
   tick.integrity = 20;
   tick.tension = 50;
 
-  assert.deepEqual(texts(game.act({ type: 'use', slot: 0 })), ['Tick solders the plate. Integrity 35.']);
-  assert.equal(tick.integrity, 35, 'CAT-06: Integrity +15');
+  // DIF-03: the Solder starts a repair — `solderTension` to start, then an even share of
+  // `solderAmount` a turn for `solderTurns` turns, the first of them on the turn it was used
+  // (CMB-02 step 3), and the remainder on the last.
+  const perTurn = Math.floor(TUNING.solderAmount / TUNING.solderTurns);
+  assert.deepEqual(texts(game.act({ type: 'use', slot: 0 })), [
+    'Tick begins soldering.',
+    `Tick solders the plate. Integrity ${20 + perTurn}.`,
+  ]);
+  assert.equal(tick.integrity, 20 + perTurn, 'CAT-06: the first tick of the repair');
+  assert.equal(tick.tension, 50 - TUNING.solderTension, 'CAT-06: the repair costs Tension to start');
+  assert.deepEqual(tick.repair, {
+    turnsLeft: TUNING.solderTurns - 1,
+    perTurn,
+    left: TUNING.solderAmount - perTurn,
+  });
   assert.deepEqual(tick.inventory, [{ name: 'Spring-Key', count: 1 }], 'the stack emptied and compacted');
 
-  assert.deepEqual(texts(game.act({ type: 'use', slot: 0 })), ['Tick fits the Spring-Key. Tension 80.']);
-  assert.equal(tick.tension, 80, 'CAT-06: Tension +30');
+  for (let i = 1; i < TUNING.solderTurns; i++) game.act({ type: 'wait' });
+  assert.equal(
+    tick.integrity,
+    Math.min(tick.integrityMax, 20 + TUNING.solderAmount),
+    'CAT-06: the whole repair, clamped at Integrity max (CHR-02)',
+  );
+  assert.equal(tick.repair, null, 'and the repair is over');
+
+  const tensionBefore = tick.tension;
+  const wound = Math.min(TENSION_MAX, tensionBefore + TUNING.springKeyAmount);
+  assert.deepEqual(texts(game.act({ type: 'use', slot: 0 })), [`Tick fits the Spring-Key. Tension ${wound}.`]);
+  assert.equal(tick.tension, wound, 'CAT-06: the Spring-Key winds `springKeyAmount`');
   assert.deepEqual(tick.inventory, []);
 
   // ITM-09: "Using a consumable that would have no effect ... is still allowed and still consumes
-  // it; the log says 'Nothing needed mending.'"
+  // it." A repair that mends nothing still runs, and still costs its 5 Tension (DIF-03).
   tick.integrity = tick.integrityMax;
+  tick.tension = TENSION_MAX;
   tick.inventory.push({ name: 'Solder', count: 2 });
-  assert.deepEqual(texts(game.act({ type: 'use', slot: 0 })), ['Nothing needed mending.']);
+  assert.deepEqual(texts(game.act({ type: 'use', slot: 0 })), [
+    'Tick begins soldering.',
+    `Tick solders the plate. Integrity ${tick.integrityMax}.`,
+  ]);
   assert.deepEqual(tick.inventory, [{ name: 'Solder', count: 1 }], 'and one still left the stack');
+  tick.repair = null;
 
   // CHR-03: restoring above 100 is wasted, and says so.
   tick.tension = 100;
@@ -634,8 +667,10 @@ test('ACC-55: a drop lands on the nearest free tile in reading order, or is not 
   combat.breakActor(game.ctx, sweeper); // dropChance 15, so a d100 of 10 drops
   assert.deepEqual(
     game.state.floor.items.map((i) => `${i.name}@${i.x},${i.y}`),
-    ['Spring-Key@2,2', 'Solder@3,1'],
-    'the table is [Solder 2, Spring-Key 1], so a d3 of 1 is Solder',
+    ['Spring-Key@2,2', 'Grit Bomb@3,1'],
+    // DIF-04: no regular enemy drops Solder or a Spring-Key any more, so the Sweeper's table is
+    // the one-line [Grit Bomb 1].
+    "the Sweeper's table is [Grit Bomb 1]",
   );
 
   // "if none within distance 2, the item is not created"

@@ -48,13 +48,21 @@ const FEATURE_TILES = new Set([TILE.STAIRS_UP, TILE.STATION]);
  * @param {object} state
  * @param {boolean} hazardsPassable the second pass, taken only when the first finds no path
  */
-export function tickPassable(state, hazardsPassable) {
+export function tickPassable(state, hazardsPassable, opts = {}) {
   const tiles = state.floor.tiles;
+  // WLD-15 (DIF-12): a Wound Lock is passable by default — bumping it winds it open for
+  // `cacheLockCost` Tension, and a travel that cannot afford it is refused there and stops, which
+  // is UI-13's own rule. `locks: false` plans around them instead, for a caller that will not pay.
+  const locks = opts.locks !== false;
   return (from, to) => {
     if (diagonalThroughDoor(tiles, from, to)) return false;
     const t = tiles[to.y][to.x];
     // A closed door is passable: bumping it opens it (a successful step, UI-13).
-    if (t !== TILE.DOOR_CLOSED && !walkable(t)) return false;
+    if (t === TILE.WOUND_LOCK) {
+      if (!locks) return false;
+    } else if (t !== TILE.DOOR_CLOSED && !walkable(t)) {
+      return false;
+    }
     if (!hazardsPassable) {
       const cfg = combat.hazardAt(state, to.x, to.y);
       if (cfg) {
@@ -73,13 +81,13 @@ export function tickPassable(state, hazardsPassable) {
  *
  * @returns {{x: number, y: number}[]|null} the steps after Tick's tile, or null when unreachable
  */
-export function travelPathTo(state, tx, ty) {
+export function travelPathTo(state, tx, ty, opts = {}) {
   const from = { x: state.tick.x, y: state.tick.y };
   const to = { x: tx, y: ty };
   if (from.x === to.x && from.y === to.y) return [];
-  const direct = astar(tickPassable(state, false), from, to, { maxLen: PATH_CAP });
+  const direct = astar(tickPassable(state, false, opts), from, to, { maxLen: PATH_CAP });
   if (direct) return direct;
-  return astar(tickPassable(state, true), from, to, { maxLen: PATH_CAP });
+  return astar(tickPassable(state, true, opts), from, to, { maxLen: PATH_CAP });
 }
 
 /**
@@ -88,11 +96,11 @@ export function travelPathTo(state, tx, ty) {
  *
  * @returns {{x: number, y: number}[]|null}
  */
-export function approachPathTo(state, ex, ey) {
+export function approachPathTo(state, ex, ey, opts = {}) {
   let best = null;
   for (const n of neighbors8(ex, ey)) {
     if (n.x === state.tick.x && n.y === state.tick.y) return [];
-    const path = travelPathTo(state, n.x, n.y);
+    const path = travelPathTo(state, n.x, n.y, opts);
     if (!path) continue;
     if (best === null || path.length < best.length) best = path;
   }

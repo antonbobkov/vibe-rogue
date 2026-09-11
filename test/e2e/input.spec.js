@@ -122,8 +122,10 @@ test('Digit1 uses skill 1 while Numpad1 moves, and each command key acts ACC-101
   await press(page, 'l');
   await press(page, 'e');
   s = await state(page);
-  expect(s.tick.tension).toBe(100);
-  expect(s.log.some((l) => l.text === 'Tick winds the spring. Tension 100.')).toBe(true);
+  // CHR-05 (DIF-05): the station winds to `stationRestore`, and says which number it wound to.
+  expect(s.tick.tension).toBe(s.tuning.stationRestore);
+  expect(s.log.some((l) => l.text === `Tick winds the spring. Tension ${s.tuning.stationRestore}.`)).toBe(true);
+  expect(s.log.some((l) => l.text === 'The winding rings through the tower.')).toBe(true);
 
   // UI-10: `c` then a direction closes a door; the glyph goes from `'` to `+` (UI-07).
   map = put(emptyMap(10, 8, 30, 16), 11, 8, "'");
@@ -256,7 +258,7 @@ test('the inspect line describes whatever the mouse is over ACC-102 @m10', async
 
   // UI-05 feature.
   await hoverCell(page, 6, 9);
-  expect(await inspectText(page)).toBe('Winding Station (unspent) — stand here and press e');
+  expect(await inspectText(page)).toBe('Winding Station (unspent) — press e. Loud: wakes the floor.');
 
   // UI-05 hazard: "Steam Vent — active in 2 turns: 4 damage, Burning 2".
   await hoverCell(page, 12, 9);
@@ -278,7 +280,11 @@ test('the inspect line describes whatever the mouse is over ACC-102 @m10', async
   const s = await state(page);
   expect(s.floor.memoryItems.some((m) => m.x === 14 && m.y === 6)).toBe(true);
   await hoverCell(page, 14, 6);
-  expect(await inspectText(page)).toBe('Solder  ! +15 Integrity');
+  // CAT-06 (DIF-03): the Solder line names the repair's total, its length and its Tension cost.
+  const tuning = (await state(page)).tuning;
+  expect(await inspectText(page)).toBe(
+    `Solder  ! +${tuning.solderAmount} Integrity over ${tuning.solderTurns}, ${tuning.solderTension} Tension`,
+  );
 
   // With nothing hovered the line is blank (UI-05's last bullet).
   await page.mouse.move(1, 1);
@@ -345,7 +351,8 @@ test('targeting starts on the nearest enemy, cycles, and cancels for free ACC-11
   await press(page, 'l');
   await press(page, 'g');
   await act(page, { type: 'equip', slot: 2 });
-  expect((await state(page)).tick.equipment.weapon).toBe('Spring-Bolt Launcher');
+  // ITM-01 (DIF-07): an equipment slot holds `{name, wear}`, not a bare name.
+  expect((await state(page)).tick.equipment.weapon.name).toBe('Spring-Bolt Launcher');
 
   // Two dormant Sweepers on one row, the far one behind the near one.
   let map = emptyMap(7, 6, 30, 14);

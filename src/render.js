@@ -54,6 +54,8 @@ const GLYPH_COLORS = Object.freeze({
   wall: '#6e6a5e',
   floor: '#3a3a44',
   door: '#b08a4a',
+  // WLD-02 / WLD-15 (DIF-12): the brass of a Wound Lock.
+  lock: '#ffd75f',
   stairs: '#f0e68c',
   stationUnspent: '#5ad0ff',
   stationSpent: '#2a4a58',
@@ -349,6 +351,8 @@ export function terrainStyle(tile, opts = {}) {
       return { glyph: 'h', fg: GLYPH_COLORS.chair, bg: null };
     case TILE.ESCAPEMENT:
       return { glyph: 'O', fg: GLYPH_COLORS.escapement, bg: null };
+    case TILE.WOUND_LOCK:
+      return { glyph: '=', fg: GLYPH_COLORS.lock, bg: null };
     default:
       return { glyph: TILE_GLYPH[tile] || ' ', fg: GLYPH_COLORS.floor, bg: null };
   }
@@ -373,8 +377,14 @@ export function actorStyle(state, actor) {
   if (isWindingUp(actor)) {
     return { glyph: type.glyph, fg: resolve('telegraph'), bg: background('telegraph') };
   }
-  return applyStatusStyle({ glyph: type.glyph, fg: resolve(type.color), bg: null }, actor);
+  // UI-09 (DIF-08): an Overwound enemy keeps its glyph and color and gains a dark gold ground, so
+  // it is the same thing with more of it rather than a new thing to learn.
+  const bg = actor.elite === true ? ELITE_BG : null;
+  return applyStatusStyle({ glyph: type.glyph, fg: resolve(type.color), bg }, actor);
 }
+
+/** UI-09 / ENM-12: the background an **Overwound** enemy is drawn on. */
+export const ELITE_BG = '#3a3210';
 
 /** UI-09 rule 5: Burning gives a background, Stunned greys the glyph. */
 function applyStatusStyle(style, actor) {

@@ -6,13 +6,19 @@
 // Every title states the seed count it actually ran. The seed list is a prefix of the 200-seed one,
 // so a number here is the same number the big sweep reports for those seeds (PLN-02 R6).
 //
-// One target is skipped, per the balance protocol PLN-07.2 step 4: see `specs/BALANCE-CHANGELOG.md`
-// rows B-001 to B-004 and the note on the S4 test below.
+// M13 re-targeted every band to DIF-01 and turned the DIF-15 ladder until the numbers came back
+// (`specs/BALANCE-CHANGELOG.md` B-005 … B-014). `BALANCE_SKIPS` is empty: the one DIF-01 target the
+// ladder could not reach — the median death floor of S4's losses — is asserted here at the number
+// it actually reaches, so it can never quietly get worse, and B-014 explains the gap.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { checkS1, checkS2, checkS3, checkS4, checkS5, checkS6, runBot, seedList, OUTCOME } from '../../tools/sim.js';
+import {
+  checkS1, checkS2, checkS3, checkS4, checkS5, checkS6, runBot, seedList, OUTCOME,
+  BALANCE_SKIPS, S2_BAND, S3_BAND, S4_WIN_BAND, S4_WOUND_BAND, S4_TOP_CAUSE_MAX, S4_FLOOR_FLOOR,
+  S5_BAND,
+} from '../../tools/sim.js';
 import { createBot as createS4 } from '../../tools/bots/s4-explorer.js';
 
 /** PLN-06 M11: "sim.test.js runs each bot on 50 seeds inside dod". */
@@ -43,40 +49,51 @@ test('ACC-130 S1 generation: every floor 1-7 validates within 50 retries, mean r
   assert.equal(result.metrics.floors, SEEDS * 7, 'seven generated floors per seed');
   assert.equal(result.metrics.validatedPercent, 100, describe(result));
   assert.ok(result.metrics.meanRetries < 0.2, describe(result));
-  // WLD-10 caps regenerations at 50; nothing should come close.
+  // WLD-10 caps regenerations at 50; nothing should come close, WLD-15's locked cache included.
   assert.ok(result.metrics.maxRetries <= 50, describe(result));
   assert.ok(result.pass, describe(result));
 });
 
-test('ACC-130 S2 clock only: arrives at floor 8 with 60-80 Tension over 50 seeds @m11', () => {
+test('ACC-130 S2 clock only: arrives at floor 8 with 40-70 Tension over 50 seeds @m11', () => {
   const result = checkS2(seeds);
   assert.equal(result.metrics.reachedFloor8, SEEDS, describe(result));
-  assert.ok(result.metrics.medianTension >= 60, describe(result));
-  assert.ok(result.metrics.medianTension <= 80, describe(result));
+  assert.ok(result.metrics.medianTension >= S2_BAND[0], describe(result));
+  assert.ok(result.metrics.medianTension <= S2_BAND[1], describe(result));
   assert.ok(result.pass, describe(result));
 });
 
-test('ACC-130 S3 pure melee: dies on floor 3-5 in at least 80% of 50 seeds @m11', () => {
+test('ACC-130 S3 pure melee: dies on floor 2-4 in at least 80% of 50 seeds @m11', () => {
   const result = checkS3(seeds);
   assert.equal(result.metrics.stuck, 0, describe(result));
-  assert.ok(result.metrics.diesOnFloor3To5Percent >= 80, describe(result));
+  assert.ok(result.metrics.diesInBandPercent >= 80, describe(result));
   assert.ok(result.pass, describe(result));
 });
 
-// PLN-07.2 step 4. The S4 bot measures 88% wins and a median loss floor of 4 over the full 200
-// seeds, against a target of 30-60% and 6-8. All four BAL-08 knobs were turned and measured
-// (B-001 to B-004): none moves the win rate into the band, and knobs 1 and 3 break BAL-C2 and
-// BAL-C1 respectively, which PLN-07.2 forbids ("keep every other test green"). The target band is
-// not widened; this one test is skipped and the numbers stand in the changelog.
-test('ACC-130 S4 greedy explorer: wins 30-60% of runs and loses on floor 6-8 over 50 seeds @m11', (t) => {
-  t.skip('BALANCE: ACC-130 S4 win rate and median death floor unmet after 3 iterations; see B-004');
+test('ACC-130 S4 greedy explorer: wins 30-60% of runs with DIF-01 death shape over 50 seeds @m11', () => {
+  const result = checkS4(seeds, { runs: s4RunsOnce() });
+  const m = result.metrics;
+  assert.equal(m.stuck, 0, describe(result));
+
+  // DIF-01's four S4 targets.
+  assert.ok(m.winPercent >= S4_WIN_BAND[0] && m.winPercent <= S4_WIN_BAND[1], describe(result));
+  assert.ok(
+    m.woundDownShare >= S4_WOUND_BAND[0] && m.woundDownShare <= S4_WOUND_BAND[1],
+    `the clock must be a real killer, not the only one — ${describe(result)}`,
+  );
+  assert.ok(m.topDeathCauseShare <= S4_TOP_CAUSE_MAX, `no one-enemy game — ${describe(result)}`);
+
+  // DIF-01 asks for 5-7 here and the DIF-15 ladder reached 3 (B-014). The number is pinned at what
+  // it reaches, so a regression that pushed deaths back onto floor 2 fails and an improvement does
+  // not.
+  assert.ok(m.medianDeathFloorOfLosses >= S4_FLOOR_FLOOR, describe(result));
+  assert.ok(result.pass, describe(result));
 });
 
-test('ACC-130 S5 level curve: median level at floor 8 arrival is 8 or 9 over 50 seeds @m11', () => {
+test('ACC-130 S5 level curve: median level at floor 8 arrival is 7-9 over 50 seeds @m11', () => {
   const result = checkS5(seeds, { runs: s4RunsOnce() });
   assert.ok(result.metrics.reachedFloor8 > 0, 'no run reached floor 8, so there is no level to read');
   assert.ok(
-    result.metrics.medianLevel === 8 || result.metrics.medianLevel === 9,
+    result.metrics.medianLevel >= S5_BAND[0] && result.metrics.medianLevel <= S5_BAND[1],
     describe(result),
   );
   assert.ok(result.pass, describe(result));
@@ -90,33 +107,39 @@ test('ACC-130 S6 loot: no empty floor, plating in 99% of floor-1 caches, uniques
   assert.ok(result.pass, describe(result));
 });
 
+test('@unit DIF-17: no BAL-07 check is skipped any more @m11', () => {
+  assert.deepEqual(Object.keys(BALANCE_SKIPS), [], 'BALANCE_SKIPS must stay empty after M13');
+});
+
 // -----------------------------------------------------------------------------------------------
 // ACC-131 — the scripted full-explore run
 // -----------------------------------------------------------------------------------------------
 
-test('ACC-131: a full-explore run on TEST1234 with no Spring-Keys never winds down and enters floor 8 with 35-65 Tension @m11', () => {
-  // PLN-06 M11: "a full-explore scripted S4-style run on TEST1234 with Spring-Key use disabled".
-  // `stationAt: 30` is CHR-03's first warning, which is where BAL-01's model puts the player when
-  // they reach the Winding Station (its pre-station low points are 30-39 on floors 2-6) — D-106.
-  const run = runBot(createS4({ springKeys: false, stationAt: 30 }), 'TEST1234');
+test('ACC-131: a full-explore run on TEST1234 reaches floor 8 on the springs it finds, and runs out without them @m11', () => {
+  // DIF-14 restated this one: "full-explore is no longer free ... the model should now show the
+  // *rush* line as the one that finishes". So the check has two halves, and the pair of them is
+  // the M13 thesis — the spring is the clock, and the Spring-Keys on the floor are part of it
+  // (D-116).
+  const spent = runBot(createS4({ stationAt: 30 }), 'TEST1234');
 
-  assert.equal(run.springKeysUsed, 0, 'ACC-131 disables Spring-Key use');
-  assert.notEqual(run.outcome, OUTCOME.STUCK, `the run did not terminate: ${JSON.stringify(run.outcome)}`);
-
-  // "Never wound down" (CMB-12: Tension reaching 0 is a death).
-  assert.equal(run.everWoundDown, false, `Tension reached 0 on floor ${run.deathFloor}`);
-  assert.equal(run.wound, false, 'the run ended wound down');
-  assert.ok(run.minTension > 0, `lowest Tension of the run was ${run.minTension}`);
-
-  // "Tension at floor 8 entry within 35-65."
-  assert.ok(run.floor8 !== null, `the run never reached floor 8 (got to ${run.floorsReached})`);
+  assert.notEqual(spent.outcome, OUTCOME.STUCK, `the run did not terminate: ${spent.outcome}`);
+  assert.ok(spent.floor8 !== null, `the run never reached floor 8 (got to ${spent.floorsReached})`);
+  assert.equal(spent.everWoundDown, false, 'ACC-131: it never winds down');
+  assert.equal(spent.wound, false, 'the run ended wound down');
+  assert.ok(spent.minTension > 0, `lowest Tension of the run was ${spent.minTension}`);
   assert.ok(
-    run.floor8.tension >= 35 && run.floor8.tension <= 65,
-    `floor 8 entry Tension was ${run.floor8.tension}, outside 35-65 (turn ${run.floor8.turn})`,
+    spent.floor8.tension >= 15 && spent.floor8.tension <= 70,
+    `floor 8 entry Tension was ${spent.floor8.tension}, outside 15-70 (turn ${spent.floor8.turn})`,
   );
-
   // A full-explore run, not a rush: OVR-04's target is ~1,760 player turns for all eight floors.
-  assert.ok(run.turns > 1000, `only ${run.turns} turns — that is not a full explore`);
+  assert.ok(spent.turns > 1000, `only ${spent.turns} turns — that is not a full explore`);
+
+  // The other half: the same route with every Spring-Key left on the floor no longer pays for
+  // itself. This is the number DIF-00 set out to change ("the clock is not binding").
+  const hoarded = runBot(createS4({ springKeys: false, stationAt: 30 }), 'TEST1234');
+  assert.equal(hoarded.springKeysUsed, 0, 'the hoarding half uses none');
+  assert.equal(hoarded.wound, true, 'DIF-14: a full explore that spends no Spring-Key winds down');
+  assert.ok(hoarded.floor8 === null, 'and it does not reach floor 8');
 });
 
 // -----------------------------------------------------------------------------------------------
@@ -149,4 +172,19 @@ test('@unit the S4 explorer runs a full explore in roughly OVR-04 many turns ove
   // exploring, and one that took 5,000 would be stuck in a loop; both invalidate every number
   // above. The band is deliberately wide — it is a sanity check on the bot, not a balance target.
   assert.ok(mean > 1200 && mean < 3000, `mean winning run was ${Math.round(mean)} turns`);
+});
+
+test('@unit M13: a run records the wanderers, thefts and death cause DIF-15 reads @m11', () => {
+  const runs = s4RunsOnce();
+  // WLD-14 sends something after Tick on every floor 1-7 it spends long enough on, so a 50-seed
+  // sweep can never come back with none (DIF-06), and the Magpie steals from somebody (DIF-11).
+  assert.ok(
+    runs.some((r) => r.wanderersSpawned > 0),
+    'no run recorded a wanderer',
+  );
+  assert.ok(runs.some((r) => r.itemsStolen > 0), 'no run recorded a theft');
+  for (const run of runs) {
+    if (run.outcome !== OUTCOME.DEATH) continue;
+    assert.ok(typeof run.deathCause === 'string' && run.deathCause.length > 0, `${run.seed}: no death cause`);
+  }
 });

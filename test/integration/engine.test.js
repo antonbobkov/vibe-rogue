@@ -141,6 +141,8 @@ test('the TEC-05 state a new run starts from @m04 @unit', () => {
   assert.deepEqual(Object.keys(game.state), [
     'version',
     'seedString',
+    // DIF-02: the run's difficulty numbers travel with it (TEC-05).
+    'tuning',
     'playRngState',
     'turn',
     'floorNumber',
@@ -155,7 +157,9 @@ test('the TEC-05 state a new run starts from @m04 @unit', () => {
     'victory',
   ]);
   assert.equal(game.state.floorNumber, 1);
+  assert.equal(Object.isFrozen(game.state.tuning), true, 'DIF-02: the tuning object is frozen');
   assert.equal(game.state.tick.integrity, START_INTEGRITY);
+  assert.equal(game.state.tick.repair, null, 'DIF-03: no repair is running on turn 0');
   assert.equal(game.state.tick.tension, TENSION_MAX);
   assert.equal(game.state.tick.level, 1);
   assert.equal(game.state.floor.tiles.length, 24);

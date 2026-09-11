@@ -21,6 +21,7 @@ export const TILE = Object.freeze({
   PENDULUM_SWEEP: 8,
   CHAIR: 9,
   ESCAPEMENT: 10,
+  WOUND_LOCK: 11,
 });
 
 /** Tile number -> the name WLD-02 gives it, for messages and tests. */
@@ -36,6 +37,7 @@ export const TILE_NAME = Object.freeze({
   [TILE.PENDULUM_SWEEP]: 'Pendulum Sweep',
   [TILE.CHAIR]: 'Chair',
   [TILE.ESCAPEMENT]: 'Escapement wheel',
+  [TILE.WOUND_LOCK]: 'Wound Lock',
 });
 
 /** Tile number -> the glyph of WLD-02 (UI-07 owns colors). */
@@ -51,6 +53,7 @@ export const TILE_GLYPH = Object.freeze({
   [TILE.PENDULUM_SWEEP]: '~',
   [TILE.CHAIR]: 'h',
   [TILE.ESCAPEMENT]: 'O',
+  [TILE.WOUND_LOCK]: '=',
 });
 
 const WALKABLE = new Set([
@@ -63,7 +66,8 @@ const WALKABLE = new Set([
   TILE.PENDULUM_SWEEP,
 ]);
 
-const BLOCKS_SIGHT = new Set([TILE.WALL, TILE.DOOR_CLOSED, TILE.ESCAPEMENT]);
+// WLD-15 (DIF-12): a Wound Lock "blocks movement and sight like a closed door".
+const BLOCKS_SIGHT = new Set([TILE.WALL, TILE.DOOR_CLOSED, TILE.ESCAPEMENT, TILE.WOUND_LOCK]);
 
 const HAZARD_TILES = new Set([TILE.GRINDING_GEAR, TILE.STEAM_VENT, TILE.PENDULUM_SWEEP]);
 
@@ -77,6 +81,11 @@ export function walkable(t) {
 /** Does this tile stop the shadowcast? Walls, closed doors and the Escapement wheel (WLD-05). */
 export function blocksSight(t) {
   return BLOCKS_SIGHT.has(t);
+}
+
+/** WLD-15: the brass lock on a cache door — a closed door that costs Tension to open (DIF-12). */
+export function isLock(t) {
+  return t === TILE.WOUND_LOCK;
 }
 
 /** Is this one of the three hazard tiles of WLD-08? */
