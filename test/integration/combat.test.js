@@ -1,5 +1,5 @@
 // M04 — combat: the hit roll and its clamp (CMB-06), Plating and Exposed, ranged attacks and
-// throwing (CMB-08), knockback (CMB-09), doors and the door-diagonal rule, and Tick's death
+// throwing (CMB-08), knockback (CMB-09), doors, and Tick's death
 // (CMB-12, SCR-08).
 //
 // Every test that needs randomness injects `queueRng` and states each draw in the order TEC-07
@@ -12,7 +12,6 @@ import assert from 'node:assert/strict';
 import * as combat from '../../src/combat.js';
 import { TILE } from '../../src/tiles.js';
 import { queueRng } from '../../src/rng.js';
-import { diagonalThroughDoor } from '../../src/turn.js';
 import { fixtureGame, floorFromAscii, aiWait, d100, die, DROP_ROLL } from '../fixtures/maps.js';
 
 /** A small arena: Tick at (2,2), an enemy on the tile east of it. */
@@ -160,23 +159,24 @@ test('ACC-26: bumping a closed door opens it, spends a turn and wakes a Dormant 
   assert.deepEqual(enemy.lastKnown, { x: 2, y: 2 }, 'lastKnown is the noise tile (ENM-04)');
 });
 
-test('ACC-27: a diagonal step into or out of a door tile is refused @m04', () => {
+test('ACC-27: a diagonal step into a door tile opens it, like any other bump @m04', () => {
   const rows = ['#######', '#..+..#', '#.T...#', '#.....#', '#######'];
   const game = fixtureGame(rows, { rng: queueRng([]) });
 
+  // CMB-05 allows every diagonal, doors included: the bump opens the door and costs the turn.
   const into = game.act({ type: 'move', dx: 1, dy: -1 }); // (2,2) -> the door at (3,1)
-  assert.equal(into.ok, false);
-  assert.equal(into.reason, 'doorDiagonal');
-  assert.equal(game.state.turn, 0);
-  assert.equal(game.state.floor.tiles[1][3], TILE.DOOR_CLOSED, 'and the door did not open');
+  assert.equal(into.ok, true);
+  assert.equal(game.state.turn, 1);
+  assert.equal(game.state.floor.tiles[1][3], TILE.DOOR_OPEN, 'the diagonal bump opened it');
+  assert.deepEqual({ x: game.state.tick.x, y: game.state.tick.y }, { x: 2, y: 2 }, 'opening does not move Tick');
 
-  // The same predicate is what ENM-08 gives the enemies' pathfinder, in both directions.
-  assert.equal(diagonalThroughDoor(game.state, 2, 2, 3, 1), true);
-  assert.equal(diagonalThroughDoor(game.state, 3, 1, 4, 2), true);
-  assert.equal(diagonalThroughDoor(game.state, 2, 2, 3, 2), false, 'orthogonal steps are fine');
-
-  const orthogonal = game.act({ type: 'move', dx: 0, dy: -1 });
-  assert.equal(orthogonal.ok, true);
+  // And stepping diagonally back out of the open door is legal too — the annoyance this removed.
+  const out = game.act({ type: 'move', dx: 1, dy: -1 });
+  assert.equal(out.ok, true);
+  assert.deepEqual({ x: game.state.tick.x, y: game.state.tick.y }, { x: 3, y: 1 }, 'Tick stepped onto the door');
+  const away = game.act({ type: 'move', dx: 1, dy: 1 });
+  assert.equal(away.ok, true, 'a diagonal out of a door tile is legal');
+  assert.deepEqual({ x: game.state.tick.x, y: game.state.tick.y }, { x: 4, y: 2 });
 });
 
 test('ACC-117: Tick broken by a Stoker on floor 4 logs and reports the SCR-08 death screen @m04', () => {

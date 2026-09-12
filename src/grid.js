@@ -6,8 +6,8 @@
 //   * A tile index is `idx(x, y) = y * W + x`, the key TEC-08 names for the A* heap.
 //   * "Reading order" is ascending `y`, then ascending `x` — the same order as the index.
 //   * Passability is always injected as a callback `(from, to) => boolean` taking the *step*, not
-//     the tile, so the ENM-08 door-diagonal rule and the per-enemy `opensDoors` rule live in the
-//     caller and this module stays free of tile semantics.
+//     the tile, so rules like the per-enemy `opensDoors` and hazard avoidance live in the caller
+//     and this module stays free of tile semantics.
 //   * `bfs` returns an `Int32Array` of length `W * H`, distance in steps, `-1` for unreachable.
 //   * `astar` returns the steps *after* the start, up to and including the destination, or `null`.
 
@@ -215,8 +215,8 @@ class Heap {
  * Fully deterministic (ACC-91).
  *
  * @param {(from: {x: number, y: number}, to: {x: number, y: number}) => boolean} passable
- *        whether the *step* from one tile to an adjacent tile may be taken. The door-diagonal rule,
- *        `opensDoors`, hazards and occupancy all live here.
+ *        whether the *step* from one tile to an adjacent tile may be taken. `opensDoors`, hazards
+ *        and occupancy all live here.
  * @param {{x: number, y: number}} from
  * @param {{x: number, y: number}} to
  * @param {{maxLen?: number}} [options] path length cap, default 60 (ENM-08)

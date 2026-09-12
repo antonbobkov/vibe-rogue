@@ -17,12 +17,22 @@ import { isWindingUp, box, write, wrap, COLS, ROWS, MAP_W, MAP_H, BG_PANEL } fro
 import { TUNING } from '../../data/tuning.js';
 
 /** UI-05 writes a range with an en dash and a negative with a true minus sign. */
+/** Shown on the last row when even a full-height popup cannot hold its content. */
+export const TRUNCATED = '… more';
+
 const EN_DASH = '–';
 const MINUS = '−';
 
-/** UI-11: "a popup box (max 40 x 12 cells)". */
+/**
+ * UI-11's popup box: 40 cells wide, and as tall as its content needs.
+ *
+ * The height used to be pinned at 12, which left 10 rows of interior — one row short of an enemy
+ * popup's seven ENM-11 stat lines, its blank and a three-line description, and three short of an
+ * Overwound one. The overflow was dropped silently, so most of the bestiary lost the last line of
+ * its description. The box now grows to fit and is only bounded by the map region it sits in.
+ */
 export const POPUP_W = 40;
-export const POPUP_H = 12;
+export const POPUP_H = MAP_H;
 
 function signed(n) {
   if (n < 0) return `${MINUS}${Math.abs(n)}`;
@@ -503,7 +513,11 @@ export function createInspectScreen(app, props) {
       const at = placePopup(avoid, width, height);
       const inner = box(buf, at.x, at.y, width, height, 'iron', BG_PANEL, content.title);
       for (let i = 0; i < lines.length && i < inner.h; i++) {
-        write(buf, inner.x + 1, inner.y + i, lines[i], 'lightGrey', BG_PANEL, inner.w - 1);
+        // Content taller than the map region cannot happen with anything in `data/`, but if it ever
+        // does the last row says so rather than the box swallowing the rest in silence.
+        const overflow = i === inner.h - 1 && lines.length > inner.h;
+        const text = overflow ? TRUNCATED : lines[i];
+        write(buf, inner.x + 1, inner.y + i, text, overflow ? 'midGrey' : 'lightGrey', BG_PANEL, inner.w - 1);
       }
     },
     onKey(ev) {

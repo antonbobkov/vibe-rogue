@@ -4,6 +4,10 @@
 //
 // The same module serves the `journal` event of the ending sequence (PLN-03): with `{page: 8,
 // blocking: true}` it opens straight on that page and calls `onDone` when it is dismissed.
+//
+// The list cursor is `state.journal.selected`, not a local: the screen is rebuilt on every `r`, so a
+// local always reopened the Journal on page 1 no matter which page was last read. Keeping it on the
+// run also lets `items.takeRecord` point it at a page the moment that page is found.
 
 import { COLS, ROWS, BG, BG_PANEL, box, write, fit, center, wrapMarkup, writeMarkup } from '../render.js';
 import { listIntent, scrollIntent } from '../input.js';
@@ -33,11 +37,30 @@ export function createJournalScreen(app, props = {}) {
   const blocking = props.blocking === true;
   let mode = props.page ? 'page' : 'list';
   let page = props.page || 1;
-  let selected = props.page ? props.page - 1 : 0;
   let scroll = 0;
   let done = false;
 
   const journal = () => app.game.state.journal;
+
+  // UI-15's cursor is kept on the run (`state.journal.selected`), not here, so it survives closing
+  // and reopening the screen and can be moved by taking a page. The ending sequence's `{page: 8}`
+  // view is not the list and does not touch it.
+  let selected = props.page ? props.page - 1 : cursor();
+
+  function cursor() {
+    const at = journal().selected;
+    return Number.isInteger(at) && at >= 0 ? at : 0;
+  }
+
+  /** Remember the cursor for the next time the Journal is opened. */
+  function select(at) {
+    selected = at;
+    if (!props.page) journal().selected = at;
+  }
+
+  // The Blueprint row exists only once it is found, so a cursor remembered while it was there can
+  // point past the end of a shorter list. Clamp on open, before anything reads it.
+  if (!props.page && selected >= rows().length) select(Math.max(0, rows().length - 1));
 
   /** The list rows: the eight pages, then the Blueprint when it has been found (UI-15). */
   function rows() {
@@ -144,7 +167,7 @@ export function createJournalScreen(app, props = {}) {
           return back();
         case 'moveSelection':
           if (intent.axis === 'x') return true;
-          selected = (selected + intent.delta + list.length) % list.length;
+          select((selected + intent.delta + list.length) % list.length);
           app.markDirty();
           return true;
         case 'confirm': {
@@ -174,7 +197,7 @@ export function createJournalScreen(app, props = {}) {
       const list = rows();
       const row = ev.cell.y - FIRST_ROW;
       if (row < 0 || row >= list.length) return true;
-      selected = row;
+      select(row);
       const chosen = list[row];
       if (chosen.found && chosen.kind === 'page') {
         page = chosen.n;

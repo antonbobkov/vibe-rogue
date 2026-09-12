@@ -50,8 +50,8 @@ test('@m10 @unit travel: the path treats a closed door as passable and an enemy 
   // "closed doors passable — they are opened on bump".
   assert.equal(passable({ x: 2, y: 2 }, { x: 3, y: 2 }), true);
   assert.equal(g.state.floor.tiles[2][3], TILE.DOOR_CLOSED);
-  // ENM-08's diagonal-door rule applies to Tick too.
-  assert.equal(passable({ x: 2, y: 1 }, { x: 3, y: 2 }), false);
+  // The ENM-08 diagonal-door rule is gone: cutting the corner into a door is a legal step.
+  assert.equal(passable({ x: 2, y: 1 }, { x: 3, y: 2 }), true);
   // A wall is never passable.
   assert.equal(passable({ x: 2, y: 1 }, { x: 3, y: 1 }), false);
 

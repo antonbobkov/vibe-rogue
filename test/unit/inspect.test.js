@@ -1,9 +1,15 @@
 // The inspect popup (UI-11, ITM-05, CAT-01, CAT-05).
 //
-// UI-11 fixes the box at "max 40 x 12 cells", so after TEC-10 word wrap at `POPUP_W - 4` an item
-// popup has exactly `POPUP_H - 2` lines of interior and `createInspectScreen` drops any line past
-// it *silently*. Every string these tests guard is prose that someone will want to lengthen one
-// day; the point of the budget test is that CI says so instead of the text vanishing on screen.
+// UI-11's box is `POPUP_W` wide and grows to its content, so after TEC-10 word wrap at
+// `POPUP_W - 4` it has `POPUP_H - 2` lines of interior and `createInspectScreen` drops any line
+// past it. Every string these tests guard is prose that someone will want to lengthen one day; the
+// point of the budget tests is that CI says so instead of the text vanishing on screen.
+//
+// The budget used to be checked for items only, and the enemy popup — the tallest of the three, and
+// the one a player reads most — was never measured. It had overflowed for twelve of the sixteen
+// bestiary entries: `ENM-11`'s seven stat lines, a blank and a three-line description come to
+// eleven rows against the ten a 12-cell box allowed, so every one of them lost the last line of its
+// description with nothing on screen to say so. Hence `enemyPopup` is measured here too.
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -11,8 +17,11 @@ import assert from 'node:assert/strict';
 import { ITEMS, WEAPON_SPECIAL_TEXT, ATTACHMENT_SPECIAL_TEXT, WEAPON_SPECIALS, ATTACHMENT_SPECIALS }
   from '../../data/items.js';
 import { STACK_MAX } from '../../src/items.js';
-import { itemPopup, specialLines, categoryName, POPUP_W, POPUP_H } from '../../src/screens/inspect.js';
+import { ENEMIES } from '../../data/enemies.js';
+import { itemPopup, enemyPopup, specialLines, categoryName, POPUP_W, POPUP_H }
+  from '../../src/screens/inspect.js';
 import { wrap } from '../../src/render.js';
+import { fixtureGame } from '../fixtures/maps.js';
 
 const TICK = Object.freeze({ level: 1, skills: [], integrity: 60, integrityMax: 60, tension: 100 });
 const WRAP_W = POPUP_W - 4;
@@ -74,7 +83,7 @@ test('@m10 @unit inspect: the popup names ITM-01 kinds, never the internal categ
   ]);
 });
 
-test('@m10 @unit inspect: no item popup overflows UI-11 max 40 x 12 box', () => {
+test('@m10 @unit inspect: no item popup overflows the UI-11 box', () => {
   const over = [];
   for (const def of ITEMS) {
     const n = wrapped(def.name).length;
@@ -86,6 +95,26 @@ test('@m10 @unit inspect: no item popup overflows UI-11 max 40 x 12 box', () => 
     }
   }
   assert.deepEqual(over, [], `these popups lose their last line(s) silently — budget ${INTERIOR}`);
+});
+
+test('@m10 @unit inspect: no enemy popup overflows the UI-11 box, Overwound included', () => {
+  // One enemy of each type, stood next to Tick on a bare room so the popup prints its live lines
+  // (ENM-11's State, Statuses and the damage range all read the actual instance).
+  const rows = ['#####', '#T e#', '#####'];
+  const over = [];
+  for (const type of ENEMIES) {
+    for (const elite of [false, true]) {
+      if (elite && type.boss) continue; // ENM-12: bosses are never Overwound
+      const game = fixtureGame(rows, { enemies: { e: { type: type.name, state: 'ACTIVE', elite } } });
+      const enemy = game.state.floor.enemies[0];
+      assert.ok(enemy, `${type.name}: the fixture placed no enemy`);
+      const lines = enemyPopup(game, enemy).lines.flatMap((line) => wrap(line, WRAP_W));
+      if (lines.length > INTERIOR) {
+        over.push(`${type.name}${elite ? ' (Overwound)' : ''}: ${lines.length} lines`);
+      }
+    }
+  }
+  assert.deepEqual(over, [], `these popups lose their last line(s) — budget ${INTERIOR}`);
 });
 
 test('@m10 @unit inspect: a stacked consumable popup still fits with its Count row', () => {

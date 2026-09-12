@@ -61,6 +61,13 @@ brightness (`UI-09`), under any item. Purely cosmetic; walkable; never removed.
 ## WLD-06 Doors
 
 - Doors are placed only where a corridor meets a room wall (WLD-11 step 4).
+- **A door is always a threshold**: a one-tile gap in a wall, with two *opposite* passable orthogonal
+  neighbours and walls on the other two sides, so stepping through it is the only way across. A tile
+  that merely borders a room's interior does not qualify — a corridor dug along a boundary wall
+  leaves openings that border it too. Generation must never leave a door a player can walk around
+  (one standing beside a hole in its own wall) or a door standing in open floor (passable on three
+  or four sides). `WLD-11` step 4 achieves this by narrowing the openings before rolling the doors;
+  `ACC-71` asserts it.
 - A door tile is never adjacent (8-neighborhood) to another door tile; if generation would create one,
   the second becomes floor instead.
 - Opening a door emits noise 3 (`CMB-11`). Closing is silent.
@@ -122,11 +129,31 @@ All random choices use the floor's PRNG in the order written. Per-floor paramete
    `(A, B)`: pick a random interior tile `a` of A and `b` of B; with 50% chance carve horizontal-then-
    vertical, else vertical-then-horizontal, using **corridor carving** below.
 4. **Extra corridors.** `extraCorridors` times: pick two distinct random rooms and carve as in step 3.
-   **Corridor carving:** walk tile by tile; each tile that is Wall becomes Floor, *except* when the
-   tile is on a room's boundary wall (orthogonally adjacent to that room's interior and not to any
-   other room's interior): then with probability `doorChance` it becomes a Closed door, else Floor.
-   Corridors passing through an existing room interior leave it unchanged. Apply WLD-06's adjacency
-   rule after all carving.
+   **Corridor carving:** walk tile by tile; each tile that is Wall becomes Floor. Corridors passing
+   through an existing room interior leave it unchanged. **No door is decided during the walk** —
+   a corridor is an L-path between two random *interior* tiles, so it can run along a boundary wall
+   as easily as through it, and an extra corridor dug one tile off a spanning one carves a second
+   parallel column through the same wall band, which the 2-tile gap step 2 guarantees between rooms
+   is exactly wide enough to dissolve. Deciding doors tile by tile therefore stranded them in the
+   resulting gaps. Instead, once **all** corridors are carved, in this order:
+
+   a. **Narrow the openings.** For each room, scan each of its four boundary walls on its own and
+      reduce every contiguous run of two or more passable tiles to a single tile, re-walling the
+      rest. The tile kept is the one that has a corridor immediately outside it, else the middle of
+      the run. Apply each fill one at a time and **revert it if it leaves any room unreachable**
+      (BFS over passable tiles from any room's centre), so narrowing can only tidy geometry and can
+      never make a floor fail step 10. A run may therefore legitimately survive where walling it
+      would cut the floor in half.
+   b. **Roll the doors.** For every remaining boundary opening of exactly one room that is a
+      threshold per WLD-06 — not itself room interior, orthogonally adjacent to exactly one room's
+      interior — with probability `doorChance` it becomes a Closed door, else it stays Floor.
+      Candidates are taken in reading order, so the draw order is deterministic (`TEC-07`).
+   c. Apply WLD-06's adjacency rule, then demote to Floor any door that is still not a threshold.
+      With (a) and (b) done this finds nothing; it keeps WLD-06's invariant enforced rather than
+      assumed.
+
+   Door counts land within roughly 10–20% of what the tile-by-tile roll produced, so `doorChance`
+   needs no retuning.
 5. **Room roles.**
    - `start` = the room with the smallest center `x` (ties: smallest `y`).
    - Compute BFS distance over walkable-or-door tiles from the start room's center to every room's

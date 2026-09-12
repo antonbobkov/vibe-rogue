@@ -88,7 +88,7 @@ grouped by source document. "Given / When / Then" is implied by the three column
 | ID | Setup | Action | Expected |
 |---|---|---|---|
 | ACC-70 | 1,000 seeds × floors 1–7 | Generate | Every floor validates; ≥ 5 rooms; all rooms reachable; exactly one `<`, one `&`, one journal page `?` (floor 6: plus the Blueprint `?`); cache has 2–3 items. |
-| ACC-71 | Same | — | No two door tiles adjacent; doors only on room boundary walls; no item on a corridor/door/feature/hazard tile; ≤ 1 item per tile. |
+| ACC-71 | Same | — | No two door tiles adjacent; doors only on room boundary walls, and **every door a threshold** per `WLD-06` (two opposite passable orthogonal neighbours, walls on the other two); no room boundary left carrying a multi-tile opening except where narrowing it would disconnect the floor; no item on a corridor/door/feature/hazard tile; ≤ 1 item per tile. |
 | ACC-72 | Same | — | No enemy in the start room; no enemy visible from the start tile; no hazard adjacent to start, stairs, or station. |
 | ACC-73 | Same | — | Station room's BFS distance is the closest to half the stairs distance among eligible rooms. |
 | ACC-74 | Floor 2 | — | Exactly 6 Grinding Gears (or fewer only if placement failed 100 times), all on corridor tiles, none adjacent to each other. |
@@ -154,7 +154,7 @@ grouped by source document. "Given / When / Then" is implied by the three column
 | ID | Setup | Action | Expected |
 |---|---|---|---|
 | ACC-130 | `BAL-07` S1–S6 bots, 200 seeds each | Run | Each target met. |
-| ACC-131 | Full-explore scripted run on seed `TEST1234` | Run it twice: spending the Spring-Keys it finds, and spending none | Spending: reaches floor 8, never wound down, Tension at entry within 15–70. Hoarding: winds down before floor 8 — a full explore is no longer free (`DIF-14`). |
+| ACC-131 | Full-explore scripted run on seed `TEST1234` | Run it twice: spending the Spring-Keys it finds, and spending none | Spending: reaches floor 8, never wound down, Tension at entry within 15–80. Hoarding: winds down before floor 8 — a full explore is no longer free (`DIF-14`). |
 | ACC-132 | All content tables | Static check | Every item name in `23` exists in `21`; every enemy name in `23` exists in `22`; every skill name in `11`/`20` matches; every color name resolves in the palette (`UI-08` + `BST-01`). |
 | ACC-133 | All docs | Search for placeholder markers (to-be-decided notes, question-mark runs) | None; every value in the specs is fixed (`OVR-07` rule 10). |
 

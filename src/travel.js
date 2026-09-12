@@ -6,7 +6,6 @@
 
 import { astar, chebyshev, neighbors8, idx } from './grid.js';
 import { TILE, walkable, hazardActive } from './tiles.js';
-import { diagonalThroughDoor } from './ai.js';
 import * as combat from './combat.js';
 import * as items from './items.js';
 import * as log from './log.js';
@@ -43,7 +42,7 @@ const FEATURE_TILES = new Set([TILE.STAIRS_UP, TILE.STATION]);
 
 /**
  * Tick's passability for UI-13's Travel: "closed doors passable — they are opened on bump; hazards
- * avoided unless no other path; enemies impassable", plus ENM-08's diagonal-door rule.
+ * avoided unless no other path; enemies impassable".
  *
  * @param {object} state
  * @param {boolean} hazardsPassable the second pass, taken only when the first finds no path
@@ -55,7 +54,6 @@ export function tickPassable(state, hazardsPassable, opts = {}) {
   // is UI-13's own rule. `locks: false` plans around them instead, for a caller that will not pay.
   const locks = opts.locks !== false;
   return (from, to) => {
-    if (diagonalThroughDoor(tiles, from, to)) return false;
     const t = tiles[to.y][to.x];
     // A closed door is passable: bumping it opens it (a successful step, UI-13).
     if (t === TILE.WOUND_LOCK) {

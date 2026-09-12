@@ -93,7 +93,7 @@ export function isHazardTile(t) {
   return HAZARD_TILES.has(t);
 }
 
-/** Open or closed door (WLD-06, ENM-08's diagonal rule). */
+/** Open or closed door (WLD-06). */
 export function isDoor(t) {
   return DOOR_TILES.has(t);
 }

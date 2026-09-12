@@ -6,7 +6,7 @@
 //
 // The pathing here is `src/travel.js`'s, reused rather than reimplemented: `travelPathTo` and
 // `approachPathTo` already carry UI-13's passability (closed doors passable, hazards avoided when
-// another path exists, enemies solid) and ENM-08's diagonal-door rule.
+// another path exists, enemies solid).
 
 import { W, H, idx, chebyshev, readingOrder, neighbors8, bfs } from '../../src/grid.js';
 import { TILE, walkable, hazardActive } from '../../src/tiles.js';
@@ -69,8 +69,8 @@ export function firstStep(state, path) {
 /**
  * Tick's passability with the actors left out: a Move into an occupied tile is an attack, not a
  * refusal (CMB-05), so a bot that fights is never *blocked* by an enemy — it is delayed by one.
- * Everything else is `tickPassable`'s rule: closed doors passable (bumping opens them), hazards
- * avoided unless `hazardsPassable`, and ENM-08's diagonal-door step refused.
+ * Everything else is `tickPassable`'s rule: closed doors passable (bumping opens them) and hazards
+ * avoided unless `hazardsPassable`.
  */
 function passableIgnoringActors(state, hazardsPassable, opts = {}) {
   const solid = tickPassable(state, hazardsPassable, opts);
@@ -89,24 +89,12 @@ function passableIgnoringActors(state, hazardsPassable, opts = {}) {
         return false;
       }
     }
-    if (diagonalDoorStep(state, from, to)) return false;
     const occupied =
       state.floor.enemies.some((e) => e.x === to.x && e.y === to.y) ||
       (state.floor.decoy && state.floor.decoy.x === to.x && state.floor.decoy.y === to.y) ||
       (to.x === tick.x && to.y === tick.y);
     return occupied === true;
   };
-}
-
-/** ENM-08: a diagonal step into or out of a door tile is refused. */
-function diagonalDoorStep(state, from, to) {
-  if (from.x === to.x || from.y === to.y) return false;
-  const tiles = state.floor.tiles;
-  return isDoorTile(tiles[from.y][from.x]) || isDoorTile(tiles[to.y][to.x]);
-}
-
-function isDoorTile(t) {
-  return t === TILE.DOOR_CLOSED || t === TILE.DOOR_OPEN;
 }
 
 /**
@@ -148,8 +136,8 @@ export function stepDownField(state, field, opts = {}) {
   for (const n of neighbors8(tick.x, tick.y)) {
     const d = field[idx(n.x, n.y)];
     if (d < 0 || d >= bestDistance) continue;
-    // The predicate is the whole gate: it already lets a closed door through (bumping it opens it,
-    // UI-13) and already refuses ENM-08's diagonal-door step.
+    // The predicate is the whole gate: it already lets a closed door through (bumping it opens
+    // it, UI-13) and already applies UI-13's hazard and occupancy rules.
     if (!pass({ x: tick.x, y: tick.y }, n)) continue;
     best = n;
     bestDistance = d;

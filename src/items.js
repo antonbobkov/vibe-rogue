@@ -527,6 +527,9 @@ function takeRecord(ctx, def) {
     log.say(ctx.lines, 'blueprint');
   } else {
     state.journal.pages[def.journalIndex - 1] = true;
+    // UI-15: the page just found is the one the player wants to read, so the Journal opens on it
+    // rather than back on page 1.
+    state.journal.selected = def.journalIndex - 1;
     log.say(ctx.lines, 'journalPage', { n: def.journalIndex });
   }
   // STY-05 moment 2 fires on the Blueprint; M08 owns the text box, so it hangs off a hook here.

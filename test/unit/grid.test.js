@@ -2,7 +2,7 @@
 //
 // Maps are written as ASCII rows anchored at (0, 0); every tile the rows do not mention is a wall,
 // so the expected paths below are forced by geometry and can be read straight off the picture.
-// Legend: '#' wall, '.' floor, '+' closed door (only the door-diagonal map uses it).
+// Legend: '#' wall, '.' floor, '+' closed door (only the corner-cutting map uses it).
 
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -41,8 +41,9 @@ function openStep(at) {
 }
 
 /**
- * Passability with the ENM-08 door rule: a diagonal step is illegal if either end is a door tile.
- * This is the callback shape the AI will inject in M06.
+ * Passability that forbids cutting a corner at a door. No rule in the game asks for this any more,
+ * but it is the sharpest illustration of the callback contract: a step rule the caller owns and
+ * `astar` knows nothing about. Keeping it here keeps that contract under test.
  */
 function doorAwareStep(at) {
   return (from, to) => {
@@ -252,21 +253,21 @@ test('@m01 @unit grid: astar returns null when there is no path or the path is l
   assert.equal(astar(openStep(corridor), p(1, 1), p(-1, 1)), null, 'off-map destinations have no path');
 });
 
-test('@m01 @unit grid: astar takes the door-diagonal rule from its passability callback', () => {
-  // A door at (3,2) is the only way between the two halves. ENM-08: a door is entered and left
-  // orthogonally, so the diagonal shortcut through it is illegal.
+test('@m01 @unit grid: astar takes step legality from its passability callback', () => {
+  // A door at (3,2) is the only way between the two halves. The two callbacks differ on one thing
+  // only — whether the diagonal shortcut through the door is legal — and astar follows each.
   const rows = ['#######', '#.....#', '###+###', '#.....#', '#######'];
   const at = asciiMap(rows);
 
   assert.deepEqual(
     astar(openStep(at), p(1, 1), p(1, 3)),
     path([2, 1], [3, 2], [2, 3], [1, 3]),
-    'without the rule the door is cut diagonally in 4 steps',
+    'a callback that allows the corner cut: 4 steps',
   );
   assert.deepEqual(
     astar(doorAwareStep(at), p(1, 1), p(1, 3)),
     path([2, 1], [3, 1], [3, 2], [3, 3], [2, 3], [1, 3]),
-    'with the rule the door is entered and left straight on, in 6 steps',
+    'a callback that forbids it: the door is entered and left straight on, in 6 steps',
   );
 });
 

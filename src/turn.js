@@ -11,7 +11,7 @@
 
 import { chebyshev, idx } from './grid.js';
 import { computeFov } from './fov.js';
-import { TILE, blocksSight, walkable, isDoor, hazardActive } from './tiles.js';
+import { TILE, blocksSight, walkable, hazardActive } from './tiles.js';
 import * as log from './log.js';
 import * as ai from './ai.js';
 import * as combat from './combat.js';
@@ -422,8 +422,3 @@ export function levelUpCheck(ctx) {
   return true;
 }
 
-/** Re-exported for `engine.js` and the tests: the door-diagonal rule of ENM-08 applies to Tick. */
-export function diagonalThroughDoor(state, x0, y0, x1, y1) {
-  if (x0 === x1 || y0 === y1) return false;
-  return isDoor(state.floor.tiles[y0][x0]) || isDoor(state.floor.tiles[y1][x1]);
-}

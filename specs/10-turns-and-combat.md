@@ -83,7 +83,7 @@ this table defines the effect.
 
 | Action | Costs a turn? | Effect |
 |---|---|---|
-| **Move** (8 directions) | Yes | If the target tile holds a living enemy → **Melee Attack** it instead. If the target tile is a closed door → open it (door becomes open; Tick does not move). If the target tile is walkable and unoccupied → move there. Otherwise (a wall, or a tile occupied by a non-enemy actor such as the Decoy) → no turn is spent and the log says why ("The wall is solid."). Diagonal moves are always allowed, including between two walls (no corner cutting rule), except that a diagonal step into or out of a door tile is refused (`ENM-08`). |
+| **Move** (8 directions) | Yes | If the target tile holds a living enemy → **Melee Attack** it instead. If the target tile is a closed door → open it (door becomes open; Tick does not move). If the target tile is walkable and unoccupied → move there. Otherwise (a wall, or a tile occupied by a non-enemy actor such as the Decoy) → no turn is spent and the log says why ("The wall is solid."). Diagonal moves are always allowed: between two walls, and into or out of a door tile — there is no corner-cutting rule and no door exception (`ENM-08`). A diagonal bump into a closed door opens it, exactly as an orthogonal one does. |
 | **Wait** | Yes | Nothing. The only action allowed while Stunned. |
 | **Pick up** | Yes | Take the item on Tick's tile into inventory (`ITM-06`). If no item, no turn is spent. If the inventory is full, no turn is spent and the log says so. |
 | **Interact** | Yes | Use the feature on Tick's tile: an unspent Winding Station (`CHR-05`) or the up-stairs (equivalent to **Ascend**). If nothing to interact with (a spent station counts as nothing: "This station has run down."), no turn is spent. |

@@ -194,9 +194,12 @@ listed for that enemy.
   `SWARMER` plans as if other enemies were not there.
 - If the first step is blocked at execution time, the enemy **Waits** (no swapping, no shoving).
 - Path length is capped at 60; if the destination is farther, treat as no path.
-- Enemies never move diagonally *through* a door tile's diagonal (a door is entered and left
-  orthogonally): a step is illegal if either the source or the destination is a door tile and the
-  step is diagonal. The same rule applies to Tick.
+- **Diagonal steps are never restricted.** A door tile is entered and left like any other tile,
+  diagonals included, and so is a gap between two walls — there is no corner-cutting rule anywhere
+  in the game, for enemies or for Tick (`CMB-05`). An earlier version of this rule refused a
+  diagonal step into or out of a door; it made stepping out of a doorway into a room cost an extra
+  turn, and with a door standing in open floor (see `WLD-06`) it blocked four diagonals through what
+  looked like bare ground.
 
 ## ENM-09 Doors and enemies
 

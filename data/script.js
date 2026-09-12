@@ -195,7 +195,7 @@ export const summaryLabels = Object.freeze([
   'Seed {seed}',
 ]);
 
-export const summaryFooter = '— any key to return to the title —';
+export const summaryFooter = '— Esc or Enter to return to the title —';
 
 // ---- SCR-09 Help screen -----------------------------------------------------------------
 

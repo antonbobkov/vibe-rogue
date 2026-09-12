@@ -196,9 +196,11 @@ All keys are case-sensitive letters as shown; `?` and `<` are typed as on a US k
 
 ## UI-11 Inspect popup
 
-Right-click on a map cell, or `Enter` in look mode, opens a popup box (max 40 × 12 cells, positioned
-to not cover the cell, preferring the side away from it) with the full information for the top-most
-thing on that cell, per `ENM-11` / `ITM-05` / hazard fields. `Esc`, right-click again, or any move
+Right-click on a map cell, or `Enter` in look mode, opens a popup box (40 cells wide, as tall as its
+content needs up to the height of the map region, positioned to not cover the cell, preferring the
+side away from it) with the full information for the top-most thing on that cell, per `ENM-11` /
+`ITM-05` / hazard fields. The box must never be shorter than its content: an enemy popup is eleven
+rows for most of the bestiary and thirteen for an Overwound one. `Esc`, right-click again, or any move
 key closes it. Free action. Hovering a side-panel stat shows its breakdown (`CHR-08`, `CHR-11`) in the
 same popup style.
 
@@ -275,6 +277,12 @@ The selected skill's full text (`20`) shows in a box below the columns. `Esc`/`s
 `Blueprint` if found. `Enter`/click opens the page text (`24`) in a scrollable box; `Esc` back. Reading
 is free.
 
+The list cursor belongs to the run, not to the screen: reopening the Journal comes back to the page
+last selected rather than to `Page 1`, and **finding a page moves the cursor to it** (`ITM-03`), so
+the Journal opens on the page just picked up. When the cursor would point past the end of a shorter
+list — the `Blueprint` row is only there once it is found — it is clamped to the last row. The
+ending sequence's page-8 view (`SCR-07`) is not the list and does not move the cursor.
+
 ## UI-16 Message History, Help, and text boxes
 
 - **Message History** (`m` / click log): full-screen scrollable list of the last 500 log lines this run (`TEC-05`),
@@ -302,8 +310,11 @@ is free.
 - **Death / Victory:** full-screen summary per `STY-08`: header line (`TICK WAS BROKEN` /
   `TICK WOUND DOWN` / `THE KEEPER` / `THE WALKER`), the flavor line, then a two-column table of run
   statistics, the skill list in order, final equipment, `Journal pages: n/8`, `Seed: xxxx`, and
-  `— any key to return to the title —`. The seed is selectable text (rendered also as a hidden DOM
-  input for copy, `TEC-12`).
+  `— Esc or Enter to return to the title —`. **Only `Esc` and `Enter` dismiss it**, and input is
+  ignored for the first 500 ms so the keystroke that ended the run cannot throw the summary away
+  before it is read; a click also dismisses it, after the same 500 ms, because `UI-13` promises the
+  mouse alone is enough to play. The seed is selectable text (rendered also as a hidden DOM input
+  for copy, `TEC-12`).
 
 ## UI-18 Pause menu
 
@@ -322,7 +333,7 @@ Continue resumes it). No "save and quit" — saving is automatic.
 | Run | Scripted trigger (`STY-05`) | Text box → Run |
 | Run | Understudy defeated | Text box (line 4) → Text box (thought 3) → Ending choice → Journal page 8 → (B only: descent lines) → Ending text → Victory |
 | Run | Tick dies | Death |
-| Death / Victory | any key | Title |
+| Death / Victory | `Esc` or `Enter` (or a click), after the 500 ms grace of `UI-17` | Title |
 | Pause | Quit to title | Title |
 
 ## UI-20 Accessibility and sizing

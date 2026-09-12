@@ -267,7 +267,7 @@ Then the Victory screen.
 
 Summary labels (two columns): `Floor reached` · `Turns` · `Enemies broken` · `Level` · `Skills` (list in
 order) · `Weapon` · `Plating` · `Attachment` · `Journal pages {n}/8` · `Seed {seed}`.
-Footer: `— any key to return to the title —`.
+Footer: `— Esc or Enter to return to the title —`.
 
 ## SCR-09 Help screen (rules summary; the key list is generated from `UI-10`)
 

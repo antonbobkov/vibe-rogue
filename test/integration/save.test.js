@@ -19,7 +19,7 @@ import { loadFixedFloor } from '../../src/gen.js';
 import { chebyshev, astar } from '../../src/grid.js';
 import { mulberry32 } from '../../src/rng.js';
 import * as combat from '../../src/combat.js';
-import { TILE, walkable, isDoor } from '../../src/tiles.js';
+import { TILE, walkable } from '../../src/tiles.js';
 import { floorFromAscii } from '../fixtures/maps.js';
 import { SCRIPT } from '../../data/script.js';
 
@@ -200,9 +200,8 @@ function driver(seed) {
       if (best && best.d <= 1) return { type: 'move', dx: best.e.x - tick.x, dy: best.e.y - tick.y };
       if (best) {
         // A closed door counts as passable: Tick opens it by moving into it (CMB-05).
-        const step = (from, to) =>
-          (walkable(tiles[to.y][to.x]) || tiles[to.y][to.x] === TILE.DOOR_CLOSED) &&
-          !(from.x !== to.x && from.y !== to.y && (isDoor(tiles[from.y][from.x]) || isDoor(tiles[to.y][to.x])));
+        const step = (_from, to) =>
+          walkable(tiles[to.y][to.x]) || tiles[to.y][to.x] === TILE.DOOR_CLOSED;
         const path = astar(step, { x: tick.x, y: tick.y }, { x: best.e.x, y: best.e.y }, { maxLen: 60 });
         if (path && path.length > 0) return { type: 'move', dx: path[0].x - tick.x, dy: path[0].y - tick.y };
       }
@@ -308,6 +307,9 @@ function assertReplayEquivalent(build, policySeed, total, cut, label) {
   assert.notEqual(saved.playRngState, build(store()).state.playRngState, `${label}: the first half must draw`);
   assert.equal(saved.playRngState, first.state.playRngState, `${label}: the save is not one turn stale`);
 
+  // Snapshot what the autosave actually holds: `createGame` adopts the loaded state, so `saved.log`
+  // becomes the restored run's live log and cannot be read afterwards.
+  const savedLog = JSON.parse(JSON.stringify(saved.log));
   const restored = createGame({ state: saved });
   assert.equal(restored.state.playRngState, first.state.playRngState, `${label}: the save's stream position`);
   playWith(restored, total - cut, policy);
@@ -317,7 +319,32 @@ function assertReplayEquivalent(build, policySeed, total, cut, label) {
     { ...straight.state, log: undefined },
     `${label}: the whole state but the log`,
   );
-  assert.deepEqual(logWithoutResume(restored.state), logTexts(straight.state), `${label}: the log tail`);
+  // The log is compared in the two halves the restore splits it into: everything the autosave
+  // carried has to come back byte for byte, and everything played after it has to match the
+  // uninterrupted run. Between them sit the `lost` lines that free actions produced after the last
+  // autosave — a refused move or "Nothing here to use." costs no turn, so CMB-02 step 9 never runs
+  // for it and its log line never reaches the save. That is the one thing a restore does not
+  // reproduce, and it is cosmetic: the state comparison above is what proves the restore faithful.
+  const expand = (lines) => {
+    const out = [];
+    for (const line of lines) for (let i = 0; i < (line.count || 1); i++) out.push(line.text);
+    return out;
+  };
+  const persisted = expand(savedLog).length;
+  const lost = expand(first.state.log).length - persisted;
+  assert.ok(lost >= 0, `${label}: the save cannot hold more log than the live run`);
+  const straightTexts = logTexts(straight.state);
+  const restoredTexts = logWithoutResume(restored.state);
+  assert.deepEqual(
+    restoredTexts.slice(0, persisted),
+    straightTexts.slice(0, persisted),
+    `${label}: the log the autosave carried`,
+  );
+  assert.deepEqual(
+    restoredTexts.slice(persisted),
+    straightTexts.slice(persisted + lost),
+    `${label}: the log played after the restore`,
+  );
   assert.deepEqual(viewOf(restored), viewOf(straight), `${label}: FOV and memory`);
   assert.equal(restored.state.playRngState, straight.state.playRngState, `${label}: playRngState`);
   assert.equal(restored.ctx.rng.next(), straight.ctx.rng.next(), `${label}: the next hit roll`);

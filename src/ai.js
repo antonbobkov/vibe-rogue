@@ -32,7 +32,7 @@
 // Nothing here touches the DOM (PLN-02 R2).
 
 import { chebyshev, neighbors8, astar, readingOrder } from './grid.js';
-import { TILE, walkable, isDoor, hazardActive } from './tiles.js';
+import { TILE, walkable, hazardActive } from './tiles.js';
 import { enemyType } from './actors.js';
 import { canSee } from './turn.js';
 import * as combat from './combat.js';
@@ -421,15 +421,14 @@ function nextToAnotherEnemy(state, self, tile) {
 }
 
 /**
- * The neighbouring tiles an enemy may simply step onto: walkable, unoccupied, and not a diagonal
- * into or out of a door tile (ENM-08). Reading order, as `neighbors8` gives them.
+ * The neighbouring tiles an enemy may simply step onto: walkable and unoccupied. Reading order, as
+ * `neighbors8` gives them.
  */
 export function freeNeighbors(enemy, state) {
   const tiles = state.floor.tiles;
   const out = [];
   for (const p of neighbors8(enemy.x, enemy.y)) {
     if (!walkable(tiles[p.y][p.x])) continue;
-    if (diagonalThroughDoor(tiles, enemy, p)) continue;
     if (combat.actorAt(state, p.x, p.y)) continue;
     out.push(p);
   }
@@ -510,8 +509,6 @@ function stepPassable(enemy, state, dest, gearsPassable) {
   const tiles = state.floor.tiles;
 
   return (from, to) => {
-    if (diagonalThroughDoor(tiles, from, to)) return false;
-
     const t = tiles[to.y][to.x];
     if (t === TILE.DOOR_CLOSED) {
       if (opens === 'NO') return false;
@@ -549,11 +546,3 @@ function hazardPassable(state, x, y, gearsPassable) {
   return !hazardActive(cfg.kind, state.turn) && !hazardActive(cfg.kind, state.turn + 1);
 }
 
-/**
- * ENM-08's last bullet: "a step is illegal if either the source or the destination is a door tile
- * and the step is diagonal". `turn.js` applies the same rule to Tick.
- */
-export function diagonalThroughDoor(tiles, from, to) {
-  if (from.x === to.x || from.y === to.y) return false;
-  return isDoor(tiles[from.y][from.x]) || isDoor(tiles[to.y][to.x]);
-}

@@ -120,6 +120,18 @@ function survey() {
             if (r !== -1) borders++;
           }
           if (borders === 0) note(out.acc71, seed, n, `door not on a room boundary at ${x},${y}`);
+          // WLD-06: a door is a *threshold* — a one-tile gap in a wall, with two opposite passable
+          // orthogonal neighbours and walls on the other two sides. Being on a room boundary is not
+          // enough on its own, and for a long time it was all that was checked: 31% of generated
+          // doors stood in T-junctions, crossroads and corridor bends, where a player walks around
+          // them. If this fires, the openings were not narrowed or a door was rolled on a gap.
+          const open = (dx, dy) => floor.tiles[y + dy][x + dx] !== TILE.WALL;
+          const vertical = open(0, -1) && open(0, 1) && !open(1, 0) && !open(-1, 0);
+          const horizontal = open(1, 0) && open(-1, 0) && !open(0, -1) && !open(0, 1);
+          if (!vertical && !horizontal) {
+            const sides = [open(0, -1), open(0, 1), open(1, 0), open(-1, 0)].filter(Boolean).length;
+            note(out.acc71, seed, n, `door at ${x},${y} is not a threshold (${sides} open sides)`);
+          }
           for (let dy = -1; dy <= 1; dy++) {
             for (let dx = -1; dx <= 1; dx++) {
               if (dx === 0 && dy === 0) continue;
@@ -131,6 +143,34 @@ function survey() {
           }
         }
       }
+      // WLD-11 step 4's narrowing pass: every way into a room is one tile wide. A corridor dug
+      // along a boundary wall used to dissolve a whole stretch of it, which is what stranded the
+      // doors above. `narrowRoomOpenings` reverts a fill that would cut a room off, so a run may
+      // legitimately survive when walling it would disconnect the floor — hence the small budget
+      // rather than zero.
+      let wideOpenings = 0;
+      for (const room of floor.rooms) {
+        const edges = [
+          { from: { x: room.x, y: room.y - 1 }, step: { x: 1, y: 0 }, len: room.w },
+          { from: { x: room.x, y: room.y + room.h }, step: { x: 1, y: 0 }, len: room.w },
+          { from: { x: room.x - 1, y: room.y }, step: { x: 0, y: 1 }, len: room.h },
+          { from: { x: room.x + room.w, y: room.y }, step: { x: 0, y: 1 }, len: room.h },
+        ];
+        for (const edge of edges) {
+          let run = 0;
+          for (let i = 0; i < edge.len; i++) {
+            const px = edge.from.x + edge.step.x * i;
+            const py = edge.from.y + edge.step.y * i;
+            const passable = px >= 0 && py >= 0 && px < W && py < H && floor.tiles[py][px] !== TILE.WALL;
+            run = passable ? run + 1 : 0;
+            if (run > 1) wideOpenings++;
+          }
+        }
+      }
+      if (wideOpenings > 2) {
+        note(out.acc71, seed, n, `${wideOpenings} multi-tile room openings left unnarrowed`);
+      }
+
       const seenItemTiles = new Set();
       for (const it of floor.items) {
         const t = tileAt(floor, it.x, it.y);
@@ -317,12 +357,20 @@ test('@m03 ACC-74 gen: floor 2 has 6 Grinding Gears, all on corridor tiles, none
 });
 
 test('@m03 @unit gen: floor 4 places 10 Steam Vents, at most 4 per room, never adjacent (FLR-05)', () => {
-  for (let s = 0; s < 200; s++) {
+  // FLR-05 asks for ten, and WLD-11 step 7 allows "place fewer" when the rejection sampler cannot
+  // fit them: at most 4 to a roleless room and none adjacent leaves a handful of tight floors where
+  // the tenth has nowhere legal to go. Measured over 3,000 seeds that is ~0.3% of floors, never
+  // below 8 — so the assertion is "ten unless the floor cannot take ten", with a floor on how often
+  // that may happen, rather than a flat ten that depends on this sample missing the tight seeds.
+  let full = 0;
+  const SEEDS = 200;
+  for (let s = 0; s < SEEDS; s++) {
     const floor = generateFloor(seedOf(s), 4);
     const rooms = roomMap(floor);
     const vents = floor.hazards.filter((h) => h.kind === 'STEAM_VENT');
-    assert.ok(vents.length <= 10);
-    assert.equal(vents.length, 10, `seed ${seedOf(s)} placed ${vents.length} vents`);
+    assert.ok(vents.length <= 10, `seed ${seedOf(s)} placed ${vents.length} vents`);
+    assert.ok(vents.length >= 8, `seed ${seedOf(s)} placed only ${vents.length} vents`);
+    if (vents.length === 10) full += 1;
     const perRoom = new Map();
     const roleRooms = new Set(Object.values(floor.roles));
     for (const v of vents) {
@@ -338,6 +386,7 @@ test('@m03 @unit gen: floor 4 places 10 Steam Vents, at most 4 per room, never a
     }
     for (const [room, count] of perRoom) assert.ok(count <= 4, `room ${room} has ${count} vents`);
   }
+  assert.ok(full >= SEEDS - 5, `only ${full} of ${SEEDS} floor-4 seeds fitted all ten vents`);
 });
 
 test('@m03 ACC-76 gen: floor 7 turns every Floor/door tile in columns 28-31 into a Pendulum Sweep, with no feature in the band', () => {

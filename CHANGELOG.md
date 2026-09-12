@@ -49,6 +49,55 @@ stop. A catalogue in one rhythm reads as machine-made however well each entry is
 
 See `D-117` in `specs/DECISIONS.md`, which supersedes `D-025`.
 
+---
+
+**The playtest pass.** Five defects found by playing the game rather than reading it. Four of them
+were invisible to the test suite because nothing asserted the thing that was wrong.
+
+### Fixed
+
+- **31% of generated doors were not doors** (`WLD-06`, `WLD-11` step 4). `carveTile` marked any wall
+  tile orthogonally touching one room's interior as a door candidate, which is not the same as "is
+  the doorway": a corridor is an L-path between two random *interior* tiles, so it runs along
+  boundary walls as readily as through them, and an extra corridor dug one tile off a spanning one
+  dissolves the whole 2-tile wall band between two rooms. Measured over 420 floors, 1,403 of 4,556
+  doors stood in a T-junction, a crossroads or a corridor bend — a door beside a hole in its own
+  wall, or a door marooned in open floor with passable ground on all four sides. Corridors are now
+  carved as bare Floor; each room's boundary openings are **narrowed back to one tile**, every fill
+  guarded by a connectivity check that reverts it rather than risk cutting the floor in half; and
+  the doors are rolled afterwards, on openings that are genuinely thresholds. Zero improper doors
+  over 840 floors, and door counts land within 10–20% of before, so `doorChance` is unchanged.
+  `ACC-71` now asserts both the threshold rule and the narrowing, and fails against the old
+  generator.
+- **Diagonal movement refused a step out of a doorway** (`ENM-08`, `CMB-05`). `CMB-05` already
+  granted every diagonal "including between two walls (no corner cutting rule)"; the one exception
+  was ENM-08's refusal of a diagonal into or out of a door tile, which cost a turn every time you
+  left a doorway into a room — and, with the stranded doors above, blocked four diagonals through
+  what looked like bare ground. The rule is gone for **everyone**: Tick, enemies, travel, A* and the
+  sim bots, which carried their own copy of it. Keeping it for enemies alone would have let a player
+  kite anything around a doorway for free.
+- **Most monster descriptions were cut off** (`UI-11`). The inspect popup was pinned at 12 cells, so
+  10 rows of interior — one short of `ENM-11`'s seven stat lines, a blank and a three-line
+  description, and three short of an Overwound one — and `createInspectScreen` dropped the overflow
+  silently. **Twelve of the sixteen bestiary entries lost the last line of their description; fifteen
+  did when Overwound.** The box now grows to its content. The existing budget test measured item
+  popups only and never the enemy popup, which is the tallest of the three and the one a player reads
+  most; it does now, and fails at the old height.
+- **The Death and Victory screens dismissed on any key** (`UI-17`), so the keystroke that killed you
+  — the last of a held direction, or anything already buffered — threw the summary away before it
+  could be read. They now take `Esc` or `Enter` only, and ignore all input for 500 ms after opening.
+  A click still works, after the same grace, because `UI-13` promises the mouse alone is enough to
+  play.
+- **The Journal always reopened on Page 1** (`UI-15`). The list cursor was a local in
+  `createJournalScreen` and `main.js` builds a fresh screen on every `r`. It now lives on the run as
+  `state.journal.selected`, so reopening returns to the page you were reading — and **finding a page
+  moves the cursor to it**, so the Journal opens on the page just picked up.
+
+Not a defect, and deliberately left alone: **the Understudy defeating itself** while the player walks
+away is `BST-06` working — it has `tension = 100`, every action costs 2, and at 0 it is defeated
+exactly as if broken, which is about 50 of its actions. `ACC-95` also asks for `Spring n/100` in its
+inspect popup and that line is implemented nowhere; it stays an open spec gap.
+
 ## [1.1.0] — 2026-09-11
 
 **The Tower Notices.** The 1.0 game was beaten on a first try: the greedy-explorer bot won 88% of

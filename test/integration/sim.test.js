@@ -127,9 +127,13 @@ test('ACC-131: a full-explore run on TEST1234 reaches floor 8 on the springs it 
   assert.equal(spent.everWoundDown, false, 'ACC-131: it never winds down');
   assert.equal(spent.wound, false, 'the run ended wound down');
   assert.ok(spent.minTension > 0, `lowest Tension of the run was ${spent.minTension}`);
+  // The upper bound was calibrated when ENM-08 still refused a diagonal into or out of a door.
+  // Removing that rule gives every route back the turns it used to spend walking around doorways,
+  // so this run now arrives with 74 rather than 67. The thesis is unchanged and still checked
+  // above and below: the spending run reaches floor 8 and never winds down, the hoarding one does.
   assert.ok(
-    spent.floor8.tension >= 15 && spent.floor8.tension <= 70,
-    `floor 8 entry Tension was ${spent.floor8.tension}, outside 15-70 (turn ${spent.floor8.turn})`,
+    spent.floor8.tension >= 15 && spent.floor8.tension <= 80,
+    `floor 8 entry Tension was ${spent.floor8.tension}, outside 15-80 (turn ${spent.floor8.turn})`,
   );
   // A full-explore run, not a rush: OVR-04's target is ~1,760 player turns for all eight floors.
   assert.ok(spent.turns > 1000, `only ${spent.turns} turns — that is not a full explore`);

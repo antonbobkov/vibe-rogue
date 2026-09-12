@@ -26,7 +26,7 @@ import * as combat from './combat.js';
 import * as skills from './skills.js';
 import * as bosses from './bosses.js';
 import * as story from './story.js';
-import { runTurn, hazardEnter, tensionWarnings, diagonalThroughDoor } from './turn.js';
+import { runTurn, hazardEnter, tensionWarnings } from './turn.js';
 import { createTick, createEnemy, derive, statsOf, TENSION_MAX } from './actors.js';
 import { SCRIPT } from '../data/script.js';
 import { FLOORS } from '../data/floors.js';
@@ -112,7 +112,14 @@ export function createGame(options = {}) {
     floorNumber: 0,
     tick: createTick(),
     floor: null,
-    journal: { pages: [false, false, false, false, false, false, false, false], blueprint: false },
+    // `selected` is UI-15's list cursor. It lives on the run rather than in the screen so that
+    // reopening the Journal comes back to the page you were reading, and so that taking a page can
+    // move it (ITM-03 `takeRecord`).
+    journal: {
+      pages: [false, false, false, false, false, false, false, false],
+      blueprint: false,
+      selected: 0,
+    },
     uniquesGenerated: [],
     log: [],
     // DIF-15's death-cause table reads `wanderersSpawned` and `itemsStolen` back out of here.
@@ -345,9 +352,6 @@ export function createGame(options = {}) {
       combat.meleeAttack(ctx, tick, target);
       return { ok: true };
     }
-
-    // ENM-08: a diagonal step into or out of a door tile is refused, for Tick too.
-    if (diagonalThroughDoor(state, tick.x, tick.y, nx, ny)) return { ok: false, reason: 'doorDiagonal' };
 
     const t = state.floor.tiles[ny][nx];
     // WLD-15 (DIF-12): a Wound Lock on a cache door. Winding it costs Tension and a turn; with too

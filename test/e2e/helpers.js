@@ -54,6 +54,17 @@ export async function dismiss(page) {
 }
 
 /** Dispatch one keydown exactly as TEC-11 reads it: `code` for the numpad, `key` for letters. */
+/**
+ * UI-17: the Death / Victory screen ignores input for its grace period after it opens, so the
+ * keystroke that ended the run cannot dismiss the summary before it is read. The grace is one
+ * `app.later` timer and it is the only thing animating on that screen, so TEC-14's `CH.timers()`
+ * reaching 0 is exactly "the screen will now accept a key" — and waiting on it beats sleeping for a
+ * duration the test would have to keep in step with `GRACE_MS`.
+ */
+export async function waitForSummaryInput(page) {
+  await page.waitForFunction(() => window.CH.timers() === 0, null, { timeout: 5000 });
+}
+
 export async function key(page, code, options = {}) {
   const data = {
     code,

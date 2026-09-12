@@ -4,7 +4,7 @@
 import { test, expect } from '@playwright/test';
 import {
   boot, newRun, grid, rowText, screenText, flatten, textboxText, act, loadFixture, emptyMap,
-  put, key, press, clickCell, state, gainXp, timers, savedText,
+  put, key, press, clickCell, state, gainXp, timers, savedText, waitForSummaryInput,
 } from './helpers.js';
 import { RUN_KEYS, CURSOR_KEYS, INVENTORY_KEYS } from '../../src/screens/help.js';
 import { SCRIPT } from '../../data/script.js';
@@ -176,7 +176,16 @@ test('the Journal marks found pages and shows their exact text ACC-111 @m10', as
   expect(g[3][6].fg).toBe('#ffffff');
   expect(g[6][6].fg).toBe(MID_GREY);
 
-  // "Enter shows the exact `SCR-03` text".
+  // UI-15: finding a page moves the cursor to it, so the Journal opened on page 3, not page 1.
+  expect(s.journal.selected).toBe(2);
+  await key(page, 'Enter');
+  expect(flatten(await grid(page))).toContain('Page 3 —');
+  await key(page, 'Escape');
+
+  // "Enter shows the exact `SCR-03` text" — back up to page 1 to read it.
+  await key(page, 'ArrowUp');
+  await key(page, 'ArrowUp');
+  expect((await state(page)).journal.selected).toBe(0);
   await key(page, 'Enter');
   text = flatten(await grid(page));
   expect(text).toContain('Page 1 — The Workshop');
@@ -184,6 +193,11 @@ test('the Journal marks found pages and shows their exact text ACC-111 @m10', as
   expect(text).toContain('— A.V.');
   await key(page, 'Escape');
   expect(screenText(await grid(page))).toContain('— not found —');
+  await key(page, 'Escape');
+
+  // UI-15: and the cursor is remembered — reopening comes back to page 1, not to the top by luck.
+  await press(page, 'r');
+  expect((await state(page)).journal.selected).toBe(0);
   await key(page, 'Escape');
 
   // "page 8 renders with no signature" (SCR-03: it ends mid-sentence).
@@ -195,8 +209,9 @@ test('the Journal marks found pages and shows their exact text ACC-111 @m10', as
   await press(page, 'g');
   s = await state(page);
   expect(s.journal.pages[7]).toBe(true);
+  // Page 8 was the page just found, so UI-15 has already put the cursor on it.
+  expect(s.journal.selected).toBe(7);
   await press(page, 'r');
-  for (let i = 0; i < 7; i++) await key(page, 'ArrowDown');
   await key(page, 'Enter');
   text = flatten(await grid(page));
   expect(text).toContain('Page 8 — The Escapement');
@@ -321,6 +336,8 @@ test('the Death screen carries SCR-08 header, flavor and summary ACC-117 @m10', 
 
   // ACC-03 / TEC-09: the save is gone, and the Title offers no Continue.
   expect(await savedText(page)).toBeNull();
+  // UI-17: a key inside the grace period is ignored, so wait for the screen to arm.
+  await waitForSummaryInput(page);
   await key(page, 'Enter');
   const title = screenText(await grid(page));
   expect(title).toContain('CLOCKWORK HOLLOW');
@@ -458,7 +475,8 @@ test('Ending A shows page 8, the ending text and THE KEEPER ACC-115 @m10', async
   // TEC-09: the save is deleted on victory.
   expect(await savedText(page)).toBeNull();
 
-  // UI-19: "Death / Victory | any key | Title".
+  // UI-19: "Death / Victory | Esc or Enter | Title", after UI-17's grace period.
+  await waitForSummaryInput(page);
   await key(page, 'Enter');
   const title = screenText(await grid(page));
   expect(title).toContain('CLOCKWORK HOLLOW');

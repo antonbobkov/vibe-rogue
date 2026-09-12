@@ -111,9 +111,15 @@ function attempt(def, rng, uniques, tuning = TUNING) {
   const rooms = carveRooms(def, rng, tiles, roomOf);
   if (rooms.length < 5) return null;
 
-  // --- Steps 3 and 4: spanning corridors, extra corridors, then WLD-06's door rule ------------
-  carveCorridors(def, rng, tiles, roomOf, rooms);
+  // --- Steps 3 and 4: corridors, then WLD-06's doors ------------------------------------------
+  // The order matters and is WLD-11 step 4's: carve every corridor as bare Floor, narrow the
+  // ragged wall openings the carving leaves behind, and only then roll doors on what survives.
+  // Rolling last is what makes every door a threshold by construction rather than by cleanup.
+  carveCorridors(def, rng, tiles, rooms);
+  narrowRoomOpenings(tiles, rooms);
+  rollDoors(def, rng, tiles, roomOf, rooms);
   applyDoorAdjacencyRule(tiles);
+  demoteStrandedDoors(tiles);
 
   // --- FLR-08: the Pendulum band replaces every Floor/door tile in columns 28..31 -------------
   const hazards = [];
@@ -367,28 +373,28 @@ function fits(roomOf, x, y, w, h) {
 // Steps 3 and 4 - corridors and doors
 // ---------------------------------------------------------------------------------------------
 
-function carveCorridors(def, rng, tiles, roomOf, rooms) {
+function carveCorridors(def, rng, tiles, rooms) {
   const order = rooms.slice().sort((a, b) => a.cx - b.cx || a.cy - b.cy);
   for (let k = 0; k + 1 < order.length; k++) {
-    connect(def, rng, tiles, roomOf, order[k], order[k + 1]);
+    connect(rng, tiles, order[k], order[k + 1]);
   }
   for (let e = 0; e < def.extraCorridors; e++) {
     if (rooms.length < 2) break;
     const a = rooms[int(rng, 0, rooms.length - 1)];
     const others = rooms.filter((r) => r.id !== a.id); // "two distinct random rooms" (D-031)
     const b = others[int(rng, 0, others.length - 1)];
-    connect(def, rng, tiles, roomOf, a, b);
+    connect(rng, tiles, a, b);
   }
 }
 
-function connect(def, rng, tiles, roomOf, roomA, roomB) {
+function connect(rng, tiles, roomA, roomB) {
   const a = pickInterior(rng, roomA);
   const b = pickInterior(rng, roomB);
   const horizontalFirst = chance(rng, 50);
   const path = horizontalFirst
     ? legX(a.x, b.x, a.y).concat(legY(a.y, b.y, b.x))
     : legY(a.y, b.y, a.x).concat(legX(a.x, b.x, b.y));
-  for (const p of path) carveTile(def, rng, tiles, roomOf, p.x, p.y);
+  for (const p of path) carveTile(tiles, p.x, p.y);
 }
 
 function legX(x0, x1, y) {
@@ -406,18 +412,150 @@ function legY(y0, y1, x) {
 }
 
 /**
- * WLD-11's corridor carving: a Wall tile becomes Floor, unless it is a room's boundary wall
- * (orthogonally adjacent to that room's interior and to no other room's), where it becomes a
- * Closed door with probability `doorChance`. Anything already carved is left alone.
+ * WLD-11's corridor carving: a Wall tile becomes Floor. Anything already carved is left alone.
+ *
+ * Doors are *not* decided here. A corridor is an L-path between two random interior tiles, so it
+ * can run along a boundary wall as easily as through it, and an extra corridor dug one tile off a
+ * spanning one carves a second parallel column through the same wall band — the 2-tile gap step 2
+ * guarantees between rooms is exactly wide enough to dissolve completely. Deciding doors tile by
+ * tile during the walk therefore stranded them in open floor. `narrowRoomOpenings` repairs the
+ * geometry first and `rollDoors` rolls afterwards, on openings that are genuinely one tile wide.
  */
-function carveTile(def, rng, tiles, roomOf, x, y) {
+function carveTile(tiles, x, y) {
   if (!inBounds(x, y)) return;
   const i = y * W + x;
   if (tiles[i] !== TILE.WALL) return;
-  if (boundaryRoom(roomOf, x, y) >= 0) {
-    tiles[i] = chance(rng, def.doorChance) ? TILE.DOOR_CLOSED : TILE.FLOOR;
-  } else {
-    tiles[i] = TILE.FLOOR;
+  tiles[i] = TILE.FLOOR;
+}
+
+/**
+ * WLD-06: a door is a *threshold* — a one-tile gap in a wall. This is that test: the tile has two
+ * opposite passable orthogonal neighbours and walls on the other two sides, so stepping through it
+ * is the only way across. It is the invariant `narrowRoomOpenings`, `rollDoors` and
+ * `demoteStrandedDoors` all work towards, and what `ACC-71` asserts.
+ */
+function isThreshold(tiles, x, y) {
+  if (!inBounds(x, y)) return false;
+  const open = (dx, dy) => inBounds(x + dx, y + dy) && tiles[(y + dy) * W + x + dx] !== TILE.WALL;
+  const n = open(0, -1);
+  const s = open(0, 1);
+  const e = open(1, 0);
+  const w = open(-1, 0);
+  return (e && w && !n && !s) || (n && s && !e && !w);
+}
+
+/**
+ * The four boundary walls of a room, each as its tiles in order plus the direction that leads out of
+ * the room. The ring's corners are diagonal to the interior, so they are on no edge and are never
+ * doors — the same reason `boundaryRoom` looks only at the four orthogonal neighbours.
+ */
+function boundaryEdges(room) {
+  const { x, y, w, h } = room;
+  const edge = (n, at, out) => {
+    const tiles = [];
+    for (let i = 0; i < n; i++) if (inBounds(at(i).x, at(i).y)) tiles.push(at(i));
+    return { tiles, out };
+  };
+  return [
+    edge(w, (i) => ({ x: x + i, y: y - 1 }), { dx: 0, dy: -1 }),
+    edge(h, (i) => ({ x: x + w, y: y + i }), { dx: 1, dy: 0 }),
+    edge(w, (i) => ({ x: x + i, y: y + h }), { dx: 0, dy: 1 }),
+    edge(h, (i) => ({ x: x - 1, y: y + i }), { dx: -1, dy: 0 }),
+  ];
+}
+
+/** Is every room still reachable from the first one? The guard on each narrowing fill. */
+function roomsConnected(tiles, rooms) {
+  const dist = bfs((_from, to) => tiles[to.y * W + to.x] !== TILE.WALL, {
+    x: rooms[0].cx,
+    y: rooms[0].cy,
+  });
+  return rooms.every((r) => dist[idx(r.cx, r.cy)] !== -1);
+}
+
+/**
+ * WLD-11 step 4 — narrow every ragged opening a room's boundary wall picked up during carving back
+ * to a single tile, so the wall reads as a wall with a doorway in it rather than a gap.
+ *
+ * Each of the four walls is scanned on its own (a run of openings can only be contiguous within one
+ * wall), and each contiguous run of two or more passable tiles keeps exactly one: the tile that
+ * actually has a corridor outside it, else the middle of the run. Every individual fill is applied,
+ * checked with `roomsConnected` and reverted if it would cut a room off, so narrowing can only ever
+ * tidy geometry — it can never make a floor fail step 10.
+ */
+function narrowRoomOpenings(tiles, rooms) {
+  for (const room of rooms) {
+    for (const edge of boundaryEdges(room)) {
+      const open = edge.tiles.map((p) => tiles[p.y * W + p.x] !== TILE.WALL);
+      let i = 0;
+      while (i < open.length) {
+        if (!open[i]) {
+          i += 1;
+          continue;
+        }
+        let j = i;
+        while (j + 1 < open.length && open[j + 1]) j += 1;
+        if (j > i) {
+          let keep = -1;
+          for (let k = i; k <= j; k++) {
+            const p = edge.tiles[k];
+            const ox = p.x + edge.out.dx;
+            const oy = p.y + edge.out.dy;
+            if (inBounds(ox, oy) && tiles[oy * W + ox] !== TILE.WALL) {
+              keep = k;
+              break;
+            }
+          }
+          if (keep < 0) keep = i + Math.floor((j - i) / 2);
+          for (let k = i; k <= j; k++) {
+            if (k === keep) continue;
+            const p = edge.tiles[k];
+            const at = p.y * W + p.x;
+            const was = tiles[at];
+            tiles[at] = TILE.WALL;
+            if (!roomsConnected(tiles, rooms)) tiles[at] = was;
+          }
+        }
+        i = j + 1;
+      }
+    }
+  }
+}
+
+/**
+ * WLD-11 step 4's door roll, run after the corridors are carved and the openings narrowed: every
+ * boundary opening of exactly one room that is a threshold becomes a Closed door with probability
+ * `doorChance`. Candidates are taken in reading order so the draw order stays deterministic
+ * (TEC-07).
+ */
+function rollDoors(def, rng, tiles, roomOf, rooms) {
+  if (rooms.length === 0) return;
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      const i = y * W + x;
+      if (tiles[i] !== TILE.FLOOR) continue;
+      if (roomOf[i] !== -1) continue; // a room's own interior is not its doorway
+      if (boundaryRoom(roomOf, x, y) < 0) continue; // WLD-06: only where a corridor meets a room
+      if (!isThreshold(tiles, x, y)) continue;
+      if (chance(rng, def.doorChance)) tiles[i] = TILE.DOOR_CLOSED;
+    }
+  }
+}
+
+/**
+ * WLD-06's threshold invariant, enforced rather than assumed: any door left standing somewhere a
+ * player could simply walk around becomes Floor. With the narrowing pass and the reordered roll in
+ * place this finds nothing, and `ACC-71` asserts as much — it is a backstop, so that a future pass
+ * which walls a tile next to a door cannot silently reintroduce the doors this rule exists to
+ * forbid.
+ */
+function demoteStrandedDoors(tiles) {
+  for (let y = 0; y < H; y++) {
+    for (let x = 0; x < W; x++) {
+      const i = y * W + x;
+      if (tiles[i] !== TILE.DOOR_CLOSED) continue;
+      if (!isThreshold(tiles, x, y)) tiles[i] = TILE.FLOOR;
+    }
   }
 }
 

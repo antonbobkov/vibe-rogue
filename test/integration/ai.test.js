@@ -622,18 +622,18 @@ test('ENM-06: each archetype decision list on the same table of situations @m06 
   }
 });
 
-test('ENM-08: a step is illegal diagonally into or out of a door, and closed doors follow opensDoors @m06 @unit', () => {
-  //  # # # #        The only way from (1,1) to (3,1) is through the door at (2,1); a diagonal
-  //  # T + . #      into or out of it is refused, so the path is the two orthogonal steps.
-  //  # . # . #
-  const rows = ['######', '#T+..#', '#.#..#', '######'];
+test('ENM-08: a diagonal step past a door is legal, and closed doors follow opensDoors @m06 @unit', () => {
+  //  # # # #        ENM-08 no longer refuses a diagonal into or out of a door, so an enemy may
+  //  # T ' . #      cut the corner at the open door on (2,1) in either direction. (A *closed*
+  //  # . # . #      door is a separate matter: it is not walkable, and `opensDoors` decides it.)
+  const rows = ['######', "#T'..#", '#.#..#', '######'];
   const game = fixtureGame(rows, { rng: queueRng([]), enemies: {} });
-  const tiles = game.state.floor.tiles;
 
-  assert.equal(ai.diagonalThroughDoor(tiles, { x: 1, y: 1 }, { x: 2, y: 2 }), false, 'not a door');
-  assert.equal(ai.diagonalThroughDoor(tiles, { x: 1, y: 2 }, { x: 2, y: 1 }), true, 'into the door');
-  assert.equal(ai.diagonalThroughDoor(tiles, { x: 2, y: 1 }, { x: 3, y: 2 }), true, 'out of the door');
-  assert.equal(ai.diagonalThroughDoor(tiles, { x: 2, y: 1 }, { x: 3, y: 1 }), false, 'orthogonal is fine');
+  const free = ai.freeNeighbors({ x: 1, y: 2 }, game.state).map((p) => `${p.x},${p.y}`);
+  assert.ok(free.includes('2,1'), `a diagonal into a door is a legal step, got ${free.join(' ')}`);
+  const out = ai.freeNeighbors({ x: 2, y: 1 }, game.state).map((p) => `${p.x},${p.y}`);
+  assert.ok(out.includes('3,2'), `a diagonal out of a door is a legal step, got ${out.join(' ')}`);
+  assert.equal(ai.diagonalThroughDoor, undefined, 'the rule is removed, not merely unused');
 
   const doored = fixtureGame(['######', '#s+T.#', '######'], {
     rng: queueRng([]),

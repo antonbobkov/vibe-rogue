@@ -2,14 +2,28 @@
 //
 // "full-screen summary per `STY-08`: header line (`TICK WAS BROKEN` / `TICK WOUND DOWN` /
 // `THE KEEPER` / `THE WALKER`), the flavor line, then a two-column table of run statistics, the
-// skill list in order, final equipment, `Journal pages: n/8`, `Seed: xxxx`, and
-// `— any key to return to the title —`. The seed is selectable text (rendered also as a hidden DOM
-// input for copy, `TEC-12`)."
+// skill list in order, final equipment, `Journal pages: n/8`, `Seed: xxxx`, and the footer. The
+// seed is selectable text (rendered also as a hidden DOM input for copy, `TEC-12`)."
+//
+// UI-17 used to dismiss this on *any* key, which meant the keystroke that killed you — the last of
+// a held direction, or anything already in the buffer — threw the screen away before it could be
+// read. It now takes `Esc` or `Enter` only, and ignores everything for `GRACE_MS` after it opens so
+// a buffered press cannot dismiss it either. A click still works, because UI-13 promises the mouse
+// alone is enough to play, but it waits out the same grace period.
 //
 // The labels are SCR-08's, verbatim, from `data/script.js` (D-089).
 
 import { COLS, BG, write, center, fit } from '../render.js';
 import { SCRIPT } from '../../data/script.js';
+
+/**
+ * How long the screen ignores input after it opens (UI-17). Long enough that a keystroke already in
+ * flight when the run ended cannot dismiss the summary, short enough not to feel stuck.
+ */
+export const GRACE_MS = 500;
+
+/** UI-17: the two keys that leave the Death / Victory screen. */
+export const LEAVE_KEYS = Object.freeze(['Escape', 'Enter']);
 
 export const HEADER_ROW = 3;
 export const FLAVOR_ROW = 5;
@@ -62,7 +76,20 @@ export function createSummaryScreen(app, props) {
   // TEC-12: the seed also goes into the hidden input, selected, so Ctrl+C copies it.
   app.offerSeedForCopy(event.summary ? event.summary.seed : '');
 
+  // The grace period is one timer that flips a flag, so `CH.timers()` still reports an idle game
+  // once it has fired (TEC-14) and `leave` cancels it if the player is quicker than it is.
+  let armed = false;
+  let graceTimer = app.later('summaryGrace', GRACE_MS, () => {
+    graceTimer = null;
+    armed = true;
+  });
+
   function leave() {
+    if (!armed) return true; // swallowed: the run only just ended
+    if (graceTimer) {
+      app.clearTimer(graceTimer);
+      graceTimer = null;
+    }
     app.hideSeedInput();
     app.toTitle();
     return true;
@@ -87,12 +114,19 @@ export function createSummaryScreen(app, props) {
       write(buf, 0, FOOTER_ROW, center(SCRIPT.summaryFooter, COLS), 'midGrey', BG, COLS);
     },
 
-    onKey() {
+    /** UI-17: `Esc` or `Enter` only — never "any key". */
+    onKey(ev) {
+      if (!LEAVE_KEYS.includes(ev.key)) return true;
       return leave();
     },
 
     onMouse() {
       return leave();
+    },
+
+    /** For the tests: has the grace period elapsed? */
+    get armed() {
+      return armed;
     },
   };
 }
