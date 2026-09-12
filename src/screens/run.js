@@ -6,7 +6,7 @@
 
 import {
   COLS, ROWS, MAP_W, MAP_H, PANEL_X, PANEL_TEXT_X, PANEL_W, INSPECT_ROW, LOG_ROW, LOG_ROWS,
-  BG, BG_PANEL, drawMap, drawSeparator, put, write, fillRect, twoColumn, fit, pad, box,
+  BG, BG_PANEL, drawMap, drawSeparator, put, write, writeMarkup, fillRect, twoColumn, fit, pad, box,
 } from '../render.js';
 import { idx, chebyshev } from '../grid.js';
 import { TILE } from '../tiles.js';
@@ -95,18 +95,26 @@ export function logRows(lines) {
   return rows.slice(-LOG_ROWS);
 }
 
-/** Greedy wrap at 80 columns; continuation lines are indented two spaces (UI-04). */
+/**
+ * Greedy wrap at 80 columns; continuation lines are indented two spaces (UI-04).
+ *
+ * Widths are *visible* widths: an `*emphasis*` marker is drawn by `writeMarkup` as a colour change
+ * rather than as a character, so it must not consume a column here either. Markers stay attached to
+ * the word they wrap, which is all the re-insertion this needs — unlike `wrapMarkup`, which strips
+ * them and puts them back, and could not account for this wrap's two-space continuation indent.
+ */
 export function wrapLogLine(text) {
-  if (text.length <= COLS) return [text];
+  const vis = (s) => s.split('*').join('').length;
+  if (vis(text) <= COLS) return [text];
   const out = [];
   const words = text.split(' ');
   let line = '';
   let indent = '';
   for (const word of words) {
     const width = COLS - indent.length;
-    if (line.length === 0) {
-      line = word.length > width ? word.slice(0, width) : word;
-      if (word.length > width) {
+    if (vis(line) === 0) {
+      line = vis(word) > width ? word.slice(0, width) : word;
+      if (vis(word) > width) {
         out.push(indent + line);
         line = '';
         indent = '  ';
@@ -120,7 +128,7 @@ export function wrapLogLine(text) {
       }
       continue;
     }
-    if (line.length + 1 + word.length <= width) {
+    if (vis(line) + 1 + vis(word) <= width) {
       line += ` ${word}`;
       continue;
     }
@@ -128,7 +136,7 @@ export function wrapLogLine(text) {
     indent = '  ';
     line = word;
   }
-  if (line.length > 0) out.push(indent + line);
+  if (vis(line) > 0) out.push(indent + line);
   return out;
 }
 
@@ -215,13 +223,19 @@ export function drawInspect(buf, text) {
   write(buf, 0, INSPECT_ROW, fit(text || '', COLS), 'lightGrey', BG_PANEL, COLS);
 }
 
-/** UI-04: rows 25-29, newest at the bottom. */
+/**
+ * UI-04: rows 25-29, newest at the bottom.
+ *
+ * Drawn with `writeMarkup`, so a scripted line carrying `*emphasis*` reads as emphasis rather than
+ * as literal asterisks — `SCR-06`'s Understudy lines are the ones that do. `fillRect` has already
+ * cleared the rows, so no padding width is needed.
+ */
 export function drawLog(buf, state) {
   fillRect(buf, 0, LOG_ROW, COLS, LOG_ROWS, ' ', 'lightGrey', BG);
   const rows = logRows(state.log);
   const first = LOG_ROW + (LOG_ROWS - rows.length);
   for (let i = 0; i < rows.length; i++) {
-    write(buf, 0, first + i, rows[i].text, rows[i].color, BG, COLS);
+    writeMarkup(buf, 0, first + i, rows[i].text, rows[i].color, BG, COLS);
   }
 }
 

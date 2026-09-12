@@ -46,6 +46,12 @@ function floor8(rng) {
 
 const understudyOf = (game) => game.state.floor.enemies.find((e) => e.type === 'The Understudy');
 
+/** SCR-06's lines are text boxes, so a phase threshold stops the loop until one is dismissed. */
+function clearBoxes(game) {
+  let guard = 0;
+  while (game.phase === 'awaitDismiss' && guard++ < 8) game.act({ type: 'dismiss' });
+}
+
 // BST-06's spring is a balance number (it is a failsafe, not a race the player can win), so these
 // tests take it from the data rather than restating it — the rule under test is "2 an action".
 const SPRING_MAX = ENEMIES_BY_NAME['The Understudy'].tension;
@@ -395,7 +401,8 @@ test('ACC-95: opening the antechamber door shows line 1 and wakes the Understudy
     assert.deepEqual(step.events, []);
   }
   const open = game.act({ type: 'move', dx: 1, dy: 0 });
-  assert.deepEqual(texts(open), ['Tick opens the door.']);
+  // SCR-06 line 1 is a box *and* a log line, so a box skipped on a stray key is still recoverable.
+  assert.deepEqual(texts(open), ['Tick opens the door.', SCRIPT.understudy[1]]);
   assert.deepEqual(
     open.events,
     [{ type: 'textbox', id: 'understudy1', text: SCRIPT.understudy[1] }],
@@ -484,6 +491,7 @@ test('ACC-95: Phase 2 Pulse deals 1d6+1 ignoring Plating within 2 and pushes, af
   const boss = understudyOf(game);
   boss.integrity = 49;
   combat.damage(game.ctx, boss, 3, {});
+  clearBoxes(game); // line 2's text box, raised by the Phase 2 transition
   // Drop the four Unfinished so only the Understudy draws from the queue (ERRATIC rolls a d10).
   state.floor.enemies = state.floor.enemies.filter((e) => e.type === 'The Understudy');
   state.tick.x = 50;
@@ -581,6 +589,60 @@ test('ACC-95: the inspect popup shows the Understudy spring (BST-06) @m08', () =
   );
 });
 
+test('ACC-95: all four Understudy lines reach both a text box and the log @m08', () => {
+  // Lines 2 and 3 were log-only, which put the boss's only dialogue during the fight into one row of
+  // a five-row log that combat refills every turn - players finished the fight never having seen
+  // them. They are boxes now, and all four keep a log copy because UI-16 dismisses a box on any key.
+  const game = floor8(queueRng([DROP_ROLL]));
+  const state = game.state;
+  const boss = understudyOf(game);
+
+  // Line 1 came with the entry trigger that `floor8` already fired.
+  assert.ok(texts({ log: state.log }).includes(SCRIPT.understudy[1]), 'line 1 in the log');
+
+  // Line 2, at Integrity 48. Plating 2 comes off the raw amount, so 3 lands 1.
+  boss.integrity = 49;
+  combat.damage(game.ctx, boss, 3, {});
+  assert.equal(boss.phase, 2);
+  assert.ok(state.log.some((l) => l.text === SCRIPT.understudy[2]), 'line 2 in the log');
+  assert.equal(game.phase, 'awaitDismiss', 'line 2 raises a box, so the fight stops to be read');
+  clearBoxes(game);
+
+  // Line 3, at Integrity 24.
+  boss.integrity = 26;
+  combat.damage(game.ctx, boss, 4, {});
+  assert.equal(boss.phase, 3);
+  assert.ok(state.log.some((l) => l.text === SCRIPT.understudy[3]), 'line 3 in the log');
+  assert.equal(game.phase, 'awaitDismiss', 'and line 3 raises a box too');
+  clearBoxes(game);
+});
+
+test('ACC-95: line 3 is earned by the spring as well as by Integrity, and said once @m08', () => {
+  const game = floor8(queueRng([]));
+  const state = game.state;
+  const boss = understudyOf(game);
+
+  // A long fight winds it down without the player having reached Integrity 24.
+  boss.tension = bosses.UNDERSTUDY_SPRING_LOW + bosses.SPRING_COST;
+  assert.equal(boss.phase || 1, 1, 'still Phase 1 by Integrity');
+  game.act({ type: 'wait' });
+  assert.ok(state.log.some((l) => l.text === SCRIPT.understudy[3]), 'the spring earned line 3');
+  assert.equal(boss.saidRunningDown, true);
+  clearBoxes(game);
+
+  // Reaching Integrity 24 afterwards must not repeat it.
+  const before = state.log.filter((l) => l.text === SCRIPT.understudy[3]).length;
+  boss.integrity = 26;
+  combat.damage(game.ctx, boss, 4, {});
+  clearBoxes(game);
+  assert.equal(boss.phase, 3, 'the phase still changes');
+  assert.equal(
+    state.log.filter((l) => l.text === SCRIPT.understudy[3]).length,
+    before,
+    'BST-06: the same line is never said twice',
+  );
+});
+
 test('@unit bosses: the Understudy spring outlasts the fight, so it is a failsafe (BST-06) @m08', () => {
   // BST-06: 125 actions against a 12-35 turn damage kill. At the 1.1.0 value of 100 the two clocks
   // were the same length, so every turn spent not attacking advanced the kill and walking away
@@ -630,7 +692,11 @@ test('ACC-96: the Understudy\'s defeat shows moment 3 and line 4, then thought 3
   state.tick.y = 5;
 
   const kill = game.act({ type: 'move', dx: 1, dy: 0 });
-  assert.deepEqual(texts(kill), ['Tick hits The Understudy for 3.', 'The Understudy breaks.']);
+  // Line 4's box is SCR-05's moment 3 (asserted below); the log carries the line itself, like 1-3.
+  assert.deepEqual(
+    texts(kill),
+    ['Tick hits The Understudy for 3.', 'The Understudy breaks.', SCRIPT.understudy[4]],
+  );
   assert.deepEqual(state.floor.scrap, [], 'no scrap');
   assert.equal(state.tick.xp, 0, 'no XP');
   assert.deepEqual(state.floor.items, [], 'BST-06: dropChance 0 and an empty drop table');

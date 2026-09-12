@@ -135,7 +135,9 @@ export function onDoorOpened(ctx, x, y) {
   if (state.floorNumber !== UNDERSTUDY_FLOOR) return;
   const boss = bosses.triggerEntry(ctx, 'UNDERSTUDY');
   if (!boss) return;
-  ctx.emit({ type: 'textbox', id: 'understudy1', text: SCRIPT.understudy[1] });
+  // Box and log, like the other three (SCR-06): a box dismissed on a key the player was already
+  // pressing is a line they never read, and the log is where they find it again.
+  bosses.speak(ctx, 1);
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -165,6 +167,8 @@ export function onEnemyBroken(ctx, enemy) {
   mark(state, 'moment3');
 
   // SCR-05 moment 3: the first box carries the defeat description and line 4, the second thought 3.
+  // Line 4 already has its box inside moment 3, so it only needs the log copy the other three get.
+  bosses.speak(ctx, 4, { box: false });
   ctx.emit({ type: 'textbox', id: 'moment3a', text: SCRIPT.moments['3a'] });
   ctx.emit({ type: 'textbox', id: 'moment3b', text: SCRIPT.moments['3b'] });
   // UI-17: the Ending choice is one screen — the setup text and the two options (D-071).

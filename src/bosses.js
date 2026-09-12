@@ -91,6 +91,46 @@ export const PULSE_NOISE = 8;
  */
 export const SPRING_COST = 2;
 
+/**
+ * BST-06: the spring at or below which the Understudy says line 3 — "I am running down. So are you."
+ * A third of 250, mirroring the Integrity threshold that says the same line (24 of 72). The line is
+ * about the spring, so it should not depend on the player having done damage: a fight long enough to
+ * wind it most of the way down has earned it whatever Integrity says.
+ */
+export const UNDERSTUDY_SPRING_LOW = 80;
+
+/**
+ * SCR-06's four Understudy lines, each delivered as **both** a text box and a log line.
+ *
+ * Lines 2 and 3 used to be log lines only (BST-06 said "log line 2"), which meant the boss's only
+ * dialogue during the fight arrived as one row in a five-row log that combat is filling every turn:
+ * players finished the fight having seen nothing but the opening and the defeat. They are text boxes
+ * now. The log copy is kept for all four because UI-16 dismisses a text box on any key, and a player
+ * already pressing keys in a fight will skip one without reading it — the log is where they find it
+ * again, and the History screen (`m`) is where it stays.
+ *
+ * @param {object} ctx
+ * @param {number} n which of SCR-06's four lines
+ * @param {{box?: boolean}} [opts] `box: false` where the line already has one — line 4 is carried
+ *        inside SCR-05's moment 3, which `story.js` shows as its own box.
+ */
+export function speak(ctx, n, opts = {}) {
+  const text = SCRIPT.understudy[n];
+  if (!text) return;
+  if (opts.box !== false) ctx.emit({ type: 'textbox', id: `understudy${n}`, text });
+  log.push(ctx.lines, text, log.LOG_COLORS.scripted);
+}
+
+/**
+ * Line 3, said once however it is earned: BST-06 reaches it at Integrity 24, and a long fight
+ * reaches it at `UNDERSTUDY_SPRING_LOW` spring. Whichever comes first speaks; the other stays quiet.
+ */
+function sayRunningDown(ctx, enemy) {
+  if (enemy.saidRunningDown === true) return;
+  enemy.saidRunningDown = true;
+  speak(ctx, 3);
+}
+
 /** The `{X}` names BST-05 and BST-06 give their two area specials, for SCR-10's damage line. */
 const SPECIAL_NAMES = Object.freeze({ VENT: 'Vent', PULSE: 'Pulse' });
 
@@ -189,12 +229,12 @@ function enterPhase(ctx, enemy, phase) {
   if (script === 'UNDERSTUDY' && phase === 2) {
     // "on transition: log line 2 (SCR-06), then summon two The Unfinished on marker tiles 1 and 2
     // (or the nearest free tiles by Chebyshev, reading order), Active, and `n` continues."
-    log.push(ctx.lines, SCRIPT.understudy[2], log.LOG_COLORS.scripted);
+    speak(ctx, 2);
     summonAtMarkers(ctx, enemy);
     return;
   }
   if (script === 'UNDERSTUDY' && phase === 3) {
-    log.push(ctx.lines, SCRIPT.understudy[3], log.LOG_COLORS.scripted);
+    sayRunningDown(ctx, enemy);
     enemy.speedOverride = 'SLOW';
     enemy.windingUp = false;
     enemy.pulsingUp = false;
@@ -325,6 +365,9 @@ function understudy(enemy, state, ctx) {
     combat.breakActor(ctx, enemy);
     return ai.WAIT;
   }
+
+  // "I am running down. So are you." — earned by the spring as readily as by Integrity (BST-06).
+  if (enemy.tension <= UNDERSTUDY_SPRING_LOW) sayRunningDown(ctx, enemy);
 
   const n = beat(enemy);
   const target = ai.targetOf(state, enemy);

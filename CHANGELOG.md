@@ -109,9 +109,27 @@ rule was `BST-06` working, but the tuning made it the wrong rule.
   it is what `STY-02` always meant: the tower winding down while you fight, and an out for a player
   who arrives unable to out-damage it at all — never a faster way to win than fighting. A new test
   fails if the number ever drifts back toward the damage clock.
+- **Line 3 is earned by the spring as well as by Integrity** (`BST-06`). *"I am running down. So are
+  you."* is a line about the spring, so it no longer waits on the player having done damage: it is
+  said the first time Integrity reaches 24 **or** the spring reaches 80 — a third of 250, mirroring
+  24 of 72 — and only once, whichever comes first. The spring trigger speaks only; the phase machine
+  is still driven by Integrity, so a boss at full Integrity does not turn SLOW because it is low on
+  spring.
 
 ### Fixed
 
+- **The Understudy's two mid-fight lines were effectively invisible** (`SCR-06`, `BST-06`). Lines 2
+  and 3 were specified as *log* lines, so the boss's only dialogue during the fight arrived as one
+  row in a five-row log that combat refills every turn — a player could finish the fight having seen
+  the opening box and the defeat box and nothing between them. All four lines are now a **text box
+  and a log line**: the box is how you meet them, and the log copy survives a box dismissed on a key
+  you were already pressing (`UI-16` dismisses on any key), with the Message History screen (`m`) as
+  the permanent record.
+- **The log printed `*emphasis*` markers literally.** `D-023` keeps the asterisks inside the script
+  strings and the text-box renderer turns a `*…*` span violet, but the log and the Message History
+  screen drew them with the plain writer — so line 3 read *"…what you would do with a heart, \*first
+  attempt\*."* Both now render markup, and log wrapping measures the visible width so a marker costs
+  no column.
 - **`ACC-95`'s `Spring n/250` line was implemented nowhere.** It is specified, and it is the only
   clock in the fight the player does not control, so without it the boss winding itself down read as
   arbitrary rather than as a mechanic. The Understudy's inspect popup now carries it, directly under

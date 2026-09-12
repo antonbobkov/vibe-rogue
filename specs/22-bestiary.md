@@ -151,7 +151,7 @@ Descriptions (≤ 25 words, in the inspect popup):
      Wait.
   2. Else if adjacent to Tick and `n mod 4 == 3` → `windingUp = true`. Log: "The Understudy tightens."
   3. Else → CHASER.
-- **Phase 2 (Integrity 25–48):** on transition: log line 2 (`SCR-06`), then summon two **The Unfinished**
+- **Phase 2 (Integrity 25–48):** on transition: **line 2** (`SCR-06`), then summon two **The Unfinished**
   on marker tiles `1` and `2` (or the nearest free tiles by Chebyshev, reading order), Active, and
   `n` continues. Script:
   1. If `pulsingUp` → **Pulse**: every actor within Chebyshev 2 takes `1d6+1` ignoring Plating and is
@@ -160,8 +160,20 @@ Descriptions (≤ 25 words, in the inspect popup):
   3. Else → Phase 1 lines 1–3. Because adjacency implies "within 2", line 2 above always fires first on
      `n mod 4 == 3`: in Phase 2 the Understudy Overwinds only to complete a wind-up carried over from
      Phase 1.
-- **Phase 3 (Integrity ≤ 24):** on transition: log line 3 (`SCR-06`); speed becomes SLOW permanently;
+- **Phase 3 (Integrity ≤ 24):** on transition: **line 3** (`SCR-06`); speed becomes SLOW permanently;
   all `windingUp`/`pulsingUp` cleared. Script: CHASER only. No specials.
+- **Line 3 is also earned by the spring.** "I am running down. So are you." is a line about the
+  spring, so it must not depend on the player having done damage: it is said the first time *either*
+  Integrity reaches 24 **or** the spring reaches **80** (a third of 250, mirroring 24 of 72). It is
+  said **once** — whichever threshold comes first speaks, and the other stays quiet. The spring
+  trigger speaks only; the phase machine is still driven by Integrity alone, so a boss at full
+  Integrity does not turn SLOW because its spring is low.
+- **All four lines are a text box *and* a log line.** Lines 2 and 3 were log lines only, which put the
+  boss's only dialogue during the fight into one row of a five-row log that combat refills every turn
+  — players finished the fight having seen the opening and the defeat and nothing between. Every line
+  also keeps its log copy, because `UI-16` dismisses a text box on any key and a player already
+  pressing keys in a fight will skip one unread; the log, and the Message History screen, is where
+  they find it again. Line 4's box is the one `SCR-05` moment 3 already shows.
 - **On defeat** (Integrity ≤ 0 or spring 0): no scrap, no XP. Text box with the defeat description and
   line 4, then thought 3, then the ending choice (`UI-19`). Journal page 8 is shown within the ending
   sequence (`SCR-07`) and marked found.
