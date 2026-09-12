@@ -9,7 +9,7 @@ import {
   INSPECT_ROW, LOG_ROW, LOG_ROWS, MAP_W, MAP_H, REMEMBERED_FACTOR,
   FLASH_TICK_BG, FLASH_ENEMY_BG, FLASH_MS, GLYPH_COLORS,
   createBuffer, clearBuffer, put, setBg, write, fillRect, invert, invertRow, box,
-  fit, pad, twoColumn, center, wrap, wrapMarkup, writeMarkup, terrainStyle, itemStyle, scrapStyle,
+  fit, pad, twoColumn, center, wrap, wrapMarkup, writeMarkup, emphasisColor, terrainStyle, itemStyle, scrapStyle,
   metricsFor, fontFor, pileAt, drawSeparator, tileName,
 } from '../../src/render.js';
 import { TILE } from '../../src/tiles.js';
@@ -160,6 +160,26 @@ test('@m10 @unit render: D-023 emphasis markers wrap with the text and are not d
   assert.equal(buf[0].slice(0, 3).map((c) => c.glyph).join(''), 'abc');
   assert.equal(buf[0][1].fg, '#c0a0ff');
   assert.equal(buf[0][0].fg, '#c8c8c8');
+
+  // UI-04: a scripted log line is already violet, so its emphasis has to lift to something else or
+  // it is not emphasis at all — which is what it was until the log learned to render markup.
+  const onViolet = createBuffer();
+  writeMarkup(onViolet, 0, 0, 'a*b*c', 'violet', BG, 10);
+  assert.equal(onViolet[0][0].fg, '#c0a0ff', 'the surrounding text stays violet');
+  assert.equal(onViolet[0][1].fg, '#ffffff', 'and the emphasis lifts to white');
+  assert.equal(emphasisColor('lightGrey'), 'violet');
+  assert.equal(emphasisColor('violet'), 'white');
+
+  // A span that survives the wrap is closed and reopened, because `writeMarkup` runs once per line
+  // and keeps no state: without this the continuation renders inverted — the emphasised words plain
+  // and whatever follows the stray marker emphasised instead.
+  assert.deepEqual(
+    wrapMarkup('one two three *four five six seven eight* nine', 14),
+    ['one two three', '*four five six*', '*seven eight*', 'nine'],
+  );
+  for (const wrapped of wrapMarkup('a *b c d e f g h i j* k', 6)) {
+    assert.equal((wrapped.match(/\*/g) || []).length % 2, 0, `unbalanced line: ${wrapped}`);
+  }
 });
 
 test('@m10 @unit render: UI-07 gives every terrain and item its glyph and color', () => {

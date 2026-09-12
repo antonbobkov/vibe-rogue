@@ -263,6 +263,7 @@ export function wrap(text, width) {
  * @returns {number} the number of rows written
  */
 export function writeMarkup(buf, x, y, line, fg, bg, width) {
+  const lift = emphasisColor(fg);
   let cx = x;
   let emphasis = false;
   for (let i = 0; i < line.length && cx < x + width; i++) {
@@ -271,10 +272,43 @@ export function writeMarkup(buf, x, y, line, fg, bg, width) {
       emphasis = !emphasis;
       continue;
     }
-    put(buf, cx, y, ch, emphasis ? 'violet' : fg, bg);
+    put(buf, cx, y, ch, emphasis ? lift : fg, bg);
     cx++;
   }
   return cx - x;
+}
+
+/** D-023: an `*emphasis*` span renders in `violet` against ordinary text. */
+export const EMPHASIS = 'violet';
+
+/**
+ * ...and in `white` when the surrounding text is *already* violet, which a scripted line in the
+ * message log is (`UI-04`). Emphasis has to be visible as emphasis; violet-on-violet is not.
+ *
+ * Colors arrive here as palette names (`LOG_COLORS`, and every `write` call site), so this compares
+ * names rather than resolving them.
+ */
+export const EMPHASIS_ON_VIOLET = 'white';
+
+export function emphasisColor(fg) {
+  return fg === EMPHASIS ? EMPHASIS_ON_VIOLET : EMPHASIS;
+}
+
+/**
+ * Close an open `*emphasis*` span at the end of each line and reopen it at the start of the next.
+ *
+ * `writeMarkup` draws one line at a time and carries no state between calls, so a span that survives
+ * a wrap arrives as one line with an unmatched opening marker and the next with an unmatched closing
+ * one — and that next line renders *inverted*: the emphasised words plain, and whatever follows the
+ * stray marker emphasised instead. Balancing each line is what lets the renderer stay stateless.
+ */
+export function balanceMarkup(lines) {
+  let open = false;
+  return lines.map((line) => {
+    const opened = open;
+    for (const ch of line) if (ch === '*') open = !open;
+    return `${opened ? '*' : ''}${line}${open ? '*' : ''}`;
+  });
 }
 
 /** `wrap`, with the `*emphasis*` markers removed from the width calculation (D-023). */
@@ -311,7 +345,7 @@ export function wrapMarkup(text, width) {
     consumed += 1;
     out.push(rebuilt);
   }
-  return out;
+  return balanceMarkup(out);
 }
 
 // ---------------------------------------------------------------------------------------------

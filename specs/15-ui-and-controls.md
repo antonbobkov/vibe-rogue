@@ -76,10 +76,11 @@ Bars: fill cells `#` in the bar color, empty cells ` `; fill count = `round(17 �
 - Message colors (UI-08): default `#c8c8c8`; damage to Tick `#ff6060`; damage by Tick `#d0d0d0` (silver);
   Tension warnings `#ffd75f`; level-up and item pickup `#80ff80`; scripted/boss lines `#c0a0ff`.
 - Identical consecutive messages are merged as "*message* (×n)".
-- A line carrying `D-023`'s `*emphasis*` markers renders the span in `violet` and **never draws the
+- A line carrying `D-023`'s `*emphasis*` markers renders the span emphasised and **never draws the
   markers themselves** — the log and the Message History screen render markup exactly as a text box
   does. Wrapping measures the visible width, so a marker costs no column. `SCR-06`'s Understudy lines
-  are the ones that carry markup into the log.
+  are the ones that carry markup into the log, and a scripted line is already `violet`, so its
+  emphasis lifts to `white` instead (`D-023`).
 
 ## UI-05 Inspect line (row 24)
 

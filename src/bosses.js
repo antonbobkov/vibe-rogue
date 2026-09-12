@@ -121,16 +121,6 @@ export function speak(ctx, n, opts = {}) {
   log.push(ctx.lines, text, log.LOG_COLORS.scripted);
 }
 
-/**
- * Line 3, said once however it is earned: BST-06 reaches it at Integrity 24, and a long fight
- * reaches it at `UNDERSTUDY_SPRING_LOW` spring. Whichever comes first speaks; the other stays quiet.
- */
-function sayRunningDown(ctx, enemy) {
-  if (enemy.saidRunningDown === true) return;
-  enemy.saidRunningDown = true;
-  speak(ctx, 3);
-}
-
 /** The `{X}` names BST-05 and BST-06 give their two area specials, for SCR-10's damage line. */
 const SPECIAL_NAMES = Object.freeze({ VENT: 'Vent', PULSE: 'Pulse' });
 
@@ -204,7 +194,15 @@ export function onDamaged(ctx, enemy) {
   const script = bossScriptOf(enemy);
   if (!script) return;
   if (enemy.integrity <= 0) return;
-  const target = phaseFor(script, enemy.integrity);
+  advanceTo(ctx, enemy, phaseFor(script, enemy.integrity));
+}
+
+/**
+ * Walk a boss up to `target`, running each phase it passes through (D-073). A phase's effects are
+ * never skipped, so a boss that reaches Phase 3 without having crossed 48 still gets Phase 2's
+ * summons — and `enemy.phase` only ever increases, which is what makes each transition happen once.
+ */
+function advanceTo(ctx, enemy, target) {
   while ((enemy.phase || 1) < target) enterPhase(ctx, enemy, (enemy.phase || 1) + 1);
 }
 
@@ -234,7 +232,7 @@ function enterPhase(ctx, enemy, phase) {
     return;
   }
   if (script === 'UNDERSTUDY' && phase === 3) {
-    sayRunningDown(ctx, enemy);
+    speak(ctx, 3);
     enemy.speedOverride = 'SLOW';
     enemy.windingUp = false;
     enemy.pulsingUp = false;
@@ -366,8 +364,11 @@ function understudy(enemy, state, ctx) {
     return ai.WAIT;
   }
 
-  // "I am running down. So are you." — earned by the spring as readily as by Integrity (BST-06).
-  if (enemy.tension <= UNDERSTUDY_SPRING_LOW) sayRunningDown(ctx, enemy);
+  // BST-06: Phase 3 is reached by the spring as readily as by Integrity. "I am running down. So are
+  // you." is a line about the spring, and so is the failing it describes — a machine this far down
+  // its mainspring slows and stops reaching for its specials whatever its Integrity says. The
+  // transition runs in full: line 3's text box, SLOW, and the wind-ups dropped.
+  if (enemy.tension <= UNDERSTUDY_SPRING_LOW) advanceTo(ctx, enemy, 3);
 
   const n = beat(enemy);
   const target = ai.targetOf(state, enemy);

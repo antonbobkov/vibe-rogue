@@ -617,30 +617,34 @@ test('ACC-95: all four Understudy lines reach both a text box and the log @m08',
   clearBoxes(game);
 });
 
-test('ACC-95: line 3 is earned by the spring as well as by Integrity, and said once @m08', () => {
+test('ACC-95: the spring reaches Phase 3 as readily as Integrity, once @m08', () => {
   const game = floor8(queueRng([]));
   const state = game.state;
   const boss = understudyOf(game);
+  const saidLine3 = () => state.log.filter((l) => l.text === SCRIPT.understudy[3]).length;
 
-  // A long fight winds it down without the player having reached Integrity 24.
+  // A long fight winds it down without the player having reached Integrity 24. Phase 2's summons
+  // are not skipped on the way (D-073), so the walk runs both transitions.
+  boss.integrity = 72;
   boss.tension = bosses.UNDERSTUDY_SPRING_LOW + bosses.SPRING_COST;
   assert.equal(boss.phase || 1, 1, 'still Phase 1 by Integrity');
+
   game.act({ type: 'wait' });
-  assert.ok(state.log.some((l) => l.text === SCRIPT.understudy[3]), 'the spring earned line 3');
-  assert.equal(boss.saidRunningDown, true);
+  assert.equal(boss.phase, 3, 'BST-06: the spring drives the whole transition, not just the line');
+  assert.equal(speedOf(state, boss), 'SLOW', 'Phase 3 speed, at full Integrity');
+  assert.equal(boss.windingUp, false, 'Phase 3 drops a pending wind-up');
+  assert.equal(boss.pulsingUp, false);
+  assert.equal(saidLine3(), 1, 'the spring earned line 3');
+  assert.equal(game.phase, 'awaitDismiss', 'and it arrives as a text box');
+  assert.equal(saidLine3(), 1);
   clearBoxes(game);
 
-  // Reaching Integrity 24 afterwards must not repeat it.
-  const before = state.log.filter((l) => l.text === SCRIPT.understudy[3]).length;
+  // Integrity falling past 24 afterwards must not repeat anything: the phase only ever increases.
   boss.integrity = 26;
   combat.damage(game.ctx, boss, 4, {});
   clearBoxes(game);
-  assert.equal(boss.phase, 3, 'the phase still changes');
-  assert.equal(
-    state.log.filter((l) => l.text === SCRIPT.understudy[3]).length,
-    before,
-    'BST-06: the same line is never said twice',
-  );
+  assert.equal(boss.phase, 3);
+  assert.equal(saidLine3(), 1, 'BST-06: the same line is never said twice');
 });
 
 test('@unit bosses: the Understudy spring outlasts the fight, so it is a failsafe (BST-06) @m08', () => {

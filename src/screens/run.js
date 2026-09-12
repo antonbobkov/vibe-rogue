@@ -6,7 +6,7 @@
 
 import {
   COLS, ROWS, MAP_W, MAP_H, PANEL_X, PANEL_TEXT_X, PANEL_W, INSPECT_ROW, LOG_ROW, LOG_ROWS,
-  BG, BG_PANEL, drawMap, drawSeparator, put, write, writeMarkup, fillRect, twoColumn, fit, pad, box,
+  BG, BG_PANEL, drawMap, drawSeparator, put, write, writeMarkup, balanceMarkup, fillRect, twoColumn, fit, pad, box,
 } from '../render.js';
 import { idx, chebyshev } from '../grid.js';
 import { TILE } from '../tiles.js';
@@ -137,7 +137,9 @@ export function wrapLogLine(text) {
     line = word;
   }
   if (vis(line) > 0) out.push(indent + line);
-  return out;
+  // A span that survives the wrap has to be closed and reopened, or `writeMarkup` — which is called
+  // once per line and keeps no state — renders the continuation inverted.
+  return balanceMarkup(out);
 }
 
 // ---------------------------------------------------------------------------------------------

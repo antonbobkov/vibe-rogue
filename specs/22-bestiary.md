@@ -162,12 +162,14 @@ Descriptions (≤ 25 words, in the inspect popup):
      Phase 1.
 - **Phase 3 (Integrity ≤ 24):** on transition: **line 3** (`SCR-06`); speed becomes SLOW permanently;
   all `windingUp`/`pulsingUp` cleared. Script: CHASER only. No specials.
-- **Line 3 is also earned by the spring.** "I am running down. So are you." is a line about the
-  spring, so it must not depend on the player having done damage: it is said the first time *either*
-  Integrity reaches 24 **or** the spring reaches **80** (a third of 250, mirroring 24 of 72). It is
-  said **once** — whichever threshold comes first speaks, and the other stays quiet. The spring
-  trigger speaks only; the phase machine is still driven by Integrity alone, so a boss at full
-  Integrity does not turn SLOW because its spring is low.
+- **Phase 3 is also reached by the spring.** "I am running down. So are you." is a line about the
+  spring, and so is the failing it describes: a machine this far down its mainspring slows and stops
+  reaching for its specials whatever its Integrity says. Phase 3 is therefore entered the first time
+  *either* Integrity reaches 24 **or** the spring reaches **80** (a third of 250, mirroring 24 of
+  72), and the transition runs in **full** either way — line 3, SLOW, wind-ups dropped. Phases are
+  never skipped on the way (`D-073`), so a boss that reaches the spring threshold while still in
+  Phase 1 runs Phase 2 first, summons and all. `enemy.phase` only ever increases, which is what makes
+  each transition, and each line, happen exactly once.
 - **All four lines are a text box *and* a log line.** Lines 2 and 3 were log lines only, which put the
   boss's only dialogue during the fight into one row of a five-row log that combat refills every turn
   — players finished the fight having seen the opening and the defeat and nothing between. Every line

@@ -109,12 +109,13 @@ rule was `BST-06` working, but the tuning made it the wrong rule.
   it is what `STY-02` always meant: the tower winding down while you fight, and an out for a player
   who arrives unable to out-damage it at all — never a faster way to win than fighting. A new test
   fails if the number ever drifts back toward the damage clock.
-- **Line 3 is earned by the spring as well as by Integrity** (`BST-06`). *"I am running down. So are
-  you."* is a line about the spring, so it no longer waits on the player having done damage: it is
-  said the first time Integrity reaches 24 **or** the spring reaches 80 — a third of 250, mirroring
-  24 of 72 — and only once, whichever comes first. The spring trigger speaks only; the phase machine
-  is still driven by Integrity, so a boss at full Integrity does not turn SLOW because it is low on
-  spring.
+- **Phase 3 is reached by the spring as well as by Integrity** (`BST-06`). *"I am running down. So
+  are you."* is a line about the spring, and so is the failing it describes — a machine this far down
+  its mainspring slows and stops reaching for its specials whatever its Integrity says. Phase 3 now
+  begins the first time Integrity reaches 24 **or** the spring reaches 80 (a third of 250, mirroring
+  24 of 72), running in full either way: line 3, SLOW, wind-ups dropped. Phases are never skipped on
+  the way (`D-073`), and `enemy.phase` only ever increases, so each transition and each line happens
+  exactly once.
 
 ### Fixed
 
@@ -130,6 +131,14 @@ rule was `BST-06` working, but the tuning made it the wrong rule.
   screen drew them with the plain writer — so line 3 read *"…what you would do with a heart, \*first
   attempt\*."* Both now render markup, and log wrapping measures the visible width so a marker costs
   no column.
+- **Emphasis inside an already-violet line was invisible.** A scripted log line is violet and so was
+  its emphasis, so the span it marked read as ordinary text. Emphasis now lifts to `white` when the
+  surrounding text is violet, and stays violet everywhere else.
+- **An emphasis span that survived a line wrap rendered inverted** — a pre-existing bug in the text
+  box, found while checking the log. The renderer draws one line at a time and keeps no state, so a
+  wrapped span arrived as one line with an unmatched opening marker and the next with an unmatched
+  closing one: the emphasised words came out plain and everything after the stray marker came out
+  emphasised. Both wrappers now close an open span at the end of a line and reopen it on the next.
 - **`ACC-95`'s `Spring n/250` line was implemented nowhere.** It is specified, and it is the only
   clock in the fight the player does not control, so without it the boss winding itself down read as
   arbitrary rather than as a mechanic. The Understudy's inspect popup now carries it, directly under
