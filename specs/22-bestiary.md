@@ -132,9 +132,19 @@ Descriptions (≤ 25 words, in the inspect popup):
 - **Placement:** the `U` tile of the floor 8 map (`FLR-09`). Entry trigger = Tick opens the door at the
   antechamber (the `+` on the map). At that moment: text box with line 1 (`SCR-06`), then the
   Understudy is Active with `lastKnown = Tick's tile`.
-- **Its own spring:** the Understudy has `tension = 100`, shown in its inspect popup as `Spring n/100`.
-  Every action it takes costs 2. If it reaches 0, the Understudy is **defeated** exactly as if broken
-  (`STY-02`: it is winding down as you fight it).
+- **Its own spring:** the Understudy has `tension = 250`, shown in its inspect popup as
+  `Spring n/250` — the line is required, not optional: it is the one clock in the fight the player
+  does not control, and without it the boss's defeat reads as arbitrary. Every action it takes costs
+  2. If it reaches 0, the Understudy is **defeated** exactly as if broken (`STY-02`: it is winding
+  down as you fight it).
+
+  **The spring is a failsafe, not a race.** 125 actions is deliberately far longer than the fight: a
+  geared Tick breaks 72 Integrity through Plating 2 in 12–35 turns. It was 100 (50 actions) in 1.1.0,
+  which made the two clocks the same length — so every turn the player spent *not* attacking (mending,
+  repositioning, clearing the summoned Unfinished) advanced the kill just as much as attacking did,
+  and walking away finished the boss. Any future change to this number must keep it well clear of the
+  damage clock, so that the spring only ever decides the fight for a player who cannot out-damage it
+  at all.
 - **Phase 1 (Integrity > 48):**
   1. If `windingUp` and Tick adjacent → **Overwind**: melee attack rolling `2d4` twice (sum), accuracy +15.
      Log: "The Understudy's arm unwinds all at once." Clear `windingUp`. If Tick not adjacent, clear and

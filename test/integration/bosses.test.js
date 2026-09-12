@@ -15,7 +15,9 @@ import { generateFloor, loadFixedFloor } from '../../src/gen.js';
 import { speedOf, cappedDuration, BOSS_STATUS_CAPS } from '../../src/actors.js';
 import { queueRng } from '../../src/rng.js';
 import { SCRIPT } from '../../data/script.js';
+import { ENEMIES_BY_NAME } from '../../data/enemies.js';
 import { fixtureGame, floorFromAscii, d100, die, DROP_ROLL } from '../fixtures/maps.js';
+import { enemyPopup } from '../../src/screens/inspect.js';
 
 const WIDTH = 60;
 
@@ -43,6 +45,10 @@ function floor8(rng) {
 }
 
 const understudyOf = (game) => game.state.floor.enemies.find((e) => e.type === 'The Understudy');
+
+// BST-06's spring is a balance number (it is a failsafe, not a race the player can win), so these
+// tests take it from the data rather than restating it — the rule under test is "2 an action".
+const SPRING_MAX = ENEMIES_BY_NAME['The Understudy'].tension;
 
 // ---------------------------------------------------------------------------------------------
 // BST-03 — the framework
@@ -382,7 +388,7 @@ test('ACC-95: opening the antechamber door shows line 1 and wakes the Understudy
   const boss = understudyOf(game);
   assert.deepEqual({ x: boss.x, y: boss.y }, { x: 51, y: 5 }, 'FLR-09: the `U` tile');
   assert.equal(boss.state, 'DORMANT');
-  assert.equal(boss.tension, 100, 'BST-06: its own spring starts at 100');
+  assert.equal(boss.tension, SPRING_MAX, "BST-06: its own spring starts at the type's `tension`");
 
   for (let i = 0; i < 5; i++) {
     const step = game.act({ type: 'move', dx: 1, dy: 0 });
@@ -428,7 +434,7 @@ test('ACC-95: Phase 1 Overwind fires on the action after the fourth, and the spr
   );
   assert.equal(boss.windingUp, false);
   assert.equal(state.tick.integrity, 24);
-  assert.equal(boss.tension, 90, 'BST-06: five actions at 2 each');
+  assert.equal(boss.tension, SPRING_MAX - 5 * bosses.SPRING_COST, 'BST-06: five actions at 2 each');
   assert.equal(bosses.OVERWIND_DICE, '4d4');
   assert.equal(bosses.OVERWIND_ACCURACY, 15);
 });
@@ -546,6 +552,51 @@ test('ACC-95: at Integrity 24 the Understudy speaks line 3, turns SLOW, and drop
     assert.equal(other.windingUp, false, `turn ${t + 1}: no wind-up in Phase 3`);
     assert.equal(other.pulsingUp, false, `turn ${t + 1}: no pulse in Phase 3`);
   }
+});
+
+test('ACC-95: the inspect popup shows the Understudy spring (BST-06) @m08', () => {
+  // The rule was specified from the start and the line was written nowhere, so the one clock in the
+  // fight the player does not control was invisible — which is why the boss winding itself down read
+  // as a bug rather than as the mechanic it is.
+  const game = floor8(queueRng([]));
+  const boss = understudyOf(game);
+  const lines = enemyPopup(game, boss).lines;
+  assert.ok(lines.includes(`Spring ${SPRING_MAX}/${SPRING_MAX}`), `no Spring line: ${lines.join(' | ')}`);
+
+  boss.tension = SPRING_MAX - 40;
+  assert.ok(
+    enemyPopup(game, boss).lines.includes(`Spring ${SPRING_MAX - 40}/${SPRING_MAX}`),
+    'the line tracks the live value',
+  );
+
+  // No other enemy has a spring, so no other popup may grow a Spring row.
+  const unfinished = createGame({
+    seedString: 'SPRING',
+    intro: false,
+    floor: floorFromAscii(['#####', '#T.u#', '#####'], { enemies: { u: { type: 'The Unfinished' } } }),
+  });
+  assert.ok(
+    !enemyPopup(unfinished, unfinished.state.floor.enemies[0]).lines.some((l) => l.startsWith('Spring')),
+    'only the Understudy has a spring of its own',
+  );
+});
+
+test('@unit bosses: the Understudy spring outlasts the fight, so it is a failsafe (BST-06) @m08', () => {
+  // BST-06: 125 actions against a 12-35 turn damage kill. At the 1.1.0 value of 100 the two clocks
+  // were the same length, so every turn spent not attacking advanced the kill and walking away
+  // finished the boss. If this ever drops back near the damage clock, that returns.
+  const actionsToSelfDefeat = SPRING_MAX / bosses.SPRING_COST;
+  assert.ok(
+    actionsToSelfDefeat >= 100,
+    `${actionsToSelfDefeat} actions is close enough to a real fight that time alone can win it`,
+  );
+
+  // And it still is a failsafe: a boss that has spent its spring is defeated, not stuck.
+  const game = floor8(queueRng([DROP_ROLL]));
+  const boss = understudyOf(game);
+  boss.tension = bosses.SPRING_COST;
+  game.act({ type: 'wait' });
+  assert.ok(!game.state.floor.enemies.includes(boss), 'the failsafe still resolves the fight');
 });
 
 test('@unit bosses: the Understudy is defeated when its own spring reaches 0 (BST-06) @m08', () => {

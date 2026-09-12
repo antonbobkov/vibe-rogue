@@ -330,13 +330,21 @@ export function enemyPopup(game, enemy) {
   const tuning = game.state.tuning || TUNING;
   const lines = [
     `Integrity ${enemy.integrity}/${enemy.integrityMax}`,
+  ];
+  // BST-06 / ACC-95: the Understudy is the one actor besides Tick with a spring of its own, and it
+  // is defeated if it runs out. The rule was specified and the line was never written, so the only
+  // clock in the fight the player does not control was invisible.
+  if (Number.isInteger(enemy.tension) && Number.isInteger(type.tension)) {
+    lines.push(`Spring ${enemy.tension}/${type.tension}`);
+  }
+  lines.push(
     `Hits you ${hitChanceVsTick(game, enemy)}%`,
     `Damage ${dmg.min}${EN_DASH}${dmg.max} after your plating`,
     `Plating ${type.plating}`,
     `Speed ${speedOf(game.state, enemy).toLowerCase()}`,
     `State ${enemyStateText(enemy)}`,
     `Statuses ${statuses.length > 0 ? statuses.join(', ') : '—'}`,
-  ];
+  );
   // ENM-12 (DIF-08): the popup spells out exactly what Overwound costs the player.
   if (enemy.elite === true) {
     const percent = Math.round((tuning.eliteIntegrityMult - 1) * 100);

@@ -77,7 +77,18 @@ export const OVERWIND_ACCURACY = 15;
 export const PULSE_RADIUS = 2;
 export const PULSE_DICE = '1d6+1';
 export const PULSE_NOISE = 8;
-/** BST-06: the Understudy's own spring starts at 100 and every action it takes costs 2. */
+/**
+ * BST-06: the Understudy's own spring starts at `tension` (250) and every action it takes costs 2,
+ * so it winds itself down in 125 actions.
+ *
+ * That number is deliberately far longer than the fight. A geared Tick breaks 72 Integrity through
+ * Plating 2 in 12-35 turns, so at the original 100 spring — 50 actions — the two clocks were the
+ * same length, and every turn the player spent *not* attacking (mending, repositioning, clearing
+ * the two summoned Unfinished) still advanced the kill. Walking away finished the boss, which read
+ * as a bug even though it was this rule working. At 125 actions the spring is what `STY-02` always
+ * meant it to be: the tower winding down while you fight, and a failsafe for a player who arrives
+ * unable to out-damage it — never a faster way to win than fighting.
+ */
 export const SPRING_COST = 2;
 
 /** The `{X}` names BST-05 and BST-06 give their two area specials, for SCR-10's damage line. */

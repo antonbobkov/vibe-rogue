@@ -22,6 +22,7 @@ import * as combat from '../../src/combat.js';
 import { TILE, walkable } from '../../src/tiles.js';
 import { floorFromAscii } from '../fixtures/maps.js';
 import { SCRIPT } from '../../data/script.js';
+import { ENEMIES_BY_NAME } from '../../data/enemies.js';
 
 const WIDTH = 60;
 const row = (s) => s.padEnd(WIDTH, '#').slice(0, WIDTH);
@@ -378,7 +379,8 @@ test('ACC-02: a restore mid boss fight keeps the BST-06 script running identical
   assert.ok(boss, 'the Understudy must survive the script, or the test proves nothing');
   assert.equal(boss.phase, 2, 'BST-06: the fight was still in Phase 2');
   assert.ok(boss.bossActions > 5, `the boss must have acted; bossActions ${boss.bossActions}`);
-  assert.ok(boss.tension < 100 && boss.tension > 0, `BST-06's spring must be part-spent; ${boss.tension}`);
+  const springMax = ENEMIES_BY_NAME['The Understudy'].tension;
+  assert.ok(boss.tension < springMax && boss.tension > 0, `BST-06's spring must be part-spent; ${boss.tension}`);
   assert.equal(
     restored.state.floor.enemies.filter((e) => e.summonedBy === boss.id).length,
     2,

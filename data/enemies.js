@@ -364,7 +364,7 @@ export const ENEMIES = Object.freeze([
     perception: 10,
     opensDoors: 'YES',
     immunities: Object.freeze(['Slowed']),
-    tension: 100,
+    tension: 250,
     xp: 0,
     dropChance: 0,
     dropTable: Object.freeze([]),

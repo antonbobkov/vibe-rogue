@@ -93,10 +93,29 @@ were invisible to the test suite because nothing asserted the thing that was wro
   `state.journal.selected`, so reopening returns to the page you were reading — and **finding a page
   moves the cursor to it**, so the Journal opens on the page just picked up.
 
-Not a defect, and deliberately left alone: **the Understudy defeating itself** while the player walks
-away is `BST-06` working — it has `tension = 100`, every action costs 2, and at 0 it is defeated
-exactly as if broken, which is about 50 of its actions. `ACC-95` also asks for `Spring n/100` in its
-inspect popup and that line is implemented nowhere; it stays an open spec gap.
+---
+
+**The Understudy's spring.** Reported as "I walked away to explore the room and the boss died". The
+rule was `BST-06` working, but the tuning made it the wrong rule.
+
+### Changed
+
+- **The Understudy's spring is a failsafe again, not a race** (`BST-06`). `tension` 100 → **250**, so
+  it winds itself down in 125 actions rather than 50. Measured, a geared Tick breaks its 72 Integrity
+  through Plating 2 in **12–35 turns** — so at 50 actions the two clocks were the same length, and
+  every turn the player spent *not* attacking (mending, repositioning, clearing the two summoned
+  Unfinished) advanced the kill exactly as much as attacking did. Time was dealing damage on the
+  player's behalf, and the last stretch of the fight could resolve while they were elsewhere. At 125
+  it is what `STY-02` always meant: the tower winding down while you fight, and an out for a player
+  who arrives unable to out-damage it at all — never a faster way to win than fighting. A new test
+  fails if the number ever drifts back toward the damage clock.
+
+### Fixed
+
+- **`ACC-95`'s `Spring n/250` line was implemented nowhere.** It is specified, and it is the only
+  clock in the fight the player does not control, so without it the boss winding itself down read as
+  arbitrary rather than as a mechanic. The Understudy's inspect popup now carries it, directly under
+  Integrity; no other enemy grows the row.
 
 ## [1.1.0] — 2026-09-11
 

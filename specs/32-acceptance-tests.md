@@ -117,7 +117,7 @@ grouped by source document. "Given / When / Then" is implied by the three column
 | ACC-92 | Cache guard of type Sweeper | Tick outside the cache room | It behaves as GUARD (stays). |
 | ACC-93 | Conductor | Enter FOV of the stage room | Moment 1 text box; the Conductor is Active. Every 3rd action while seeing Tick: telegraph then 2 Dancers adjacent (cap 4 alive). At Integrity ≤ 16 | FAST, no more summons; log "…tempo doubles." |
 | ACC-94 | Regulator | Sight/noise | Wakes; BRUISER; at ≤ 24: NORMAL; every 4th action telegraph "seams glow" then Vent: radius 2, 4 damage ignoring Plating + Burning 2. Immune Slowed/Burning; Stun cap 1. |
-| ACC-95 | Understudy | Open the antechamber door | Text box line 1; Active. Overwind every 4th action when adjacent (telegraph "tightens"). At ≤ 48: line 2 in the log, 2 Unfinished appear at markers; Pulse every 4th action when Tick within 2 (telegraph "hums"), `1d6+1` ignoring Plating + push. At ≤ 24: line 3, SLOW, no specials. Spring shows `n/100`, −2 per action; at 0 | defeat sequence. |
+| ACC-95 | Understudy | Open the antechamber door | Text box line 1; Active. Overwind every 4th action when adjacent (telegraph "tightens"). At ≤ 48: line 2 in the log, 2 Unfinished appear at markers; Pulse every 4th action when Tick within 2 (telegraph "hums"), `1d6+1` ignoring Plating + push. At ≤ 24: line 3, SLOW, no specials. **Inspect popup shows `Spring n/250`**, −2 per action; at 0 | defeat sequence. The spring must outlast the damage clock — 125 actions against a 12–35 turn kill. |
 | ACC-96 | Understudy defeated | — | Text box (moment 3 + line 4) → text box (thought 3) → Ending choice; no scrap; no XP. |
 | ACC-97 | Bosses | Apply Stun 3 / Exposed 4 | Durations become 1 / 2. |
 
