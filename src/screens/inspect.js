@@ -9,6 +9,7 @@
 import { idx, chebyshev } from '../grid.js';
 import { TILE, TILE_NAME, HAZARDS, hazardActive, hazardWarning, turnsUntilActive } from '../tiles.js';
 import { itemDef, consumableAmount as amountOf, entryName, entryWear, platingOf, displayName } from '../items.js';
+import { WEAPON_SPECIAL_TEXT, ATTACHMENT_SPECIAL_TEXT } from '../../data/items.js';
 import { enemyType, enemyName, statsOf, speedOf, derive, isTick, START_INTEGRITY } from '../actors.js';
 import * as combat from '../combat.js';
 
@@ -337,12 +338,30 @@ export function enemyPopup(game, enemy) {
   return { title: enemyName(enemy), lines };
 }
 
-/** ITM-05: "every field in ITM-01 as numbers, its description". */
+/**
+ * CAT-01 / CAT-05: the prose of an item's `special`, so the one-word token `itemFields` prints
+ * ("rend", "regulated") is never the only thing the player is told about it — OVR-02's second
+ * pillar is that there are no secret formulas. Attachment texts already name themselves
+ * ("Quiet: ..."); a weapon special gets its CAT-01 name and trigger as a heading.
+ */
+export function specialLines(def) {
+  if (!def.special) return [];
+  if (def.category === 'attachment') {
+    const text = ATTACHMENT_SPECIAL_TEXT[def.special];
+    return text ? [text] : [];
+  }
+  const entry = WEAPON_SPECIAL_TEXT[def.special];
+  return entry ? [`${entry.name} (${entry.trigger})`, entry.effect] : [];
+}
+
+/** ITM-05: "every field in ITM-01 as numbers, its description" — `special` among them (CAT-01). */
 export function itemPopup(record, tick) {
   const def = itemDef(entryName(record));
   const lines = [`Kind ${def.category}`, itemFields(def, tick, record)];
   if (record.count > 1) lines.unshift(`Count ${record.count}`);
   lines.push('', def.description);
+  const special = specialLines(def);
+  if (special.length) lines.push('', ...special);
   return { title: def.name, lines };
 }
 

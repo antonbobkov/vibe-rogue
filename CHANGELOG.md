@@ -36,6 +36,13 @@ stop. A catalogue in one rhythm reads as machine-made however well each entry is
   Governor's tooltip. `STY-11` now bars these outright.
 - `SCR-10`'s level-up line gave Tick an interior (*"Tick feels a new gear catch"*), against `STY-09`'s
   own rule that Tick describes and never emotes.
+- **`ITM-05`'s inspect popup never explained a weapon or attachment special.** `WEAPON_SPECIAL_TEXT`
+  and `ATTACHMENT_SPECIAL_TEXT` were exported by `data/items.js` and imported by nothing, so the popup
+  showed the bare token (`rend`, `regulated`) and never said what it did — against `OVR-02`'s "no
+  secret formulas". The popup now carries each special's `CAT-01` name, trigger and effect. The
+  Governor's text is two words shorter so the Governor's popup fits `UI-11`'s 40 × 12 box, and a new
+  `test/unit/inspect.test.js` fails if any item's popup ever overflows it again — the renderer drops
+  overflowing lines silently, so nothing else would have told us.
 
 See `D-117` in `specs/DECISIONS.md`, which supersedes `D-025`.
 

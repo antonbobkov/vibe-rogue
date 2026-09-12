@@ -479,5 +479,5 @@ export const ATTACHMENT_SPECIAL_TEXT = Object.freeze({
   COOLING: 'Cooling: Tick cannot receive Burning.',
   QUIET: "Quiet: Tick's plain melee noise is 2 instead of 5 (Overwind Strike stays 6); opening a door is silent.",
   REGULATED:
-    "Regulated: Tick's spring drops 1 every 6 turns instead of every 5. Fitting or removing the Governor does not reset the count.",
+    "Regulated: Tick's spring drops 1 every 6 turns, not 5. Fitting or removing it never resets the count.",
 });
