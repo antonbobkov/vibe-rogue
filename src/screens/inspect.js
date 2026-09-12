@@ -339,6 +339,27 @@ export function enemyPopup(game, enemy) {
 }
 
 /**
+ * ITM-01's own first column, for the popup's opening line. The raw `category` ids are internal
+ * vocabulary: `instant` and `record` in particular are words the player never meets anywhere else —
+ * a `record` goes to the screen called the Journal — so the popup names the kind as `ITM-01` writes
+ * it rather than printing the id behind a "Kind" label.
+ */
+const CATEGORY_NAME = Object.freeze({
+  melee: 'Melee weapon',
+  ranged: 'Ranged weapon',
+  plating: 'Plating',
+  attachment: 'Attachment',
+  instant: 'Consumable',
+  throwable: 'Throwable',
+});
+
+/** ITM-01: a `record` is a journal page or the one blueprint, which the Journal screen names. */
+export function categoryName(def) {
+  if (def.category === 'record') return def.blueprint ? 'Blueprint' : 'Journal page';
+  return CATEGORY_NAME[def.category] || def.category;
+}
+
+/**
  * CAT-01 / CAT-05: the prose of an item's `special`, so the one-word token `itemFields` prints
  * ("rend", "regulated") is never the only thing the player is told about it — OVR-02's second
  * pillar is that there are no secret formulas. Attachment texts already name themselves
@@ -357,7 +378,7 @@ export function specialLines(def) {
 /** ITM-05: "every field in ITM-01 as numbers, its description" — `special` among them (CAT-01). */
 export function itemPopup(record, tick) {
   const def = itemDef(entryName(record));
-  const lines = [`Kind ${def.category}`, itemFields(def, tick, record)];
+  const lines = [categoryName(def), itemFields(def, tick, record)];
   if (record.count > 1) lines.unshift(`Count ${record.count}`);
   lines.push('', def.description);
   const special = specialLines(def);

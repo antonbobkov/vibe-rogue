@@ -43,6 +43,9 @@ stop. A catalogue in one rhythm reads as machine-made however well each entry is
   Governor's text is two words shorter so the Governor's popup fits `UI-11`'s 40 × 12 box, and a new
   `test/unit/inspect.test.js` fails if any item's popup ever overflows it again — the renderer drops
   overflowing lines silently, so nothing else would have told us.
+- **The popup's opening line printed the internal category id** — `Kind instant`, `Kind record` — for
+  kinds the player meets nowhere else (a *record* goes to the screen called the Journal). It now names
+  the kind as `ITM-01`'s own table does: `Melee weapon`, `Plating`, `Consumable`, `Journal page`.
 
 See `D-117` in `specs/DECISIONS.md`, which supersedes `D-025`.
 

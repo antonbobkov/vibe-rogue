@@ -11,7 +11,7 @@ import assert from 'node:assert/strict';
 import { ITEMS, WEAPON_SPECIAL_TEXT, ATTACHMENT_SPECIAL_TEXT, WEAPON_SPECIALS, ATTACHMENT_SPECIALS }
   from '../../data/items.js';
 import { STACK_MAX } from '../../src/items.js';
-import { itemPopup, specialLines, POPUP_W, POPUP_H } from '../../src/screens/inspect.js';
+import { itemPopup, specialLines, categoryName, POPUP_W, POPUP_H } from '../../src/screens/inspect.js';
 import { wrap } from '../../src/render.js';
 
 const TICK = Object.freeze({ level: 1, skills: [], integrity: 60, integrityMax: 60, tension: 100 });
@@ -55,6 +55,23 @@ test('@m10 @unit inspect: every CAT-01 and CAT-05 special id has prose written f
   for (const id of ATTACHMENT_SPECIALS) {
     assert.ok(ATTACHMENT_SPECIAL_TEXT[id], `ATTACHMENT_SPECIAL_TEXT missing ${id}`);
   }
+});
+
+test('@m10 @unit inspect: the popup names ITM-01 kinds, never the internal category id', () => {
+  // `instant` and `record` are ids the player meets nowhere else — a record goes to the Journal.
+  const IDS = new Set(['melee', 'ranged', 'plating', 'attachment', 'instant', 'throwable', 'record']);
+  const seen = new Set();
+  for (const def of ITEMS) {
+    const label = categoryName(def);
+    assert.ok(!IDS.has(label), `${def.name}: popup shows the raw id "${label}"`);
+    assert.equal(label, label[0].toUpperCase() + label.slice(1), `${def.name}: "${label}" not capitalised`);
+    assert.equal(wrapped(def.name)[0], label, `${def.name}: kind is not the popup's first line`);
+    seen.add(label);
+  }
+  assert.deepEqual([...seen].sort(), [
+    'Attachment', 'Blueprint', 'Consumable', 'Journal page',
+    'Melee weapon', 'Plating', 'Ranged weapon', 'Throwable',
+  ]);
 });
 
 test('@m10 @unit inspect: no item popup overflows UI-11 max 40 x 12 box', () => {
