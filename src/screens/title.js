@@ -1,4 +1,4 @@
-// The Title screen (UI-17, SCR-01): the title, the four-line tagline, the menu, the seed input
+// The Title screen (UI-17, SCR-01): the title, the tagline, the menu, the seed input
 // and the Abandon prompt.
 //
 // It replaces the stack (TEC-06) and is the only screen that exists before a run does, so every

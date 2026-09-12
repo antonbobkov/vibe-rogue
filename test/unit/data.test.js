@@ -680,8 +680,8 @@ test('ACC-77: the floor 8 fixed map is 24 x 60 in the WLD-13 legend with one @, 
 
 test('data/script: SCR-01..09 strings are present and correctly sized @unit @m02', () => {
   assert.equal(SCRIPT.title, 'CLOCKWORK HOLLOW');
-  assert.equal(SCRIPT.tagline.length, 4, 'SCR-01: four tagline lines');
-  assert.equal(SCRIPT.tagline[3], 'Climb.');
+  assert.equal(SCRIPT.tagline.length, 2, 'SCR-01: two tagline lines');
+  assert.equal(SCRIPT.tagline[1], 'Eleven days ago she stopped.');
   assert.deepEqual([...SCRIPT.menu], ['New run', 'Continue', 'Enter seed', 'Help']);
   assert.equal(SCRIPT.descent.length, 7, 'SCR-07: the descent is seven lines');
   assert.equal(SCRIPT.descent[0], '7. The pendulum swings once more, and hangs.');
@@ -720,7 +720,7 @@ test("data/script: the Understudy's four lines are SCR-06 verbatim @unit @m02", 
   assert.equal(SCRIPT.understudy[2], 'You fight the way she taught the soldiers to. She was not a soldier.');
   assert.equal(
     SCRIPT.understudy[3],
-    'I am running down. So are you. Tell me what you would do with a heart, first attempt.',
+    'I am running down. So are you. Tell me what you would do with a heart, *first attempt*.',
   );
   assert.ok(SCRIPT.understudy[1].startsWith('Tick. She wrote about you.'));
   for (const line of Object.values(SCRIPT.understudy)) {
@@ -745,7 +745,7 @@ test('data/script: the SCR-10 log templates use only the documented placeholders
   assert.equal(SCRIPT.log.station, 'Tick winds the spring. Tension {n}.');
   assert.equal(SCRIPT.log.stationSpent, 'This station has run down.');
   assert.equal(SCRIPT.log.stairs, 'Tick climbs. Floor {n}: {floor name}.');
-  assert.equal(SCRIPT.log.levelUp, 'Tick feels a new gear catch. Level {n}.');
+  assert.equal(SCRIPT.log.levelUp, 'A new gear catches. Level {n}.');
   assert.equal(SCRIPT.log.tensionLoosening, 'The spring is loosening.');
   assert.equal(SCRIPT.log.tensionNearlySlack, "Tick's spring is nearly slack.");
   assert.equal(SCRIPT.log.journalPage, 'Tick finds a page in her hand. (Journal, page {n})');

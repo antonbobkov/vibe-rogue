@@ -10,12 +10,10 @@
 
 Title: `CLOCKWORK HOLLOW`
 
-Tagline (four lines, centered under the title):
+Tagline (two lines, centered under the title):
 ```
-Eight floors. One key.
-Every turn costs spring.
-Nothing winds you but you.
-Climb.
+For fifty years she wound them every morning.
+Eleven days ago she stopped.
 ```
 
 Menu items: `New run` · `Continue` · `Enter seed` · `Help`. Continue subtitle: `Floor {N}, turn {T}`.
@@ -121,7 +119,7 @@ Each is shown in the Journal screen with the header `Page {n} — {floor name}` 
 > Every spring in this tower needs a hand on a key. Take the hand away and the tower is a very elaborate
 > way of stopping. So: a mainspring with its own key, mounted on its own back, geared to wind itself from
 > the running of the tower. It cannot be fitted to the old frames. It needs a frame built around it, from
-> the first bolt. A heart, if I am being ridiculous, and I am.
+> the first bolt. A heart.
 >
 > Drawings finished today. Silver, because brass will not take the tolerances. Taller than me. I have
 > been calling it the understudy, which is unfair to it and to me.
@@ -138,7 +136,7 @@ Each is shown in the Journal screen with the header `Page {n} — {floor name}` 
 > that is what I will have told it to do. I have been trying for a week to write an order that means
 > "and then decide for yourself," and I cannot. It is not that kind of thing.
 >
-> Tick, on the other hand, would have no idea what to do with a heart. That is rather the point. It has
+> Tick, on the other hand, would have no idea what to do with a heart. It has
 > never once done what it was told. It does what I am doing.
 >
 > I will decide tomorrow. My chest is bad tonight.
@@ -182,7 +180,7 @@ Blueprint: `Tick unfolds a drawing. (Journal, Blueprint)`
 ### Moment 3 — the Key (floor 8, on the Understudy's defeat)
 First text box:
 > The Understudy kneels. It is very slow now. It opens its hand, and the Master Key is on its palm — a
-> short brass key with a worn bow. She wrote that it fits any mainspring. That was the whole trouble of it.
+> short brass key with a worn bow. She wrote that it fits any mainspring.
 >
 > "Turn it, then. Someone has to."
 
@@ -193,9 +191,9 @@ Second text box:
 
 | # | When (`STY-06`) | Where | Text |
 |---|---|---|---|
-| 1 | Entry | Text box | "Tick. She wrote about you. *The first attempt — she works.* She meant the Key for something finished. Go back down. There is oil in the workshop, and nothing you need to do." |
+| 1 | Entry | Text box | "Tick. She wrote about you. *The first attempt — she works.* The Key was intended for something finished, and you are not that. You may go back down. There is oil in the workshop, and there is nothing further required of you." |
 | 2 | Integrity ≤ 48 | Log, `violet` | "You fight the way she taught the soldiers to. She was not a soldier." |
-| 3 | Integrity ≤ 24 | Log, `violet` | "I am running down. So are you. Tell me what you would do with a heart, first attempt." |
+| 3 | Integrity ≤ 24 | Log, `violet` | "I am running down. So are you. Tell me what you would do with a heart, *first attempt*." |
 | 4 | Defeat | Text box (in Moment 3) | "Turn it, then. Someone has to." |
 
 ## SCR-07 The ending choice
@@ -223,7 +221,7 @@ the chosen ending.
 > from their doors. Every small order she gave is ended, and replaced with the one she never managed to
 > write.
 >
-> You sit down in her chair, because the Key must be held, and it is a chair for holding things.
+> You sit down in her chair, because the Key must be held, and hers is a chair for holding things.
 >
 > Down in Lowmere, in the square, the clock struck the hour for the first time in eleven days, and went on
 > striking it.
@@ -278,7 +276,7 @@ Tension is your spring and your clock. It drops 1 every 5 turns, always.
 It never comes back on its own. Winding Stations (&) restore it once; Spring-Keys give 30.
 Integrity is your body. It never heals on its own either. Solder gives 15.
 Enemies start still. Sight and noise wake them. Anything with a raised arm is about to hit.
-Hover anything for its numbers. Right-click for everything.
+Hover anything for its numbers. Right-click opens the full card.
 When you die, the run is over. The seed on the last screen replays the same tower.
 ```
 
@@ -331,7 +329,7 @@ the start of a sentence: "The Sweeper breaks."), unless the name itself begins w
 | Door broken | `The {A} breaks the door down.` |
 | Wall | `The wall is solid.` |
 | Stairs | `Tick climbs. Floor {n}: {floor name}.` |
-| Level-up | `Tick feels a new gear catch. Level {n}.` |
+| Level-up | `A new gear catches. Level {n}.` |
 | Skill used | `{X}.` (the skill's name, then the effect messages) |
 | Skill unaffordable | `Not enough spring for {X}.` |
 | Once-per-floor used | `{X} is spent until the next floor.` |

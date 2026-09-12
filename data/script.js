@@ -15,10 +15,8 @@
 export const title = 'CLOCKWORK HOLLOW';
 
 export const tagline = Object.freeze([
-  'Eight floors. One key.',
-  'Every turn costs spring.',
-  'Nothing winds you but you.',
-  'Climb.',
+  'For fifty years she wound them every morning.',
+  'Eleven days ago she stopped.',
 ]);
 
 export const menu = Object.freeze(['New run', 'Continue', 'Enter seed', 'Help']);
@@ -77,7 +75,7 @@ export const pages = Object.freeze({
   ].join('\n\n'),
   6: [
     'The answer is a key that turns from the inside.',
-    'Every spring in this tower needs a hand on a key. Take the hand away and the tower is a very elaborate way of stopping. So: a mainspring with its own key, mounted on its own back, geared to wind itself from the running of the tower. It cannot be fitted to the old frames. It needs a frame built around it, from the first bolt. A heart, if I am being ridiculous, and I am.',
+    'Every spring in this tower needs a hand on a key. Take the hand away and the tower is a very elaborate way of stopping. So: a mainspring with its own key, mounted on its own back, geared to wind itself from the running of the tower. It cannot be fitted to the old frames. It needs a frame built around it, from the first bolt. A heart.',
     'Drawings finished today. Silver, because brass will not take the tolerances. Taller than me. I have been calling it the understudy, which is unfair to it and to me.',
     'Three years, I think. I have three years.',
     '— A.V.',
@@ -85,7 +83,7 @@ export const pages = Object.freeze({
   7: [
     'The understudy is finished. It is the best thing I have made and I do not trust it.',
     'It does what it is told, perfectly, and it waits to be told. When the key goes in it will wind itself and then the others, and keep the tower, and it will keep it exactly as I built it, forever, because that is what I will have told it to do. I have been trying for a week to write an order that means "and then decide for yourself," and I cannot. It is not that kind of thing.',
-    'Tick, on the other hand, would have no idea what to do with a heart. That is rather the point. It has never once done what it was told. It does what I am doing.',
+    'Tick, on the other hand, would have no idea what to do with a heart. It has never once done what it was told. It does what I am doing.',
     'I will decide tomorrow. My chest is bad tonight.',
     '— A.V.',
   ].join('\n\n'),
@@ -108,7 +106,7 @@ export const moments = Object.freeze({
     '*It has a place for the Key. I do not.*',
   ].join('\n\n'),
   '3a': [
-    'The Understudy kneels. It is very slow now. It opens its hand, and the Master Key is on its palm — a short brass key with a worn bow. She wrote that it fits any mainspring. That was the whole trouble of it.',
+    'The Understudy kneels. It is very slow now. It opens its hand, and the Master Key is on its palm — a short brass key with a worn bow. She wrote that it fits any mainspring.',
     '"Turn it, then. Someone has to."',
   ].join('\n\n'),
   '3b': '*It is still waiting for her. So was I.*',
@@ -121,9 +119,9 @@ export const moments = Object.freeze({
  * 4 — defeat, inside moment 3 (SCR-05).
  */
 export const understudy = Object.freeze({
-  1: 'Tick. She wrote about you. *The first attempt — she works.* She meant the Key for something finished. Go back down. There is oil in the workshop, and nothing you need to do.',
+  1: 'Tick. She wrote about you. *The first attempt — she works.* The Key was intended for something finished, and you are not that. You may go back down. There is oil in the workshop, and there is nothing further required of you.',
   2: 'You fight the way she taught the soldiers to. She was not a soldier.',
-  3: 'I am running down. So are you. Tell me what you would do with a heart, first attempt.',
+  3: 'I am running down. So are you. Tell me what you would do with a heart, *first attempt*.',
   4: 'Turn it, then. Someone has to.',
 });
 
@@ -140,7 +138,7 @@ export const endingOptions = Object.freeze(['A) Wind the tower', 'B) Wind yourse
 export const endingA = [
   'You set the Key into the Escapement and turn it. It turns easily; it was made to.',
   'The tower takes a breath. Below you, floor by floor, the sound of springs tightening — the gallery gears groaning up to speed, the boilers catching, the orchestra finding, at last, the bar after the fourth beat. The sweepers stop where they stand and then start again, slower, sweeping. The soldiers step back from their doors. Every small order she gave is ended, and replaced with the one she never managed to write.',
-  'You sit down in her chair, because the Key must be held, and it is a chair for holding things.',
+  'You sit down in her chair, because the Key must be held, and hers is a chair for holding things.',
   'Down in Lowmere, in the square, the clock struck the hour for the first time in eleven days, and went on striking it.',
 ].join('\n\n');
 
@@ -206,7 +204,7 @@ export const help = Object.freeze([
   'It never comes back on its own. Winding Stations (&) restore it once; Spring-Keys give 30.',
   'Integrity is your body. It never heals on its own either. Solder gives 15.',
   'Enemies start still. Sight and noise wake them. Anything with a raised arm is about to hit.',
-  'Hover anything for its numbers. Right-click for everything.',
+  'Hover anything for its numbers. Right-click opens the full card.',
   'When you die, the run is over. The seed on the last screen replays the same tower.',
 ]);
 
@@ -247,7 +245,7 @@ export const log = Object.freeze({
   doorBroken: 'The {A} breaks the door down.',
   wall: 'The wall is solid.',
   stairs: 'Tick climbs. Floor {n}: {floor name}.',
-  levelUp: 'Tick feels a new gear catch. Level {n}.',
+  levelUp: 'A new gear catches. Level {n}.',
   skillUsed: '{X}.',
   skillUnaffordable: 'Not enough spring for {X}.',
   oncePerFloorSpent: '{X} is spent until the next floor.',

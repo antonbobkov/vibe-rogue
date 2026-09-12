@@ -62,10 +62,10 @@ Descriptions (≤ 25 words, in the inspect popup):
 - Magpie: *An aviary bird that likes bright things. Takes one, and does not come back for another.*
 - Cuckoo: *Announces the hour at anything that moves. The shriek carries, and the whole floor hears it.*
 - Stoker: *Feeds the boilers. Its hands are hot. Burns you on a hit; cannot itself burn.*
-- Gear-Golem: *Maintenance engine. Slow. Raises its arm one turn, brings it down the next. Do not be there.*
+- Gear-Golem: *Maintenance engine. Slow.*
 - Brass Finch: *An aviary bird that says the time. Quick, fragile, and never alone.*
 - Archivist: *Files things. Flicks pins that loosen your plating. Keeps its distance.*
-- The Unfinished: *Never given an order. Moves on raw spring, wherever. Does not blind; it never saw properly.*
+- The Unfinished: *Never given an order. Moves on raw spring, wherever it happens to go. Cannot be Blinded; it never saw properly.*
 - Pendulum Knight: *Guards the stair. Steel pattern, two-handed blade. Stays at its post unless you enter it.*
 
 ## BST-03 Boss rules
@@ -121,7 +121,7 @@ Descriptions (≤ 25 words, in the inspect popup):
   2. Else if `n mod 4 == 3` → `ventingUp = true` and `windingUp = false` (telegraph color; a pending heavy
      hit is dropped). Log: "The Regulator's seams glow."
   3. Else → BRUISER script.
-- Description: *The tower's governor. Built to run without her and never did. Slow until it is not.*
+- Description: *The tower's governor. She built it to run without her. It never did.*
 
 ## BST-06 The Understudy (floor 8)
 

@@ -50,7 +50,7 @@
   knocked back 1 tile (`CMB-09`) and Stunned 1. The Stun applies even if the knockback fails.
   Boss Stun caps apply (`BST-03`).
 - Summary: `+2 Force. Melee hits of 6+ knock back and Stun 1.`
-- Description: *A piston where the elbow was. Things you hit go somewhere else and think about it.*
+- Description: *A piston where the elbow was. She traded a joint for a small, patient explosion.*
 
 ## SKL-03 Tinkering
 
@@ -70,13 +70,13 @@
   This is in addition to the enemy's own drop. Counter persists across floors. Summoned enemies
   count; the Decoy does not.
 - Summary: `Every 4th enemy broken drops a throwable.`
-- Description: *Everything in this tower is made of parts. Every fourth one leaves something worth keeping.*
+- Description: *Everything in this tower is made of parts. Most of them are still good.*
 
 ### Efficient Springs
 - Effect: adds `efficientKeyBonus` to a **Spring-Key**, `efficientSolderBonus` to the total of a
   **Solder** repair (`ITM-09`), and `efficientFluxBonus` to a **Flux**.
 - Summary: `Spring-Key +10, Solder +15, Flux +5.`
-- Description: *Her second-best screwdriver, and the knack of using it. Nothing is wasted.*
+- Description: *Her second-best screwdriver, and the knack of using it.*
 
 ### Field Repair
 - Effect: Integrity +12 (clamped). Usable once per floor; resets on Ascend. Shown `(used)` in the panel.
@@ -94,7 +94,7 @@
   themselves still attack Tick. After 6 turns, or when its Integrity reaches 0, the Decoy is removed
   (no scrap, no XP, no noise). Only one Decoy exists at a time; placing a new one removes the old.
 - Summary: `Place a 12-Integrity decoy; enemies within 8 target it for 6 turns. 15 Tension.`
-- Description: *A tin frame, a lamp, and a spring that does nothing but rattle. It works on the sweepers. It worked on her.*
+- Description: *A tin frame, a lamp, and a spring that does nothing but rattle. The sweepers fell for it. So did she.*
 
 ## SKL-04 Resonance
 
@@ -115,7 +115,7 @@
 - Effect: every enemy within Chebyshev 2 of Tick takes `1d4+2` damage ignoring Plating, then is
   knocked back 1 tile away from Tick (`CMB-09`), resolved in enemy `id` order. Noise 8.
 - Summary: `All enemies within 2: 1d4+2 damage (ignores Plating), pushed back. 8 Tension.`
-- Description: *Strike your own frame like a bell. Anything close enough to hear it is not close any more.*
+- Description: *Strike your own frame like a bell. For one moment you are the loudest thing in the Hollow, and nothing wants to be near.*
 
 ### Discord
 - Effect: the target enemy becomes **Exposed** 4 and **Slowed** 4. No line of fire is needed — only

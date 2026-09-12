@@ -4,6 +4,41 @@ All notable changes to Clockwork Hollow. This project is versioned by release, n
 milestones below are the `40-implementation-plan.md` build order, kept because every one of them is a
 reviewable commit with its own green Definition of Done.
 
+## [Unreleased]
+
+**The prose pass.** Every string the player reads was reviewed end to end. The writing was not bad —
+the world is coherent and the best lines are the best things in the game — but it had a single
+rhythm: a setup, a full stop, and a wry reversal, over and over, very often echoing a word across the
+stop. A catalogue in one rhythm reads as machine-made however well each entry is written.
+
+### Added
+
+- **`STY-11` Range discipline** (`specs/01-story.md`) — six binding rules: no word echoed across a
+  full stop, no two neighbouring catalogue entries landing the same shape, an entry is allowed to be
+  flat, the theme is never stated, characters do not share a syntax, and the evocative is preferred to
+  the merely precise where it does not mislead about a mechanic.
+
+### Changed
+
+- **29 strings rewritten** across the title screen, journal, endings, item catalogue, bestiary, skills
+  and the Understudy's dialogue. Seven proposed rewrites were rejected in review and keep their
+  current text. No entity is renamed, so saves are unaffected.
+- **The tagline** is now two lines and opens on Aurelie rather than on mechanics.
+- **The eight journal-page items** had one identical description between them; each now describes its
+  own physical page.
+- **The Understudy** no longer speaks in Aurelie's syntax, so its fourth line — the one place the
+  formality drops — lands.
+
+### Fixed
+
+- **Internal identifiers were reaching the screen**: the spec IDs `(CHR-02)` in the Integrity popup
+  and `(WLD-14)` in the wanderer hover, and the variable names `decayPeriod` and `decayCounter` in the
+  Governor's tooltip. `STY-11` now bars these outright.
+- `SCR-10`'s level-up line gave Tick an interior (*"Tick feels a new gear catch"*), against `STY-09`'s
+  own rule that Tick describes and never emotes.
+
+See `D-117` in `specs/DECISIONS.md`, which supersedes `D-025`.
+
 ## [1.1.0] — 2026-09-11
 
 **The Tower Notices.** The 1.0 game was beaten on a first try: the greedy-explorer bot won 88% of

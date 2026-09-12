@@ -547,7 +547,7 @@ export function panelHoverText(game, row) {
       const cycle = state.floor.hazardCycle;
       if (!cycle) {
         const next = turnsUntilWanderer(state);
-        return next === null ? '' : `Something arrives on this floor in ${next} turns (WLD-14)`;
+        return next === null ? '' : `Something arrives on this floor in ${next} turns`;
       }
       const cfg = HAZARDS[cycle.kind];
       return cycle.active

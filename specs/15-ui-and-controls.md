@@ -289,7 +289,7 @@ is free.
 
 ## UI-17 Title, Death, Victory, Ending-choice screens
 
-- **Title:** the title `CLOCKWORK HOLLOW` in brass, a 4-line tagline (`24`), and a vertical menu:
+- **Title:** the title `CLOCKWORK HOLLOW` in brass, the tagline (`24`), and a vertical menu:
   `New run`, `Continue` (only if an autosave exists; shows "Floor N, turn T"), `Enter seed`, `Help`.
   Arrows/Enter or click. `Enter seed` shows a one-line text input (up to 16 characters, any
   printable); confirming starts a new run with that seed (`TEC-07`). Starting a new run while an

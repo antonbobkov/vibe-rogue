@@ -32,9 +32,9 @@ Descriptions:
 - Wrench: *Adjustable. Hers, then Tick's. Fits every bolt in the tower because she made every bolt in the tower.*
 - Mallet: *Rawhide face, lignum vitae head. For persuading gears. Swings slow.*
 - Cog Saw: *Fine teeth for cutting brass plate. Leaves a seam you can get a second blow into.*
-- Escapement Blade: *A pallet fork ground to an edge. Balanced for a wrist she never gave you. Use it anyway.*
+- Escapement Blade: *A pallet fork ground to an edge. Balanced for a wrist she never gave you.*
 - Pendulum Flail: *A bob on a chain. Hard to aim, hard to be near.*
-- Piston Hammer: *Steam-driven head. Whatever you hit does not stay hit where it was.*
+- Piston Hammer: *Steam-driven head. It sighs on the downstroke, and the thing you hit goes to find a wall.*
 - Conductor's Baton: *Ebony, weighted. Keeps things to time. Things do not enjoy it.*
 
 ## CAT-03 Ranged weapons
@@ -59,10 +59,10 @@ Descriptions:
 | **Lacquered Plating** | 2 | 0 | pink | 5–7 |
 
 Descriptions:
-- Tin: *Cut from the roof. Better than nothing, which is what you had.*
+- Tin: *Cut from the roof. Better than nothing.*
 - Brass: *Workshop stock. Heavy enough to notice.*
 - Iron: *Boilerplate, riveted. You will not dodge in it. You will not need to, mostly.*
-- Steel: *From the knights' pattern. She said it was too much. It is too much.*
+- Steel: *From the knights' pattern. She said it was too much armour for a thing that cannot be afraid.*
 - Lacquered: *Thin steel, twelve coats. Light as brass and twice the trouble to make.*
 
 ## CAT-05 Attachments
@@ -77,9 +77,9 @@ Descriptions:
 
 Descriptions:
 - Balance Wheel: *Hairspring and wheel from a pocket watch. Steadies the hand.*
-- Counterweight: *Lead in the back plate. Hits land harder. Everything else lands on you.*
+- Counterweight: *Puts your weight behind everything, including the mistakes.*
 - Oil Reservoir: *Keeps the joints cool. Stokers hate it.*
-- Sounding Plate: *A plate that swallows the ring of brass on brass. The birds will not hear you coming.*
+- Sounding Plate: *Swallows the ring of brass on brass. The birds will not hear you coming.*
 - Governor: *The tower's own regulator, taken from the thing that guarded it. Time passes slower with it on.*
 
 ## CAT-06 Consumables
@@ -97,10 +97,10 @@ Descriptions:
 Descriptions:
 - Solder: *Tin and flux in a paper twist. Mends plate. Does not mend much else.*
   (It also takes three turns and a little of the spring to heat: `ITM-09`.)
-- Spring-Key: *A spare key, pre-wound. Thirty turns of the spring. Do not lose it.*
+- Spring-Key: *Thirty ticks of borrowed morning.*
 - Flux: *Cleans a joint of anything that got into it. Stings, she said, if you could sting.*
-- Oil Flask: *Lamp oil. Everything in here runs on it and everything in here burns on it.*
-- Grit Bomb: *Emery dust in a glass bulb. Gets in the eyes, for those that have eyes, and the lenses, for the rest.*
+- Oil Flask: *Lamp oil, from the harbor lamps.*
+- Grit Bomb: *Emery dust in a glass bulb. It gets into the lenses, and for a while the world is only a rumour.*
 - Tuning Fork: *Struck and thrown, it rings on a pitch that stops a mechanism dead for a moment.*
 - Clatter Can: *A tin of loose screws. Thrown, it says: over here.*
 
@@ -108,7 +108,7 @@ Descriptions:
 
 | Name | Glyph | Where | Effect |
 |---|---|---|---|
-| **Journal page 1–8** | `?` | One per floor in the journal room (`WLD-07`); page 8 on the chair after the Understudy breaks | Added to the Journal screen. Text in `24-script.md`. |
+| **Journal page 1–8** | `?` | One per floor in the journal room (`WLD-07`); page 8 on the chair after the Understudy breaks | Added to the Journal screen. Text in `24-script.md`. Each of the eight carries its own one-line description of the physical page (`STY-11`); they are in `data/items.js`. |
 | **Understudy Blueprint** | `?` | Floor 6 cache, guaranteed, in addition to the 2–3 rolled items | Added to the Journal screen; triggers scripted moment 2 (`STY-05`). |
 
 The **Master Key** is narrative only: never on the map, never an item in `data/items.js`; the ending

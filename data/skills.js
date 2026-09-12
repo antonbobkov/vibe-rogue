@@ -41,7 +41,7 @@ export const SKILLS = Object.freeze([
     rank: 4,
     type: 'P',
     summary: '+2 Force. Melee hits of 6+ knock back and Stun 1.',
-    description: 'A piston where the elbow was. Things you hit go somewhere else and think about it.',
+    description: 'A piston where the elbow was. She traded a joint for a small, patient explosion.',
   }),
 
   // ---- SKL-03 Tinkering -----------------------------------------------------------------
@@ -51,7 +51,7 @@ export const SKILLS = Object.freeze([
     rank: 1,
     type: 'P',
     summary: 'Every 4th enemy broken drops a throwable.',
-    description: 'Everything in this tower is made of parts. Every fourth one leaves something worth keeping.',
+    description: 'Everything in this tower is made of parts. Most of them are still good.',
   }),
   Object.freeze({
     name: 'Efficient Springs',
@@ -59,7 +59,7 @@ export const SKILLS = Object.freeze([
     rank: 2,
     type: 'P',
     summary: 'Spring-Key +10, Solder +15, Flux +5.',
-    description: 'Her second-best screwdriver, and the knack of using it. Nothing is wasted.',
+    description: 'Her second-best screwdriver, and the knack of using it.',
   }),
   Object.freeze({
     name: 'Field Repair',
@@ -80,7 +80,7 @@ export const SKILLS = Object.freeze([
     cost: 15,
     target: 'adjacent-free',
     summary: 'Place a 12-Integrity decoy; enemies within 8 target it for 6 turns. 15 Tension.',
-    description: 'A tin frame, a lamp, and a spring that does nothing but rattle. It works on the sweepers. It worked on her.',
+    description: 'A tin frame, a lamp, and a spring that does nothing but rattle. The sweepers fell for it. So did she.',
   }),
 
   // ---- SKL-04 Resonance -----------------------------------------------------------------
@@ -100,7 +100,7 @@ export const SKILLS = Object.freeze([
     cost: 8,
     target: 'self',
     summary: 'All enemies within 2: 1d4+2 damage (ignores Plating), pushed back. 8 Tension.',
-    description: 'Strike your own frame like a bell. Anything close enough to hear it is not close any more.',
+    description: 'Strike your own frame like a bell. For one moment you are the loudest thing in the Hollow, and nothing wants to be near.',
   }),
   Object.freeze({
     name: 'Discord',

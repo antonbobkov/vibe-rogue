@@ -98,7 +98,7 @@ test('ACC-30: XP 9 plus a 1-XP break is level 2 — +2/+2 Integrity, a skill poi
   assert.equal(tick.integrityMax, START_INTEGRITY + TUNING.levelUpIntegrity);
   assert.equal(tick.integrity, START_INTEGRITY + TUNING.levelUpIntegrity);
   assert.equal(tick.skillPoints, 1, "UI-03 shows SP:1 until it is spent");
-  assert.ok(texts(result).includes('Tick feels a new gear catch. Level 2.'));
+  assert.ok(texts(result).includes('A new gear catches. Level 2.'));
   assert.deepEqual(
     result.events.filter((e) => e.type === 'levelUp'),
     [{ type: 'levelUp', level: 2 }],

@@ -391,7 +391,7 @@ export function statPopup(game, stat) {
         lines: [
           `${tick.integrity} of ${tick.integrityMax}`,
           `Base ${START_INTEGRITY} + ${TUNING.levelUpIntegrity} per level above 1 (level ${tick.level})`,
-          'It never heals on its own (CHR-02).',
+          'It never heals on its own.',
         ],
       };
     case 'tension':

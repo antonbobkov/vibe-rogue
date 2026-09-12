@@ -104,7 +104,7 @@ are defined in `13-world-and-generation.md` and `23-floors.md` and must fit the 
 | 4 | **The Furnace Deck** | Boilers, coal bunkers, steam vent hazards. Hot. | The tower's heart; heavy enemies (Gear-Golems, Stokers). Player should be choosing fights now. | *Page 4:* Fatigue. Coughing. "Eight floors is too many for one pair of legs." |
 | 5 | **The Aviary** | Open galleries, perches, cages, a shattered skylight. Long sightlines. | Ranged threat floor (Cuckoos). Teaches cover and doors. | *Page 5:* Fear. What happens to them when she stops? "They will run down their last order until they stop. I have given them such small orders." |
 | 6 | **The Archive** | Blueprint cabinets, drafting tables, the shelves of parts for things she never finished. | **Mini-boss: The Regulator** — the tower's governor, the one thing she built to run *without* her, and which never worked right. Scripted moment: Tick finds the Understudy's blueprint. Thought #2. | *Page 6:* The plan. A key that turns from the inside. "A heart, if I am being ridiculous, and I am." |
-| 7 | **The Pendulum Stair** | A spiral stair around the shaft; the Great Pendulum swings through the map. Narrow. Mixed elite enemies. | The gauntlet. No new mechanics; everything at once. | *Page 7:* Doubt. Who gets the Key? The Understudy is finished, perfect, and she doesn't trust it. "Tick would have no idea what to do with it. That is rather the point." |
+| 7 | **The Pendulum Stair** | A spiral stair around the shaft; the Great Pendulum swings through the map. Narrow. Mixed elite enemies. | The gauntlet. No new mechanics; everything at once. | *Page 7:* Doubt. Who gets the Key? The Understudy is finished, perfect, and she doesn't trust it. "Tick would have no idea what to do with it." |
 | 8 | **The Escapement** | A single handcrafted circular chamber around the escapement wheel. Aurelie's chair. | **Final boss: The Understudy.** Scripted entry: the Understudy is standing beside the chair, holding the Key. Aurelie's body is *not* depicted — the chair is empty; the doctor's visit in page 8 implies she was taken down to Lowmere. Boss dialogue. On victory, the **ending choice**. Thought #3. | *Page 8:* Found on the chair *after* the boss, delivered by the ending sequence (`SCR-07`). Unfinished mid-sentence. She was deciding. |
 
 ## STY-05 Scripted moments and Tick's three thoughts
@@ -158,8 +158,9 @@ choice is still up there."*
 
 ## STY-09 Tone guide (binding on all text in wave 3)
 
-- **Voice:** plain, precise, a little dry. Short sentences. Concrete nouns (brass, oil, keys, coal)
-  over abstract ones. Warmth is shown through attention to detail, never stated.
+- **Voice:** concrete and unhurried. Short sentences. Concrete nouns (brass, oil, keys, coal) over
+  abstract ones. Warmth is shown through attention to detail, never stated. Plainness is a register
+  the text may use, not the register it must use — see `STY-11`.
 - **Never:** gore, cruelty, swearing, jokes at the player's expense, fourth-wall breaks, "epic" language,
   exclamation marks in Aurelie's voice.
 - **Aurelie** is the only character with a personality on the page. She measures things. She names
@@ -168,12 +169,38 @@ choice is still up there."*
   feelings.
 - **The Understudy** is formal and quiet, never menacing in word choice. Its menace is that it is
   correct about everything except the conclusion.
-- **UI and system text** (item descriptions, enemy descriptions, help) is written in the same plain
-  voice, as if Aurelie labeled everything in the tower — because she did. Item descriptions may be her
-  workshop labels.
+- **UI and system text** (item descriptions, enemy descriptions, help) is written as if Aurelie
+  labeled everything in the tower — because she did. Item descriptions may be her workshop labels, and
+  a label of hers may be a measurement, a memory, or a joke. No internal identifier, spec ID, or source
+  symbol ever appears in text the player can read.
 - **Length discipline:** intro ≤ 180 words; each journal page 110–170 words; each scripted moment
   ≤ 80 words; each ending ≤ 200 words; item/enemy descriptions ≤ 25 words. Total in-game prose
   ≈ 2,000 words.
+
+## STY-11 Range discipline (binding on all text, with `STY-09`)
+
+Added after the wave-3 text shipped and was read end to end. The failure it corrects was not any single
+line — almost every line was good — but that the text had **one move and made it every time**: a short
+setup, a full stop, and a wry deflating reversal. Thirty-five items, sixteen enemies and twelve skills
+in a single rhythm reads as machine-made however well each entry is written, and a player stops reading
+descriptions by the eighth one.
+
+1. **No line may echo a word across its own full stop.** *"She said it was too much. It is too much."*
+   and *"Fits every bolt in the tower because she made every bolt in the tower."* are the pattern.
+   Deliberate repetition inside one sentence is fine; the figure this bans is the echo used as a punchline.
+2. **No two neighbouring entries in a catalogue may land the same shape.** Read `21`, `22` and `20` in
+   catalogue order and vary what the last beat does: a measurement, a memory of hers, a joke, a threat,
+   or nothing at all.
+3. **An entry is allowed to be flat.** A description that states a fact and stops is not a failure of
+   craft; it is what makes the next entry's turn land.
+4. **The theme is never stated.** Not by Aurelie, not by the narrator, not in an ending. *"I did not
+   think about what a small order looks like from the inside"* explains what the tricolon above it
+   already did. Cut the explanation and keep the image.
+5. **Characters do not share a syntax.** Aurelie is clipped and measures things. The Understudy is
+   formal, uses subordinate clauses, and is courteous at the worst moments. Tick describes.
+6. **Prefer the evocative to the merely precise.** Where a line can be accurate and also strange, funny
+   or sad, it should be — provided it does not mislead about a mechanic. Dryness is one colour in the
+   range, not the target.
 
 ## STY-10 Glossary (canonical names — match exactly everywhere)
 
