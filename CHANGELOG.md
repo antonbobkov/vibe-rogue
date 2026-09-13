@@ -4,7 +4,15 @@ All notable changes to Clockwork Hollow. This project is versioned by release, n
 milestones below are the `40-implementation-plan.md` build order, kept because every one of them is a
 reviewable commit with its own green Definition of Done.
 
-## [Unreleased]
+## [1.2.0] — 2026-09-12
+
+**What playing it found.** Three passes over a game that the specs said was finished. The first read
+every string the player sees; the second played the game instead of reading it; the third followed
+the one report from that session that turned out to be a tuning problem rather than a bug. The
+through-line is that none of it was visible from the specs — four of the five playtest defects were
+invisible to a green test suite as well, because nothing asserted the thing that was wrong.
+
+---
 
 **The prose pass.** Every string the player reads was reviewed end to end. The writing was not bad —
 the world is coherent and the best lines are the best things in the game — but it had a single

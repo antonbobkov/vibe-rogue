@@ -9,7 +9,7 @@ the Master Key, and decide what to do with it. Every turn costs spring. Death is
 run takes 30–45 minutes.
 
 The game is built entirely from the specifications in [`specs/`](specs/), which are written so that a
-builder makes no creative decision. Version **1.0.0** — see [`CHANGELOG.md`](CHANGELOG.md).
+builder makes no creative decision. Version **1.2.0** — see [`CHANGELOG.md`](CHANGELOG.md).
 
 ---
 
